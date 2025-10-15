@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class RegisterActivity : AppCompatActivity() {
 
@@ -54,25 +55,44 @@ class RegisterActivity : AppCompatActivity() {
                 passwordLayout.error = null
             }
 
-            // Si pasa validaciones, intento registrar con Firebase
+            // Si todas las validaciones están OK, registrar el usuario en Firebase
             if (valid) {
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            // Si resulta, aviso que está todo bien y cierro pantalla
-                            Toast.makeText(this, "Registro exitoso, ahora puedes iniciar sesión.", Toast.LENGTH_SHORT).show()
-                            finish() // Vuelve atrás, al login
-                        } else {
-                            // Si hay error (correo ya usado, mal conexión, etc.)
-                            Toast.makeText(
-                                this,
-                                "Error de registro: " + (task.exception?.message ?: ""),
-                                Toast.LENGTH_LONG
-                            ).show()
+                            // Obtengo el UID único que Firebase le asignó al nuevo usuario
+                            val uid = auth.currentUser?.uid
+
+                            // Creo un objeto con los datos del perfil que quiero guardar en Firestore
+                            val nuevoUsuario = hashMapOf(
+                                "email" to email,
+                                "rol" to "alumno" // Por defecto todos los registros nuevos son alumnos
+                                // Más adelante puedo agregar campos como nombre, carrera, etc.
+                            )
+
+                            // Verifico que el UID exista antes de guardar en la base de datos
+                            if (uid != null) {
+                                // Guardo el perfil del usuario en Firestore, colección "usuarios"
+                                FirebaseFirestore.getInstance()
+                                    .collection("usuarios")
+                                    .document(uid) // Uso el UID como ID del documento para relacionarlo fácil
+                                    .set(nuevoUsuario)
+                                    .addOnSuccessListener {
+                                        // Todo salió bien: usuario creado y perfil guardado
+                                        Toast.makeText(this, "Registro y guardado exitoso, inicia sesión.", Toast.LENGTH_SHORT).show()
+                                        finish() // Cierro la pantalla y vuelvo al login
+                                    }
+                                    .addOnFailureListener { e ->
+                                        // El usuario se creó en Auth, pero no se guardó el perfil en Firestore
+                                        Toast.makeText(this, "Se registró, pero no se guardó el perfil: ${e.message}", Toast.LENGTH_LONG).show()
+                                        finish() // Igual cierro, aunque haya fallado el guardado del perfil
+                                    }
+                            }
                         }
                     }
             }
         }
+
 
         // Opción para volver al login SIN crear usuario
         backToLoginButton.setOnClickListener {
