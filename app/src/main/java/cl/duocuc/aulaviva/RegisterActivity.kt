@@ -58,7 +58,7 @@ class RegisterActivity : AppCompatActivity() {
                         }
                     }
             }
-            
+
             val backToLoginButton = findViewById<Button>(R.id.backToLoginButton)
             backToLoginButton.setOnClickListener {
                 finish() // Termina Activity y vuelve atrás al Login
