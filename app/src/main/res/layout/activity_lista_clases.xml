@@ -3,21 +3,36 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
+    android:padding="24dp"
     android:background="#F8FCFF">
 
+    <!-- Título -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mis Clases"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="#4F3BB8"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="18dp"/>
+
+    <!-- Botón para crear nueva clase -->
     <Button
         android:id="@+id/crearClaseButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Crear nueva clase"
-        android:layout_marginBottom="16dp"
         android:backgroundTint="#4F3BB8"
-        android:textColor="@android:color/white"/>
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="18dp"/>
 
+    <!-- Espacio para listado de clases -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewClases"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="4dp"
+        android:clipToPadding="false"/>
 </LinearLayout>

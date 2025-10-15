@@ -1,19 +1,55 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:padding="24dp"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="#F8FCFF">
 
-    <EditText
-        android:id="@+id/inputNombreClase"
+    <!-- Título del diálogo -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Crear nueva clase"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#4F3BB8"
+        android:layout_marginBottom="18dp"/>
+
+    <!-- Campo nombre (con validación visual) -->
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Nombre de la clase"/>
+        android:hint="Nombre de la clase"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        app:boxStrokeColor="#4F3BB8"
+        app:boxBackgroundColor="@android:color/white"
+        android:layout_marginBottom="12dp">
 
-    <EditText
-        android:id="@+id/inputFechaClase"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputNombreClase"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#2C2C2C"
+            android:textSize="15sp"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Campo fecha -->
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Fecha (dd/MM/yyyy)"/>
+        android:hint="Fecha (dd/MM/yyyy)"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        app:boxStrokeColor="#4F3BB8"
+        app:boxBackgroundColor="@android:color/white">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputFechaClase"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#2C2C2C"
+            android:textSize="15sp"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
 </LinearLayout>

@@ -56,7 +56,7 @@ class RegisterActivity : AppCompatActivity() {
                             val uid = auth.currentUser?.uid ?: ""
                             val usuario = hashMapOf(
                                 "email" to email,
-                                "rol" to "alumno"
+                                "rol" to "docente"
                             )
                             firestore.collection("usuarios").document(uid)
                                 .set(usuario)
