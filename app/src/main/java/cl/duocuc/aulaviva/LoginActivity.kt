@@ -24,12 +24,19 @@ class LoginActivity : AppCompatActivity() {
         // Inicializa Firebase Auth aquí
         auth = FirebaseAuth.getInstance()
 
+
         // Captura los campos y el botón del layout
         val emailInput = findViewById<TextInputEditText>(R.id.emailInput)
         val passwordInput = findViewById<TextInputEditText>(R.id.passwordInput)
         val emailLayout = findViewById<TextInputLayout>(R.id.emailLayout)
         val passwordLayout = findViewById<TextInputLayout>(R.id.passwordLayout)
         val loginButton = findViewById<Button>(R.id.loginButton)
+
+        val goToRegisterButton = findViewById<Button>(R.id.goToRegisterButton)
+        goToRegisterButton.setOnClickListener {
+            val intent = Intent(this, RegisterActivity::class.java)
+            startActivity(intent)
+        }
 
         // Acción al presionar el botón de login
         loginButton.setOnClickListener {
@@ -68,12 +75,6 @@ class LoginActivity : AppCompatActivity() {
                         }
                     }
             }
-            val goToRegisterButton = findViewById<Button>(R.id.goToRegisterButton)
-            goToRegisterButton.setOnClickListener {
-                val intent = Intent(this, RegisterActivity::class.java)
-                startActivity(intent)
-            }
-
         }
     }
 }
