@@ -26,8 +26,8 @@ class LoginActivity : AppCompatActivity() {
         // Captura los campos y el botón del layout
         val emailInput = findViewById<TextInputEditText>(R.id.emailInput)
         val passwordInput = findViewById<TextInputEditText>(R.id.passwordInput)
-        val emailLayout = findViewById<TextInputLayout>(R.id.emailInput)
-        val passwordLayout = findViewById<TextInputLayout>(R.id.passwordInput)
+        val emailLayout = findViewById<TextInputLayout>(R.id.emailLayout)
+        val passwordLayout = findViewById<TextInputLayout>(R.id.passwordLayout)
         val loginButton = findViewById<Button>(R.id.loginButton)
 
         // Acción al presionar el botón de login

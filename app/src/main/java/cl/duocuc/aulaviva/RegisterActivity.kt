@@ -20,8 +20,8 @@ class RegisterActivity : AppCompatActivity() {
 
         val emailInput = findViewById<TextInputEditText>(R.id.registerEmailInput)
         val passwordInput = findViewById<TextInputEditText>(R.id.registerPasswordInput)
-        val emailLayout = findViewById<TextInputLayout>(R.id.registerEmailInput)
-        val passwordLayout = findViewById<TextInputLayout>(R.id.registerPasswordInput)
+        val emailLayout = findViewById<TextInputLayout>(R.id.registerEmailLayout)
+        val passwordLayout = findViewById<TextInputLayout>(R.id.registerPasswordLayout)
         val registerButton = findViewById<Button>(R.id.registerButton)
 
         registerButton.setOnClickListener {

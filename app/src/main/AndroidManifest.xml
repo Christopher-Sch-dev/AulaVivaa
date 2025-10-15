@@ -12,7 +12,7 @@
 
         <activity
             android:name=".RegisterActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <activity
             android:name=".LoginActivity"
