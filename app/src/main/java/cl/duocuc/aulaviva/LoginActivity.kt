@@ -7,13 +7,10 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-import com.google.firebase.auth.FirebaseAuth // Importa la clase Firebase Auth (ojo aquí)
-
+import com.google.firebase.auth.FirebaseAuth
 class LoginActivity : AppCompatActivity() {
 
     // Instanciamos Firebase Auth
-
-
 
     private lateinit var auth: FirebaseAuth
 
@@ -65,7 +62,11 @@ class LoginActivity : AppCompatActivity() {
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             Toast.makeText(this, "Bienvenido!", Toast.LENGTH_SHORT).show()
-                            // Aquí puedes pasar al Panel principal
+                            // Ir al Panel Principal (Dashboard)
+                            val intent = Intent(this, PanelPrincipalActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK // Esta línea limpia el stack y previene volver al login con el botón "atrás"
+                            startActivity(intent)
+
                         } else {
                             Toast.makeText(
                                 this,

@@ -1,5 +1,6 @@
 package cl.duocuc.aulaviva
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
@@ -11,18 +12,17 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class RegisterActivity : AppCompatActivity() {
 
-    // Variable para usar Firebase Auth (login/registro seguro en la nube)
+    // Manejo de autenticación y base de datos
     private lateinit var auth: FirebaseAuth
+    private val firestore = FirebaseFirestore.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Carga la pantalla diseñada en activity_register.xml
         setContentView(R.layout.activity_register)
 
-        // Inicializo el objeto de autenticación de Firebase
         auth = FirebaseAuth.getInstance()
 
-        // Referencias a los inputs y botones del formulario
+        // Inputs y botones
         val emailInput = findViewById<TextInputEditText>(R.id.registerEmailInput)
         val passwordInput = findViewById<TextInputEditText>(R.id.registerPasswordInput)
         val emailLayout = findViewById<TextInputLayout>(R.id.registerEmailLayout)
@@ -30,74 +30,63 @@ class RegisterActivity : AppCompatActivity() {
         val registerButton = findViewById<Button>(R.id.registerButton)
         val backToLoginButton = findViewById<Button>(R.id.backToLoginButton)
 
-        // Acción al presionar "Registrar"
+        // Listener para registro nuevo
         registerButton.setOnClickListener {
-            // Traigo texto del usuario y limpio espacios
             val email = emailInput.text?.toString()?.trim() ?: ""
             val password = passwordInput.text?.toString() ?: ""
-
-            // Bandera de validación, parte "en true"
             var valid = true
 
-            // Validación simple de email
+            // Validaciones simples
             if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                 emailLayout.error = "Correo inválido"
                 valid = false
-            } else {
-                emailLayout.error = null // Borra mensaje de error si está ok
-            }
+            } else emailLayout.error = null
 
-            // Validación simple de contraseña (mínimo 6 chars)
             if (password.length < 6) {
                 passwordLayout.error = "La contraseña debe tener al menos 6 caracteres"
                 valid = false
-            } else {
-                passwordLayout.error = null
-            }
+            } else passwordLayout.error = null
 
-            // Si todas las validaciones están OK, registrar el usuario en Firebase
+            // Solo sigue si está válido
             if (valid) {
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
-                            // Obtengo el UID único que Firebase le asignó al nuevo usuario
-                            val uid = auth.currentUser?.uid
-
-                            // Creo un objeto con los datos del perfil que quiero guardar en Firestore
-                            val nuevoUsuario = hashMapOf(
+                            // Guardamos datos extra en Firestore
+                            val uid = auth.currentUser?.uid ?: ""
+                            val usuario = hashMapOf(
                                 "email" to email,
-                                "rol" to "alumno" // Por defecto todos los registros nuevos son alumnos
-                                // Más adelante puedo agregar campos como nombre, carrera, etc.
+                                "rol" to "alumno"
                             )
+                            firestore.collection("usuarios").document(uid)
+                                .set(usuario)
+                                .addOnSuccessListener {
+                                    Toast.makeText(this, "Registro exitoso. ¡Bienvenido a Aula Viva!", Toast.LENGTH_SHORT).show()
+                                    val intent = Intent(this, LoginActivity::class.java)
+                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                    startActivity(intent)
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(this, "Registro incompleto: ${e.message}", Toast.LENGTH_LONG).show()
+                                    finish()
+                                }
 
-                            // Verifico que el UID exista antes de guardar en la base de datos
-                            if (uid != null) {
-                                // Guardo el perfil del usuario en Firestore, colección "usuarios"
-                                FirebaseFirestore.getInstance()
-                                    .collection("usuarios")
-                                    .document(uid) // Uso el UID como ID del documento para relacionarlo fácil
-                                    .set(nuevoUsuario)
-                                    .addOnSuccessListener {
-                                        // Todo salió bien: usuario creado y perfil guardado
-                                        Toast.makeText(this, "Registro y guardado exitoso, inicia sesión.", Toast.LENGTH_SHORT).show()
-                                        finish() // Cierro la pantalla y vuelvo al login
-                                    }
-                                    .addOnFailureListener { e ->
-                                        // El usuario se creó en Auth, pero no se guardó el perfil en Firestore
-                                        Toast.makeText(this, "Se registró, pero no se guardó el perfil: ${e.message}", Toast.LENGTH_LONG).show()
-                                        finish() // Igual cierro, aunque haya fallado el guardado del perfil
-                                    }
+                        } else {
+                            val errorMsg = task.exception?.message ?: ""
+                            if (errorMsg.contains("The email address is already in use")) {
+                                Toast.makeText(this, "Ese correo ya está registrado. Inicia sesión o usa otro.", Toast.LENGTH_LONG).show()
+                            } else {
+                                Toast.makeText(this, "Error: $errorMsg", Toast.LENGTH_LONG).show()
                             }
                         }
+
                     }
             }
         }
 
-
-        // Opción para volver al login SIN crear usuario
+        // Listener para volver al login
         backToLoginButton.setOnClickListener {
-            finish() // Simplemente cierra y vuelve al login
+            finish()
         }
-
     }
 }
