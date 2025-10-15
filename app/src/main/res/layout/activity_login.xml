@@ -66,6 +66,7 @@
         android:layout_marginBottom="16dp"
         android:elevation="4dp"/>
     <Button
+        android:id="@+id/goToRegisterButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="¿No tienes cuenta? Regístrate aquí"

@@ -1,5 +1,6 @@
 package cl.duocuc.aulaviva
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
@@ -67,6 +68,12 @@ class LoginActivity : AppCompatActivity() {
                         }
                     }
             }
+            val goToRegisterButton = findViewById<Button>(R.id.goToRegisterButton)
+            goToRegisterButton.setOnClickListener {
+                val intent = Intent(this, RegisterActivity::class.java)
+                startActivity(intent)
+            }
+
         }
     }
 }
