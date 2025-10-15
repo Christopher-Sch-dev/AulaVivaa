@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "682866935677",
+    "project_id": "aulaviva-duoc",
+    "storage_bucket": "aulaviva-duoc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:682866935677:android:46b5903515fe00720e2e14",
+        "android_client_info": {
+          "package_name": "cl.duocuc.aulaviva"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCU0m6S0sFau1I0DbhNMAXN9o5fx3-Vy5I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
