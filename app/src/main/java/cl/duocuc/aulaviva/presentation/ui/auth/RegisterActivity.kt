@@ -62,8 +62,12 @@ class RegisterActivity : AppCompatActivity() {
             val email = binding.registerEmailInput.text?.toString()?.trim() ?: ""
             val password = binding.registerPasswordInput.text?.toString() ?: ""
             
-            // Capturo el rol seleccionado (docente o alumno)
-            val rol = if (binding.radioDocente.isChecked) "docente" else "alumno"
+            // Capturo el rol seleccionado según el RadioButton marcado
+            val rol = when (binding.radioGroupRol.checkedRadioButtonId) {
+                R.id.radioDocente -> "docente"
+                R.id.radioAlumno -> "alumno"
+                else -> "alumno" // Por defecto alumno
+            }
 
             // Validación
             var valid = true
@@ -83,6 +87,7 @@ class RegisterActivity : AppCompatActivity() {
 
             if (valid) {
                 // Paso el rol al ViewModel
+                Toast.makeText(this, "Registrando como $rol...", Toast.LENGTH_SHORT).show()
                 viewModel.register(email, password, rol)
             }
         }

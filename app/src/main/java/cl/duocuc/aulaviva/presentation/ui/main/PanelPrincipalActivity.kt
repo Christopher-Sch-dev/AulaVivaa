@@ -58,12 +58,13 @@ class PanelPrincipalActivity : AppCompatActivity() {
                     val email = documento.getString("email") ?: "Usuario"
                     val rol = documento.getString("rol") ?: "alumno"
                     
-                    // Personalizo el mensaje según el rol
+                    // Personalizo el mensaje según el rol y email
                     val emoji = if (rol == "docente") "👨‍🏫" else "🎓"
+                    val nombreCorto = email.substringBefore("@")
                     val mensaje = if (rol == "docente") {
-                        "Bienvenido Profesor"
+                        "Bienvenido Profesor $nombreCorto"
                     } else {
-                        "Bienvenido Estudiante"
+                        "Bienvenido Estudiante $nombreCorto"
                     }
                     
                     binding.bienvenidaTextView.text = "$emoji $mensaje"
