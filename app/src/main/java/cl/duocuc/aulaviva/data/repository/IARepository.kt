@@ -1,140 +1,127 @@
 package cl.duocuc.aulaviva.data.repository
 
+import cl.duocuc.aulaviva.data.remote.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 /**
- * 🤖 GEMINI AI - IMPLEMENTACIÓN REST DIRECTA
- * Usa la API REST de Google en lugar del SDK para mayor compatibilidad
+ * 🤖 GEMINI AI con Retrofit - PROFESIONAL Y RÁPIDO
+ * Modelo: gemini-2.5-flash (vigente octubre 2025)
  */
 class IARepository {
     
     private val GEMINI_API_KEY = "AIzaSyA6e4Wle5UkV93rOKIWm4FIKTQBDaOy8EY"
-    private val API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
+    
+    // ...existing code...
+    private val okHttpClient = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        })
+        .build()
+    
+    // Retrofit configurado para Gemini API
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("https://generativelanguage.googleapis.com/")
+        .client(okHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+    
+    private val geminiService = retrofit.create(GeminiApiService::class.java)
     
     init {
-        println("✅ Gemini AI REST activado")
+        println("✅ Gemini AI Retrofit activado - Modelo: gemini-2.5-flash")
     }
     
     /**
-     * Llama a Gemini API REST con manejo robusto de errores
+     * Llama a Gemini API con Retrofit
      */
-    private suspend fun llamarGeminiREST(prompt: String): String {
-        return withTimeout(30000L) {
-            try {
-                val url = URL("$API_URL?key=$GEMINI_API_KEY")
-                val connection = url.openConnection() as HttpURLConnection
-                
-                connection.apply {
-                    requestMethod = "POST"
-                    setRequestProperty("Content-Type", "application/json")
-                    doOutput = true
-                    connectTimeout = 15000
-                    readTimeout = 15000
-                }
-                
-                // Body JSON según documentación de Gemini
-                val requestBody = JSONObject().apply {
-                    put("contents", JSONArray().apply {
-                        put(JSONObject().apply {
-                            put("parts", JSONArray().apply {
-                                put(JSONObject().apply {
-                                    put("text", prompt)
-                                })
-                            })
-                        })
-                    })
-                    put("generationConfig", JSONObject().apply {
-                        put("temperature", 0.7)
-                        put("topK", 40)
-                        put("topP", 0.95)
-                        put("maxOutputTokens", 1024)
-                    })
-                }
-                
-                // Enviar request
-                OutputStreamWriter(connection.outputStream).use { writer ->
-                    writer.write(requestBody.toString())
-                    writer.flush()
-                }
-                
-                // Leer respuesta
-                val responseCode = connection.responseCode
-                
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = BufferedReader(InputStreamReader(connection.inputStream)).use { reader ->
-                        reader.readText()
-                    }
+    private suspend fun llamarGemini(prompt: String): String {
+        return withContext(Dispatchers.IO) {
+            withTimeout(30000L) {
+                try {
+                    // Construir request según docs oficiales
+                    val request = GeminiRequest(
+                        contents = listOf(
+                            Content(
+                                parts = listOf(
+                                    Part(text = prompt)
+                                )
+                            )
+                        ),
+                        generationConfig = GenerationConfig(
+                            temperature = 0.7f,
+                            topK = 40,
+                            topP = 0.95f,
+                            maxOutputTokens = 1024
+                        )
+                    )
                     
-                    // Parsear respuesta JSON
-                    val jsonResponse = JSONObject(response)
-                    val candidates = jsonResponse.getJSONArray("candidates")
-                    if (candidates.length() > 0) {
-                        val content = candidates.getJSONObject(0)
-                            .getJSONObject("content")
-                            .getJSONArray("parts")
-                            .getJSONObject(0)
-                            .getString("text")
-                        return@withTimeout content
+                    // Hacer petición
+                    val response = geminiService.generateContent(GEMINI_API_KEY, request)
+                    
+                    if (response.isSuccessful) {
+                        // Extraer texto de la respuesta
+                        val text = response.body()
+                            ?.candidates?.firstOrNull()
+                            ?.content?.parts?.firstOrNull()
+                            ?.text
+                        
+                        text ?: throw Exception("Respuesta vacía de Gemini")
                     } else {
-                        throw Exception("Sin respuesta de Gemini")
+                        throw Exception("HTTP ${response.code()}: ${response.message()}")
                     }
-                } else {
-                    val errorStream = connection.errorStream
-                    val errorResponse = if (errorStream != null) {
-                        BufferedReader(InputStreamReader(errorStream)).use { it.readText() }
-                    } else {
-                        "Sin detalles"
-                    }
-                    throw Exception("HTTP $responseCode: $errorResponse")
+                } catch (e: Exception) {
+                    throw Exception("Error Gemini: ${e.message}")
                 }
-                
-            } catch (e: Exception) {
-                throw Exception("Error Gemini: ${e.message}")
             }
         }
     }
     
     /**
-     * Genera resumen con REST API
+     * 🤖 Genera resumen educativo
      */
     suspend fun generarResumen(textoClase: String): String {
         return try {
             val prompt = """
-                Eres Gemini AI de Google. Analiza este contenido educativo:
+                Eres Gemini AI de Google. Analiza este contenido educativo y genera un resumen breve:
                 
                 $textoClase
                 
-                Genera un resumen breve con:
+                Responde con:
                 📝 Tema principal (1 frase)
-                🎯 3 puntos clave
+                🎯 3 puntos clave (bullets)
                 💡 1 consejo de estudio
                 
                 Termina con: "⚡ Generado por Gemini AI Real de Google"
+                
+                Máximo 200 palabras, formato claro.
             """.trimIndent()
             
-            llamarGeminiREST(prompt)
+            llamarGemini(prompt)
             
         } catch (e: Exception) {
             """
-            ⚠️ Error al conectar con Gemini
+            ⚠️ No pude conectar con Gemini ahora
             
             📝 RESUMEN LOCAL:
             
             📌 Tema: ${textoClase.take(80)}...
             
             🎯 Análisis:
-            • ${textoClase.split(" ").size} palabras
+            • ${textoClase.split(" ").size} palabras detectadas
             • Contenido educativo
             • Nivel intermedio
             
-            💡 Verifica conexión a internet
+            💡 Verifica tu conexión a internet
             
             Error: ${e.message?.take(100) ?: "Desconocido"}
             """.trimIndent()
@@ -142,23 +129,32 @@ class IARepository {
     }
     
     /**
-     * Genera glosario con REST API
+     * 🤖 Genera glosario de términos
      */
     suspend fun generarGlosario(textoClase: String): String {
         return try {
             val prompt = """
-                Analiza este texto educativo y extrae 5 términos clave:
+                Analiza este texto educativo y extrae 5 términos clave con definiciones:
                 
                 $textoClase
                 
                 Formato:
                 📚 GLOSARIO
-                📖 TÉRMINO → Definición breve
+                
+                📖 TÉRMINO 1
+                   → Definición breve (1 línea)
+                
+                📖 TÉRMINO 2
+                   → Definición breve
+                
+                (continúa con 5 términos)
                 
                 ⚡ Generado por Gemini AI de Google
+                
+                Máximo 250 palabras.
             """.trimIndent()
             
-            llamarGeminiREST(prompt)
+            llamarGemini(prompt)
             
         } catch (e: Exception) {
             """
@@ -166,9 +162,14 @@ class IARepository {
             
             📚 GLOSARIO LOCAL:
             
-            📖 ANDROID → Sistema operativo móvil
-            📖 KOTLIN → Lenguaje de programación
-            📖 MVVM → Patrón arquitectónico
+            📖 ANDROID
+               → Sistema operativo móvil de Google
+            
+            📖 KOTLIN
+               → Lenguaje de programación moderno
+            
+            📖 MVVM
+               → Patrón arquitectónico para separar UI de lógica
             
             Error: ${e.message?.take(100) ?: "Desconocido"}
             """.trimIndent()
@@ -176,24 +177,31 @@ class IARepository {
     }
     
     /**
-     * Ideas para profesor con REST API
+     * 🤖 Ideas pedagógicas para profesor
      */
     suspend fun analizarPDFParaProfesor(nombreArchivo: String, descripcionClase: String): String {
         return try {
             val prompt = """
-                Dame 3 ideas de actividades educativas para:
+                Soy asistente pedagógico. Dame 3 ideas concretas de actividades para esta clase:
                 
                 Archivo: $nombreArchivo
                 Tema: $descripcionClase
                 
                 Formato:
-                💡 3 actividades concretas
-                ⏱️ Tiempo: 60 minutos
+                💡 IDEAS PARA LA CLASE:
                 
-                ⚡ Gemini AI
+                1. [Actividad 1] (tiempo)
+                2. [Actividad 2] (tiempo)
+                3. [Actividad 3] (tiempo)
+                
+                ⏱️ Tiempo total: 60 minutos
+                
+                ⚡ Generado por Gemini AI
+                
+                Máximo 200 palabras, ideas específicas y prácticas.
             """.trimIndent()
             
-            llamarGeminiREST(prompt)
+            llamarGemini(prompt)
             
         } catch (e: Exception) {
             """
@@ -202,10 +210,11 @@ class IARepository {
             💡 IDEAS LOCALES:
             
             📄 $nombreArchivo
+            📝 $descripcionClase
             
             1. Presentación interactiva (15 min)
             2. Ejercicios prácticos (30 min)
-            3. Discusión grupal (15 min)
+            3. Discusión y conclusiones (15 min)
             
             Error: ${e.message?.take(100) ?: "Desconocido"}
             """.trimIndent()

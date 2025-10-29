@@ -21,11 +21,13 @@
               <option value="389c897c-86d2-4126-bc06-c5f4ce2dc374" />
               <option value="3ee2c39b-d238-4ce5-9eed-128b731bcd53" />
               <option value="40beee81-0726-44e4-b649-37269248398b" />
+              <option value="4d7ea39a-e7bf-4d4a-b60b-dcd44f26765a" />
               <option value="5d430b8b-26b4-4e14-b25c-27f387e1b962" />
               <option value="66848348-e473-4486-a599-b9d02dcc0f47" />
               <option value="6b4bdcdb-b222-43d6-a95f-4dd0022a18da" />
               <option value="7243acb6-0374-4e28-b6f2-3bb0a41c6177" />
               <option value="8605c4b4-a4a1-4933-87c2-830eb76e2ada" />
+              <option value="931018d2-6f57-43f1-b353-3187e0ed99fe" />
               <option value="9a96508b-b098-4570-be3e-94d76294edf4" />
               <option value="b3583bc9-b820-4509-a529-8e02cb028931" />
               <option value="b6f26bff-76fe-4df6-8c6c-1004cf5f37c9" />
@@ -75,6 +77,8 @@
           <option value="file://$PROJECT_DIR$/PRUEBA_RAPIDA_FINAL.md" />
           <option value="file://$PROJECT_DIR$/IA_ARREGLADA_100.md" />
           <option value="file://$PROJECT_DIR$/REST_API_GEMINI_FINAL.md" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/remote/GeminiApiService.kt" />
+          <option value="file://$PROJECT_DIR$/RETROFIT_GEMINI_FINAL.md" />
         </set>
       </entry>
       <entry key="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4" />
