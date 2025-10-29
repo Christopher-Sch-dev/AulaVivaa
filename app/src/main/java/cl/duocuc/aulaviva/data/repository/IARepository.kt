@@ -1,206 +1,213 @@
 package cl.duocuc.aulaviva.data.repository
 
-import com.google.ai.client.generativeai.GenerativeModel
+import kotlinx.coroutines.withTimeout
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.URL
 
 /**
- * 🤖 GEMINI AI REAL - Repository para IA Educativa
- * Conectado directamente a Google Gemini Pro
- * 
- * Funciones educativas:
- * - Generar resúmenes de clases
- * - Crear glosarios automáticos
- * - Analizar PDFs y dar ideas pedagógicas
+ * 🤖 GEMINI AI - IMPLEMENTACIÓN REST DIRECTA
+ * Usa la API REST de Google en lugar del SDK para mayor compatibilidad
  */
 class IARepository {
     
-    // 🔑 Gemini AI Real activado
     private val GEMINI_API_KEY = "AIzaSyA6e4Wle5UkV93rOKIWm4FIKTQBDaOy8EY"
-    private val generativeModel = GenerativeModel(
-        modelName = "gemini-pro",
-        apiKey = GEMINI_API_KEY
-    )
+    private val API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
     
     init {
-        println("✅ 🤖 GEMINI AI REAL ACTIVADO")
+        println("✅ Gemini AI REST activado")
     }
     
     /**
-     * 🤖 GEMINI REAL - Genera resumen para ALUMNO
+     * Llama a Gemini API REST con manejo robusto de errores
+     */
+    private suspend fun llamarGeminiREST(prompt: String): String {
+        return withTimeout(30000L) {
+            try {
+                val url = URL("$API_URL?key=$GEMINI_API_KEY")
+                val connection = url.openConnection() as HttpURLConnection
+                
+                connection.apply {
+                    requestMethod = "POST"
+                    setRequestProperty("Content-Type", "application/json")
+                    doOutput = true
+                    connectTimeout = 15000
+                    readTimeout = 15000
+                }
+                
+                // Body JSON según documentación de Gemini
+                val requestBody = JSONObject().apply {
+                    put("contents", JSONArray().apply {
+                        put(JSONObject().apply {
+                            put("parts", JSONArray().apply {
+                                put(JSONObject().apply {
+                                    put("text", prompt)
+                                })
+                            })
+                        })
+                    })
+                    put("generationConfig", JSONObject().apply {
+                        put("temperature", 0.7)
+                        put("topK", 40)
+                        put("topP", 0.95)
+                        put("maxOutputTokens", 1024)
+                    })
+                }
+                
+                // Enviar request
+                OutputStreamWriter(connection.outputStream).use { writer ->
+                    writer.write(requestBody.toString())
+                    writer.flush()
+                }
+                
+                // Leer respuesta
+                val responseCode = connection.responseCode
+                
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    val response = BufferedReader(InputStreamReader(connection.inputStream)).use { reader ->
+                        reader.readText()
+                    }
+                    
+                    // Parsear respuesta JSON
+                    val jsonResponse = JSONObject(response)
+                    val candidates = jsonResponse.getJSONArray("candidates")
+                    if (candidates.length() > 0) {
+                        val content = candidates.getJSONObject(0)
+                            .getJSONObject("content")
+                            .getJSONArray("parts")
+                            .getJSONObject(0)
+                            .getString("text")
+                        return@withTimeout content
+                    } else {
+                        throw Exception("Sin respuesta de Gemini")
+                    }
+                } else {
+                    val errorStream = connection.errorStream
+                    val errorResponse = if (errorStream != null) {
+                        BufferedReader(InputStreamReader(errorStream)).use { it.readText() }
+                    } else {
+                        "Sin detalles"
+                    }
+                    throw Exception("HTTP $responseCode: $errorResponse")
+                }
+                
+            } catch (e: Exception) {
+                throw Exception("Error Gemini: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Genera resumen con REST API
      */
     suspend fun generarResumen(textoClase: String): String {
         return try {
             val prompt = """
-                ¡Hola! Soy Gemini AI de Google, tu asistente educativo personal.
+                Eres Gemini AI de Google. Analiza este contenido educativo:
                 
-                He analizado el contenido de tu clase y aquí está el resumen:
-                
-                CONTENIDO ANALIZADO:
                 $textoClase
                 
-                Por favor, genera un resumen estructurado así:
+                Genera un resumen breve con:
+                📝 Tema principal (1 frase)
+                🎯 3 puntos clave
+                💡 1 consejo de estudio
                 
-                📝 RESUMEN DE CLASE
-                
-                📌 Tema Principal:
-                [Explica en 1-2 frases el tema central]
-                
-                🎯 Conceptos Clave:
-                1. [Concepto 1 - explicación breve]
-                2. [Concepto 2 - explicación breve]
-                3. [Concepto 3 - explicación breve]
-                
-                💡 Lo Más Importante:
-                [1-2 frases sobre qué debe recordar el estudiante]
-                
-                📚 Para estudiar:
-                [Tips rápidos de estudio]
-                
-                IMPORTANTE: Termina con "⚡ Generado por Gemini AI Real de Google"
-                
-                Mantén un tono amigable y educativo. Máximo 200 palabras.
+                Termina con: "⚡ Generado por Gemini AI Real de Google"
             """.trimIndent()
             
-            val response = generativeModel.generateContent(prompt)
-            response.text ?: "❌ Error: No se recibió respuesta de Gemini"
+            llamarGeminiREST(prompt)
             
         } catch (e: Exception) {
             """
-            ⚠️ No pude conectar con Gemini AI ahora mismo
+            ⚠️ Error al conectar con Gemini
             
             📝 RESUMEN LOCAL:
             
-            📌 Tema: ${textoClase.take(100)}...
+            📌 Tema: ${textoClase.take(80)}...
             
-            🎯 Puntos clave:
-            • Contenido educativo identificado
-            • Material para estudio
-            • Información de clase
+            🎯 Análisis:
+            • ${textoClase.split(" ").size} palabras
+            • Contenido educativo
+            • Nivel intermedio
             
-            💡 Tip: Verifica tu conexión a internet
+            💡 Verifica conexión a internet
             
-            Error técnico: ${e.message}
+            Error: ${e.message?.take(100) ?: "Desconocido"}
             """.trimIndent()
         }
     }
     
     /**
-     * 🤖 GEMINI REAL - Genera glosario para ALUMNO
+     * Genera glosario con REST API
      */
     suspend fun generarGlosario(textoClase: String): String {
         return try {
             val prompt = """
-                ¡Hola! Soy Gemini AI de Google, tu tutor virtual.
+                Analiza este texto educativo y extrae 5 términos clave:
                 
-                Voy a crear un glosario de términos importantes de esta clase:
-                
-                CONTENIDO:
                 $textoClase
                 
-                Genera un glosario así:
+                Formato:
+                📚 GLOSARIO
+                📖 TÉRMINO → Definición breve
                 
-                📚 GLOSARIO DE TÉRMINOS
-                
-                [Identifica 5-7 términos clave del texto]
-                
-                Para cada término usa este formato:
-                📖 TÉRMINO EN MAYÚSCULAS
-                   → Definición clara y simple (1 línea)
-                   💡 Ejemplo o contexto breve
-                
-                Si no hay términos técnicos, explica los conceptos principales del contenido.
-                
-                IMPORTANTE: Termina con "⚡ Generado por Gemini AI Real de Google"
-                
-                Sé claro y didáctico. Máximo 250 palabras.
+                ⚡ Generado por Gemini AI de Google
             """.trimIndent()
             
-            val response = generativeModel.generateContent(prompt)
-            response.text ?: "❌ Error: No se recibió respuesta de Gemini"
+            llamarGeminiREST(prompt)
             
         } catch (e: Exception) {
             """
-            ⚠️ No pude conectar con Gemini AI
+            ⚠️ Error con Gemini
             
             📚 GLOSARIO LOCAL:
             
-            📖 CLASE
-               → Unidad educativa con contenido específico
-               💡 Ej: "Tengo clase de programación hoy"
+            📖 ANDROID → Sistema operativo móvil
+            📖 KOTLIN → Lenguaje de programación
+            📖 MVVM → Patrón arquitectónico
             
-            📖 MATERIAL
-               → Recursos didácticos de apoyo
-               💡 Ej: "El material está en PDF"
-            
-            Error: ${e.message}
+            Error: ${e.message?.take(100) ?: "Desconocido"}
             """.trimIndent()
         }
     }
     
     /**
-     * 🤖 GEMINI REAL - Analiza PDF y da IDEAS al DOCENTE
+     * Ideas para profesor con REST API
      */
     suspend fun analizarPDFParaProfesor(nombreArchivo: String, descripcionClase: String): String {
         return try {
             val prompt = """
-                ¡Hola Profesor! Soy Gemini AI de Google, tu asistente pedagógico.
+                Dame 3 ideas de actividades educativas para:
                 
-                Acabo de analizar tu material:
-                📄 Archivo: $nombreArchivo
-                📝 Contexto: $descripcionClase
+                Archivo: $nombreArchivo
+                Tema: $descripcionClase
                 
-                Como tu asistente educativo, te doy estas IDEAS PARA TU CLASE:
+                Formato:
+                💡 3 actividades concretas
+                ⏱️ Tiempo: 60 minutos
                 
-                💡 PLAN DE CLASE SUGERIDO:
-                
-                1. 📖 ACTIVIDADES RECOMENDADAS:
-                   • [2-3 actividades interactivas específicas]
-                
-                2. 🎯 PUNTOS CLAVE A ENFATIZAR:
-                   • [2-3 conceptos fundamentales]
-                
-                3. 📊 EVALUACIÓN SUGERIDA:
-                   • [1-2 formas de evaluar]
-                
-                4. ⏱️ DISTRIBUCIÓN DE TIEMPO:
-                   • Intro: X min
-                   • Desarrollo: Y min
-                   • Cierre: Z min
-                
-                5. 💬 TIP PEDAGÓGICO:
-                   [Un consejo práctico para mejorar la clase]
-                
-                IMPORTANTE: Termina con "⚡ Análisis generado por Gemini AI Real de Google"
-                
-                Sé específico y práctico. Máximo 300 palabras.
+                ⚡ Gemini AI
             """.trimIndent()
             
-            val response = generativeModel.generateContent(prompt)
-            response.text ?: "❌ Error: No se recibió respuesta de Gemini"
+            llamarGeminiREST(prompt)
             
         } catch (e: Exception) {
             """
-            ⚠️ No pude conectar con Gemini AI
+            ⚠️ Error con Gemini
             
-            💡 IDEAS LOCALES PARA TU CLASE:
+            💡 IDEAS LOCALES:
             
-            📄 Archivo: $nombreArchivo
-            📝 Tema: $descripcionClase
+            📄 $nombreArchivo
             
-            1. 📖 Actividades:
-               • Discusión grupal
-               • Ejercicios prácticos
-               • Quiz rápido
+            1. Presentación interactiva (15 min)
+            2. Ejercicios prácticos (30 min)
+            3. Discusión grupal (15 min)
             
-            2. 🎯 Puntos clave:
-               • Conceptos fundamentales
-               • Aplicaciones prácticas
-            
-            3. ⏱️ Tiempo:
-               • 15 min intro
-               • 30 min desarrollo
-               • 15 min práctica
-            
-            Error: ${e.message}
+            Error: ${e.message?.take(100) ?: "Desconocido"}
             """.trimIndent()
         }
     }

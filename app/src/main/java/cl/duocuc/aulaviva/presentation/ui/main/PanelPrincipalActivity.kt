@@ -126,6 +126,11 @@ class PanelPrincipalActivity : AppCompatActivity() {
             val intent = Intent(this, ListaClasesActivity::class.java)
             startActivity(intent)
         }
+        
+        // 🎓 Botón NUEVO: Crear clase de prueba
+        binding.crearClasePruebaButton.setOnClickListener {
+            crearClaseDemostracion()
+        }
 
         // Botón para cerrar sesión con confirmación
         binding.logoutButton.setOnClickListener {

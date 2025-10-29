@@ -75,8 +75,8 @@ dependencies {
     // Corrutinas para operaciones asíncronas con Room
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    // Google Generative AI (Gemini) - Integración de IA real
-    implementation("com.google.ai.client.generativeai:generativeai:0.1.2")
+    // 🤖 Gemini AI ahora usa REST directo (sin librería externa)
+    // Ya no necesitamos la librería porque usamos HttpURLConnection nativo
 
     // Test
     testImplementation(libs.junit)
