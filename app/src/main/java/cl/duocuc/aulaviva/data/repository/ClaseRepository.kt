@@ -213,23 +213,45 @@ class ClaseRepository(context: Context) {
      * Para demostrar funcionalidades de la app
      */
     suspend fun crearClaseDePrueba(onSuccess: () -> Unit, onError: (String) -> Unit) {
-        val claseDemoId = "clase_demo_${System.currentTimeMillis()}"
-        
-        val claseDemo = Clase(
-            id = claseDemoId,
-            nombre = "Introducción a Desarrollo Android con Kotlin",
-            fecha = "Lunes 29 de Octubre, 14:00hrs",
-            creador = uid
-        )
-        
-        crearClase(claseDemo, 
-            onSuccess = {
-                // Ahora agregamos materiales de prueba
-                agregarMaterialDePrueba(claseDemoId)
-                onSuccess()
-            },
-            onError = onError
-        )
+        try {
+            val claseDemoId = "clase_demo_${System.currentTimeMillis()}"
+            
+            val claseDemo = Clase(
+                id = claseDemoId,
+                nombre = "Introducción a Desarrollo Android con Kotlin",
+                fecha = "Lunes 29 de Octubre, 14:00hrs",
+                creador = uid
+            )
+            
+            // Primero creo la clase
+            val entity = ClaseEntity(
+                id = claseDemoId,
+                nombre = claseDemo.nombre,
+                fecha = claseDemo.fecha,
+                creador = uid,
+                sincronizado = false
+            )
+            claseDao.insertarClase(entity)
+            
+            // Subo a Firestore
+            firestore.collection("clases")
+                .document(claseDemoId)
+                .set(hashMapOf(
+                    "nombre" to claseDemo.nombre,
+                    "fecha" to claseDemo.fecha,
+                    "creador" to uid
+                ))
+                .await()
+            
+            // Ahora agrego los materiales
+            agregarMaterialDePrueba(claseDemoId)
+            
+            claseDao.actualizarClase(entity.copy(sincronizado = true))
+            onSuccess()
+            
+        } catch (e: Exception) {
+            onError(e.message ?: "Error al crear clase de prueba")
+        }
     }
     
     /**

@@ -5,15 +5,18 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.databinding.ActivityPanelPrincipalBinding
 import cl.duocuc.aulaviva.presentation.ui.clases.ListaClasesActivity
 import cl.duocuc.aulaviva.presentation.ui.auth.LoginActivity
 import cl.duocuc.aulaviva.utils.NotificationHelper
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 class PanelPrincipalActivity : AppCompatActivity() {
 
@@ -139,5 +142,30 @@ class PanelPrincipalActivity : AppCompatActivity() {
                 .setNegativeButton("Cancelar", null)
                 .show()
         }
+    }
+    
+    /**
+     * 🎓 Crea una clase de demostración con contenido rico
+     * Esto sirve para testing y para la defensa EV2
+     */
+    private fun crearClaseDemostracion() {
+        AlertDialog.Builder(this)
+            .setTitle("🎓 Clase de Demostración")
+            .setMessage("¿Quieres crear una clase de prueba con contenido educativo completo?\n\nIncluye:\n• Material educativo rico\n• PDF simulado de Kotlin\n• Links a documentación\n• Listo para probar IA")
+            .setPositiveButton("Crear") { _, _ ->
+                lifecycleScope.launch {
+                    val repository = cl.duocuc.aulaviva.data.repository.ClaseRepository(this@PanelPrincipalActivity)
+                    repository.crearClaseDePrueba(
+                        onSuccess = {
+                            Toast.makeText(this@PanelPrincipalActivity, "✅ Clase de prueba creada! Ve a 'Ver clases'", Toast.LENGTH_LONG).show()
+                        },
+                        onError = { error ->
+                            Toast.makeText(this@PanelPrincipalActivity, "Error: $error", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 }
