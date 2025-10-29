@@ -207,4 +207,102 @@ class ClaseRepository(context: Context) {
     suspend fun limpiarLocal() {
         claseDao.eliminarTodas()
     }
+    
+    /**
+     * 🎓 Crea una CLASE DE PRUEBA automáticamente
+     * Para demostrar funcionalidades de la app
+     */
+    suspend fun crearClaseDePrueba(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val claseDemoId = "clase_demo_${System.currentTimeMillis()}"
+        
+        val claseDemo = Clase(
+            id = claseDemoId,
+            nombre = "Introducción a Desarrollo Android con Kotlin",
+            fecha = "Lunes 29 de Octubre, 14:00hrs",
+            creador = uid
+        )
+        
+        crearClase(claseDemo, 
+            onSuccess = {
+                // Ahora agregamos materiales de prueba
+                agregarMaterialDePrueba(claseDemoId)
+                onSuccess()
+            },
+            onError = onError
+        )
+    }
+    
+    /**
+     * Agrega materiales educativos de prueba a la clase demo
+     */
+    private suspend fun agregarMaterialDePrueba(claseId: String) {
+        try {
+            // Material 1: PDF simulado
+            firestore.collection("clases").document(claseId)
+                .collection("materiales")
+                .document("material_1")
+                .set(hashMapOf(
+                    "tipo" to "pdf",
+                    "nombre" to "Guía de Kotlin para Android.pdf",
+                    "descripcion" to """
+                        📚 GUÍA COMPLETA DE KOTLIN PARA ANDROID
+                        
+                        Este material cubre los fundamentos de programación Android moderna usando Kotlin:
+                        
+                        📖 Contenido:
+                        • Variables y tipos de datos (val, var, tipos básicos)
+                        • Funciones y lambdas (sintaxis moderna)
+                        • Clases y objetos (POO en Kotlin)
+                        • Null Safety (evitar NullPointerException)
+                        • Coroutines (programación asíncrona)
+                        • Android Jetpack (ViewModel, LiveData, Room)
+                        • Material Design 3 (UI moderna)
+                        • Firebase (Auth y Firestore)
+                        
+                        🎯 Objetivos de aprendizaje:
+                        1. Entender sintaxis básica de Kotlin
+                        2. Aplicar programación orientada a objetos
+                        3. Usar coroutines para operaciones asíncronas
+                        4. Implementar arquitectura MVVM
+                        5. Integrar Firebase en apps Android
+                        
+                        💡 Conceptos clave:
+                        • Kotlin es interoperable con Java
+                        • Menos código, más seguro (null safety)
+                        • Coroutines simplifican async/await
+                        • Jetpack moderniza desarrollo Android
+                        
+                        📝 Ejercicios prácticos incluidos:
+                        - Crear tu primera Activity
+                        - Implementar RecyclerView
+                        - Conectar Room Database
+                        - Integrar Firebase Auth
+                        - Usar ViewModel y LiveData
+                        
+                        ⚡ Nivel: Intermedio-Avanzado
+                        ⏱️ Tiempo estimado: 90 minutos
+                        
+                        Este material fue diseñado para estudiantes de 4to semestre de Ingeniería en Informática, pero es útil para cualquiera que quiera aprender desarrollo Android moderno.
+                    """.trimIndent(),
+                    "fechaSubida" to System.currentTimeMillis()
+                ))
+                .await()
+            
+            // Material 2: Link útil
+            firestore.collection("clases").document(claseId)
+                .collection("materiales")
+                .document("material_2")
+                .set(hashMapOf(
+                    "tipo" to "link",
+                    "nombre" to "Documentación Oficial de Kotlin",
+                    "url" to "https://kotlinlang.org/docs/android-overview.html",
+                    "descripcion" to "Guía oficial de JetBrains para desarrollo Android con Kotlin. Incluye tutoriales, ejemplos de código y mejores prácticas.",
+                    "fechaSubida" to System.currentTimeMillis()
+                ))
+                .await()
+                
+        } catch (e: Exception) {
+            println("Error al agregar materiales de prueba: ${e.message}")
+        }
+    }
 }
