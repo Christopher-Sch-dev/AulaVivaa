@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AgentMigrationStateService">
+    <option name="migrationStatus" value="IN_PROGRESS" />
+    <option name="pendingSessionIds">
+      <option value="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4" />
+    </option>
+    <option name="pendingTurns">
+      <map>
+        <entry key="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4">
+          <value>
+            <set>
+              <option value="4a84b3ab-3e99-4691-80a4-f7b09071f296" />
+              <option value="50e3f347-4c74-4934-ae16-9865f939f814" />
+              <option value="75665532-2a2a-4faf-83ee-90437a00e387" />
+              <option value="7617d76b-6838-416d-b6dc-af5816f54a91" />
+              <option value="a46e93e4-fd4b-4239-b196-9930d0901e69" />
+              <option value="a56606fc-72c6-4317-aae5-c0acbe222a82" />
+              <option value="c5251546-dc30-46e6-a08c-255be09df9f6" />
+              <option value="c5f62614-5578-4c37-8315-2fe8ca2b2f2e" />
+              <option value="da253759-c06f-48f1-9285-dc48399f14dc" />
+              <option value="f26d4656-8cab-4bc4-8e7e-703eac555eca" />
+            </set>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <pendingWorkingSetItems>
+      <entry key="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4">
+        <set>
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/RegisterActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/main/PanelPrincipalActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/ListaClasesActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/LoginActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/adapter/ClaseAdapter.kt" />
+        </set>
+      </entry>
+    </pendingWorkingSetItems>
+  </component>
+</project>

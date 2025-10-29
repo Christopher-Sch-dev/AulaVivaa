@@ -1,16 +1,21 @@
-package cl.duocuc.aulaviva
+package cl.duocuc.aulaviva.presentation.adapter
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import cl.duocuc.aulaviva.R
+import cl.duocuc.aulaviva.data.model.Clase
 
 /**
  * Adaptador para mostrar una lista de clases en un RecyclerView
  * Recibe la lista de objetos Clase y los "conecta" con las vistas del layout
  */
-class ClaseAdapter(private val clases: List<Clase>): RecyclerView.Adapter<ClaseAdapter.ClaseViewHolder>() {
+class ClaseAdapter(
+    private var clases: List<Clase> = emptyList(),
+    private val onClaseClick: ((Clase) -> Unit)? = null
+): RecyclerView.Adapter<ClaseAdapter.ClaseViewHolder>() {
 
     /**
      * ViewHolder: representa cada item individual de la lista
@@ -44,7 +49,23 @@ class ClaseAdapter(private val clases: List<Clase>): RecyclerView.Adapter<ClaseA
      */
     override fun onBindViewHolder(holder: ClaseViewHolder, position: Int) {
         // Tomo la clase en la posición actual y seteo sus datos en la vista
-        holder.nombre.text = clases[position].nombre
-        holder.fecha.text = clases[position].fecha
+        val clase = clases[position]
+        holder.nombre.text = clase.nombre
+        holder.fecha.text = clase.fecha
+        
+        // Si hay listener de click, lo configuro
+        onClaseClick?.let { listener ->
+            holder.itemView.setOnClickListener {
+                listener(clase)
+            }
+        }
+    }
+
+    /**
+     * Actualizar la lista de clases
+     */
+    fun updateList(newClases: List<Clase>) {
+        clases = newClases
+        notifyDataSetChanged()
     }
 }

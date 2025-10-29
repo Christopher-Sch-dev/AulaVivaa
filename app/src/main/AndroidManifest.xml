@@ -12,16 +12,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AulaViva">
         <activity
-            android:name=".ListaClasesActivity"
+            android:name=".presentation.ui.clases.ListaClasesActivity"
             android:exported="false" />
         <activity
-            android:name=".PanelPrincipalActivity"
+            android:name=".presentation.ui.main.PanelPrincipalActivity"
             android:exported="false" />
         <activity
-            android:name=".RegisterActivity"
+            android:name=".presentation.ui.auth.RegisterActivity"
             android:exported="true" />
         <activity
-            android:name=".LoginActivity"
+            android:name=".presentation.ui.auth.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

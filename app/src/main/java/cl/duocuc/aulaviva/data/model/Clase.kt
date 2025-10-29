@@ -1,4 +1,4 @@
-package cl.duocuc.aulaviva
+package cl.duocuc.aulaviva.data.model
 
 data class Clase(
     val id: String = "",
