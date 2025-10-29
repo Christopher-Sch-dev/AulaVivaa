@@ -2,10 +2,12 @@ package cl.duocuc.aulaviva.presentation.ui.auth
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
+import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.databinding.ActivityLoginBinding
 import cl.duocuc.aulaviva.presentation.viewmodel.AuthViewModel
 import cl.duocuc.aulaviva.presentation.ui.main.PanelPrincipalActivity
@@ -54,6 +56,13 @@ class LoginActivity : AppCompatActivity() {
                 val intent = Intent(this, PanelPrincipalActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 startActivity(intent)
+                // ANIMACIÓN FUNCIONAL: Transición suave entre pantallas (API 34+)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, R.anim.slide_in_right, R.anim.slide_out_left)
+                } else {
+                    @Suppress("DEPRECATION")
+                    overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                }
             }
         })
     }
@@ -67,6 +76,9 @@ class LoginActivity : AppCompatActivity() {
 
         // Botón de login
         binding.loginButton.setOnClickListener {
+            // ANIMACIÓN FUNCIONAL: Feedback al tocar el botón
+            it.startAnimation(AnimationUtils.loadAnimation(this, R.anim.button_scale))
+            
             val email = binding.emailInput.text?.toString()?.trim() ?: ""
             val password = binding.passwordInput.text?.toString() ?: ""
 

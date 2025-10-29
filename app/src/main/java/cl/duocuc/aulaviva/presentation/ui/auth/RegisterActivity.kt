@@ -1,10 +1,12 @@
 package cl.duocuc.aulaviva.presentation.ui.auth
 
 import android.os.Bundle
+import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
+import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.databinding.ActivityRegisterBinding
 import cl.duocuc.aulaviva.presentation.viewmodel.AuthViewModel
 
@@ -54,8 +56,14 @@ class RegisterActivity : AppCompatActivity() {
 
         // Botón de registro
         binding.registerButton.setOnClickListener {
+            // ANIMACIÓN: Feedback visual al tocar
+            it.startAnimation(AnimationUtils.loadAnimation(this, R.anim.button_scale))
+            
             val email = binding.registerEmailInput.text?.toString()?.trim() ?: ""
             val password = binding.registerPasswordInput.text?.toString() ?: ""
+            
+            // Capturo el rol seleccionado (docente o alumno)
+            val rol = if (binding.radioDocente.isChecked) "docente" else "alumno"
 
             // Validación
             var valid = true
@@ -74,7 +82,8 @@ class RegisterActivity : AppCompatActivity() {
             }
 
             if (valid) {
-                viewModel.register(email, password)
+                // Paso el rol al ViewModel
+                viewModel.register(email, password, rol)
             }
         }
     }

@@ -37,17 +37,19 @@ class AuthRepository {
     fun register(
         email: String,
         password: String,
+        rol: String = "alumno",  // Nuevo parámetro: rol del usuario
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    // Guardamos datos extra en Firestore
+                    // Guardamos datos extra en Firestore incluyendo el rol
                     val uid = auth.currentUser?.uid ?: ""
                     val usuario = hashMapOf(
                         "email" to email,
-                        "rol" to "docente"
+                        "rol" to rol,  // "docente" o "alumno"
+                        "fechaRegistro" to System.currentTimeMillis()
                     )
                     firestore.collection("usuarios").document(uid)
                         .set(usuario)

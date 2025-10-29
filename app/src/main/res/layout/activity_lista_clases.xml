@@ -22,9 +22,21 @@
         android:id="@+id/crearClaseButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Crear nueva clase"
+        android:text="➕ Crear nueva clase"
         android:backgroundTint="#4F3BB8"
         android:textColor="@android:color/white"
+        android:textAllCaps="false"
+        android:layout_marginBottom="8dp"/>
+    
+    <!-- Botón para funciones de IA -->
+    <Button
+        android:id="@+id/btnGenerarResumenIA"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🤖 Generar Resumen con IA"
+        android:backgroundTint="#FF6F00"
+        android:textColor="@android:color/white"
+        android:textAllCaps="false"
         android:layout_marginBottom="18dp"/>
 
     <!-- Espacio para listado de clases -->

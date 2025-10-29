@@ -3,13 +3,33 @@
   <component name="AgentMigrationStateService">
     <option name="migrationStatus" value="IN_PROGRESS" />
     <option name="pendingSessionIds">
+      <option value="9bf7bb71-31e5-4ee4-88d9-719eccde22d1" />
       <option value="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4" />
     </option>
     <option name="pendingTurns">
       <map>
+        <entry key="9bf7bb71-31e5-4ee4-88d9-719eccde22d1">
+          <value>
+            <set>
+              <option value="0654a26c-2ec4-4ba0-8bcf-66020fbd2976" />
+              <option value="0bc53e54-181c-47f3-ba1c-e4d65471a126" />
+              <option value="1c552ff8-df4e-4c26-944a-6529752341ca" />
+              <option value="1cb7090f-c795-4462-8a04-e83c1f85dce0" />
+              <option value="2d7dcd13-4c76-4806-a6e9-d7b3b0f9d9b3" />
+              <option value="40beee81-0726-44e4-b649-37269248398b" />
+              <option value="5d430b8b-26b4-4e14-b25c-27f387e1b962" />
+              <option value="66848348-e473-4486-a599-b9d02dcc0f47" />
+              <option value="6b4bdcdb-b222-43d6-a95f-4dd0022a18da" />
+              <option value="8605c4b4-a4a1-4933-87c2-830eb76e2ada" />
+              <option value="9a96508b-b098-4570-be3e-94d76294edf4" />
+              <option value="c59b934e-6716-4082-9ae4-12545239e847" />
+            </set>
+          </value>
+        </entry>
         <entry key="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4">
           <value>
             <set>
+              <option value="439741a2-9809-43b7-accd-91641ecca238" />
               <option value="4a84b3ab-3e99-4691-80a4-f7b09071f296" />
               <option value="50e3f347-4c74-4934-ae16-9865f939f814" />
               <option value="75665532-2a2a-4faf-83ee-90437a00e387" />
@@ -26,16 +46,16 @@
       </map>
     </option>
     <pendingWorkingSetItems>
-      <entry key="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4">
+      <entry key="9bf7bb71-31e5-4ee4-88d9-719eccde22d1">
         <set>
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/RegisterActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/main/PanelPrincipalActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/ListaClasesActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
+          <option value="file://$PROJECT_DIR$/app/build.gradle.kts" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/IARepository.kt" />
           <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/LoginActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/adapter/ClaseAdapter.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/ListaClasesActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/main/PanelPrincipalActivity.kt" />
         </set>
       </entry>
+      <entry key="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4" />
     </pendingWorkingSetItems>
   </component>
 </project>

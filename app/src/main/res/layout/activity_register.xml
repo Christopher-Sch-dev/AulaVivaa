@@ -48,7 +48,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Contraseña"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="16dp"
         app:boxStrokeColor="#4F3BB8"
         app:boxBackgroundColor="@android:color/white"
         app:boxCornerRadiusTopStart="10dp"
@@ -64,6 +64,44 @@
             android:textColor="#2C2C2C"
             android:textSize="16sp"/>
     </com.google.android.material.textfield.TextInputLayout>
+    
+    <!-- Selector de rol (Docente/Alumno) -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="¿Qué rol tienes?"
+        android:textStyle="bold"
+        android:textColor="#4F3BB8"
+        android:textSize="15sp"
+        android:layout_marginBottom="8dp"/>
+    
+    <RadioGroup
+        android:id="@+id/radioGroupRol"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="24dp">
+        
+        <RadioButton
+            android:id="@+id/radioDocente"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="👨‍🏫 Docente"
+            android:textSize="15sp"
+            android:checked="true"
+            android:buttonTint="#4F3BB8"/>
+        
+        <RadioButton
+            android:id="@+id/radioAlumno"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🎓 Alumno"
+            android:textSize="15sp"
+            android:buttonTint="#4F3BB8"/>
+    </RadioGroup>
 
     <!-- Botón a registro -->
     <Button

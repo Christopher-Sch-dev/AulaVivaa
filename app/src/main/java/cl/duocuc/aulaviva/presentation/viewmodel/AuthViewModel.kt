@@ -59,13 +59,14 @@ class AuthViewModel : ViewModel() {
     }
 
     // Registro
-    fun register(email: String, password: String) {
+    fun register(email: String, password: String, rol: String = "alumno") {
         _isLoading.value = true
         _error.value = null
 
         repository.register(
             email = email,
             password = password,
+            rol = rol,  // Paso el rol seleccionado
             onSuccess = {
                 _isLoading.value = false
                 _registerSuccess.value = true
