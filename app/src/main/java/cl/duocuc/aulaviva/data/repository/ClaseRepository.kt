@@ -1,18 +1,22 @@
 package cl.duocuc.aulaviva.data.repository
 
 import android.content.Context
+import android.net.Uri
+import android.util.Log
 import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.local.ClaseDao
 import cl.duocuc.aulaviva.data.local.ClaseEntity
 import cl.duocuc.aulaviva.data.model.Clase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 /**
  * Repository que maneja toda la lógica de clases.
@@ -233,6 +237,43 @@ class ClaseRepository(context: Context) {
     }
 
     /**
+     * ✅ TAREA 3: Método sobrecargado para actualizar clase usando objeto Clase
+     */
+    suspend fun actualizarClase(clase: Clase) {
+        val entity = ClaseEntity(
+            id = clase.id,
+            nombre = clase.nombre,
+            descripcion = clase.descripcion,
+            fecha = clase.fecha,
+            archivoPdfUrl = clase.archivoPdfUrl,
+            archivoPdfNombre = clase.archivoPdfNombre,
+            creador = clase.creador,
+            sincronizado = false
+        )
+        claseDao.actualizarClase(entity)
+
+        // Intento actualizar en Firestore
+        try {
+            firestore.collection("clases")
+                .document(clase.id)
+                .update(
+                    hashMapOf<String, Any>(
+                        "nombre" to clase.nombre,
+                        "descripcion" to clase.descripcion,
+                        "fecha" to clase.fecha,
+                        "archivoPdfUrl" to clase.archivoPdfUrl,
+                        "archivoPdfNombre" to clase.archivoPdfNombre
+                    )
+                )
+                .await()
+
+            claseDao.actualizarClase(entity.copy(sincronizado = true))
+        } catch (_: Exception) {
+            // No importa si falla en Firestore, ya se actualizó en Room
+        }
+    }
+
+    /**
      * Elimina una clase.
      * Primero de Room, luego de Firestore.
      */
@@ -258,6 +299,23 @@ class ClaseRepository(context: Context) {
 
         } catch (e: Exception) {
             onError(e.message ?: "Error al eliminar")
+        }
+    }
+
+    /**
+     * ✅ TAREA 3: Método sobrecargado para eliminar clase usando solo el ID
+     */
+    suspend fun eliminarClase(claseId: String) {
+        val entity = ClaseEntity(id = claseId, nombre = "", fecha = "", creador = uid)
+        claseDao.eliminarClase(entity)
+
+        try {
+            firestore.collection("clases")
+                .document(claseId)
+                .delete()
+                .await()
+        } catch (e: Exception) {
+            // No importa si falla en Firestore, ya se borró de Room
         }
     }
 
@@ -321,6 +379,62 @@ class ClaseRepository(context: Context) {
 
         } catch (e: Exception) {
             onError(e.message ?: "Error al crear clase de prueba")
+        }
+    }
+
+    /**
+     * 📤 TAREA 2: Sube un PDF a Firebase Storage y retorna la URL pública
+     *
+     * Esta función permite que los PDFs funcionen en múltiples dispositivos.
+     * En lugar de guardar content:// (que solo funciona local), subimos el archivo
+     * a Firebase Storage y obtenemos una URL pública que funciona en cualquier lugar.
+     *
+     * Ruta de almacenamiento: clases/{UID_DOCENTE}/{TIMESTAMP}_{NOMBRE_ARCHIVO}
+     * - UID_DOCENTE: identifica al docente propietario
+     * - TIMESTAMP: evita colisiones de nombres
+     *
+     * @param pdfUri URI local del PDF seleccionado (content://...)
+     * @param nombreArchivo Nombre original del archivo
+     * @return URL pública del PDF en Firebase Storage (https://firebasestorage.googleapis.com/...)
+     * @throws Exception si falla la autenticación o la subida
+     */
+    suspend fun subirPdfAFirebaseStorage(
+        pdfUri: Uri,
+        nombreArchivo: String
+    ): String = withContext(Dispatchers.IO) {
+        try {
+            // Obtener UID del docente actual (necesario para seguridad)
+            val uidDocente = auth.currentUser?.uid
+                ?: throw Exception("Docente no autenticado")
+
+            // Referencia a Firebase Storage
+            val storage = FirebaseStorage.getInstance()
+            val storageRef = storage.reference
+
+            // Crear ruta segura: clases/{UID}/{TIMESTAMP}_{NOMBRE}
+            // Ejemplo: clases/abc123/1699123456789_Material_Kotlin.pdf
+            val timestamp = System.currentTimeMillis()
+            val rutaPdf = "clases/$uidDocente/${timestamp}_$nombreArchivo"
+
+            Log.d("ClaseRepository", "📤 Iniciando subida de PDF a: $rutaPdf")
+
+            // Subir archivo de forma síncrona en corrutina
+            val fileRef = storageRef.child(rutaPdf)
+            fileRef.putFile(pdfUri).await()
+
+            Log.d("ClaseRepository", "✅ PDF subido correctamente")
+
+            // Obtener URL pública del PDF (esta URL funciona en cualquier dispositivo)
+            val downloadUrl = fileRef.downloadUrl.await()
+            val urlPublica = downloadUrl.toString()
+
+            Log.d("ClaseRepository", "🔗 URL pública obtenida: $urlPublica")
+
+            return@withContext urlPublica
+
+        } catch (e: Exception) {
+            Log.e("ClaseRepository", "❌ Error al subir PDF a Storage", e)
+            throw Exception("Error subiendo PDF: ${e.message}")
         }
     }
 }

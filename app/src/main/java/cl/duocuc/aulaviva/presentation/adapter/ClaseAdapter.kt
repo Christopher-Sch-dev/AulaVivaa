@@ -14,14 +14,18 @@ import cl.duocuc.aulaviva.data.model.Clase
 /**
  * Adaptador para mostrar una lista de clases en un RecyclerView.
  * Ahora incluye descripción, badge de PDF y botón ver detalles.
+ * ✅ TAREA 3: Agregados callbacks para editar y eliminar
  */
 class ClaseAdapter(
     private var clases: List<Clase> = emptyList(),
-    private val onClaseClick: ((Clase) -> Unit)? = null
+    private val onClaseClick: ((Clase) -> Unit)? = null,
+    private val onEditarClick: ((Clase) -> Unit)? = null,
+    private val onEliminarClick: ((Clase) -> Unit)? = null
 ) : RecyclerView.Adapter<ClaseAdapter.ClaseViewHolder>() {
 
     /**
      * ViewHolder: representa cada item individual de la lista.
+     * ✅ TAREA 3: Agregados botones editar y eliminar
      */
     class ClaseViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val cardClase: CardView = itemView.findViewById(R.id.cardClase)
@@ -31,6 +35,8 @@ class ClaseAdapter(
         val badgePdf: TextView = itemView.findViewById(R.id.badgePdf)
         val btnVerDetalles: Button = itemView.findViewById(R.id.btnVerDetalles)
         val btnCompartir: Button = itemView.findViewById(R.id.btnCompartirClase)
+        val btnEditar: Button = itemView.findViewById(R.id.btnEditarClase)
+        val btnEliminar: Button = itemView.findViewById(R.id.btnEliminarClase)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ClaseViewHolder {
@@ -74,6 +80,16 @@ class ClaseAdapter(
         // También click en toda la card
         holder.cardClase.setOnClickListener {
             onClaseClick?.invoke(clase)
+        }
+
+        // ✅ TAREA 3: Botón Editar
+        holder.btnEditar.setOnClickListener {
+            onEditarClick?.invoke(clase)
+        }
+
+        // ✅ TAREA 3: Botón Eliminar
+        holder.btnEliminar.setOnClickListener {
+            onEliminarClick?.invoke(clase)
         }
 
         // Botón compartir (Recurso Nativo)

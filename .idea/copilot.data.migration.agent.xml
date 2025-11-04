@@ -9,9 +9,12 @@
       <option value="460b98c5-0651-4a62-8059-73712432dd16" />
       <option value="49f6519c-9011-460d-9004-4ad9b5615d29" />
       <option value="5a16e508-12d9-40d8-95e6-9be5a922e9c8" />
+      <option value="72290f73-d5df-4e02-b353-c976c26771b4" />
       <option value="9bf7bb71-31e5-4ee4-88d9-719eccde22d1" />
+      <option value="aa091703-1fcc-4b16-b281-c059c8fe4be0" />
       <option value="c62c1a13-009a-463b-93c1-fa95042c9182" />
       <option value="d9d54b89-00b3-410d-aaa0-41061f433c41" />
+      <option value="e6ef2816-498a-4498-bfb2-26209da09573" />
       <option value="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4" />
     </option>
     <option name="pendingTurns">
@@ -77,6 +80,13 @@
             </set>
           </value>
         </entry>
+        <entry key="72290f73-d5df-4e02-b353-c976c26771b4">
+          <value>
+            <set>
+              <option value="d200d0f1-35eb-4bc3-a8a5-38fd2406bf97" />
+            </set>
+          </value>
+        </entry>
         <entry key="9bf7bb71-31e5-4ee4-88d9-719eccde22d1">
           <value>
             <set>
@@ -108,6 +118,34 @@
               <option value="c59b934e-6716-4082-9ae4-12545239e847" />
               <option value="ca93312c-bbeb-4592-86da-017ccd9fcfe4" />
               <option value="e11a87b7-d2fd-4609-b4dd-ddba909a5f1e" />
+            </set>
+          </value>
+        </entry>
+        <entry key="c62c1a13-009a-463b-93c1-fa95042c9182">
+          <value>
+            <set>
+              <option value="8b267ef6-c0a0-4ee5-8272-27dee9cf0a2a" />
+              <option value="21c00dbb-4bdd-4b80-8981-9754a5cf2252" />
+              <option value="569dab06-b0b3-4ab9-865d-9610fdf56110" />
+              <option value="9768e1a4-be12-4948-b2ef-397e0d3578a9" />
+              <option value="3244c005-430e-415f-9c2b-dc6f3a21f990" />
+              <option value="dae4de1d-b3ee-435e-9c30-e813cc3ea54f" />
+              <option value="7d76c7aa-8765-42c0-adb7-6ac3b4fd6f53" />
+            </set>
+          </value>
+        </entry>
+        <entry key="d9d54b89-00b3-410d-aaa0-41061f433c41">
+          <value>
+            <set>
+              <option value="571cbfa4-ac07-4d0e-b123-d852355c0a99" />
+            </set>
+          </value>
+        </entry>
+        <entry key="e6ef2816-498a-4498-bfb2-26209da09573">
+          <value>
+            <set>
+              <option value="3e1dd43b-af48-4bd7-bd78-0afbfc7f7b57" />
+              <option value="0a84f41a-b516-4311-a454-e873909e5a11" />
             </set>
           </value>
         </entry>
@@ -145,6 +183,42 @@
       </entry>
       <entry key="5a16e508-12d9-40d8-95e6-9be5a922e9c8" />
       <entry key="9bf7bb71-31e5-4ee4-88d9-719eccde22d1" />
+      <entry key="c62c1a13-009a-463b-93c1-fa95042c9182">
+        <set>
+          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_lista_clases.xml" />
+          <option value="file://$PROJECT_DIR$/app/build.gradle.kts" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/ia/ResultadoIAActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/DetalleClaseActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/adapter/ClaseAdapter.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/item_clase.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/ListaClasesActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/ClaseRepository.kt" />
+          <option value="file://$PROJECT_DIR$/CORRECCIONES_APLICADAS.md" />
+          <option value="file://$PROJECT_DIR$/QUICK_REFERENCE.md" />
+          <option value="file://$PROJECT_DIR$/GUIA_VISUAL.md" />
+          <option value="file://$PROJECT_DIR$/INSTRUCCIONES_COMPILACION.md" />
+          <option value="file://$PROJECT_DIR$/INDICE_DOCUMENTACION.md" />
+          <option value="file://$PROJECT_DIR$/gradle.properties" />
+          <option value="file://$PROJECT_DIR$/SOLUCION_ERROR_LINT_BLOQUEADO.md" />
+          <option value="file://$PROJECT_DIR$/ANALISIS_ARQUITECTURA_COMPLETO.md" />
+          <option value="file://$PROJECT_DIR$/FIREBASE_STORAGE_RULES.md" />
+          <option value="file://$PROJECT_DIR$/IMPLEMENTACION_FIREBASE_STORAGE.md" />
+          <option value="file://$PROJECT_DIR$/CHECKLIST_FINAL_FIREBASE.md" />
+          <option value="file://$PROJECT_DIR$/GUIA_TESTING_RAPIDA.md" />
+        </set>
+      </entry>
+      <entry key="d9d54b89-00b3-410d-aaa0-41061f433c41">
+        <set>
+          <option value="file://$PROJECT_DIR$/AUDITORIA_MIGRACION_FIREBASE_SUPABASE.md" />
+          <option value="file://$PROJECT_DIR$/RESUMEN_EJECUTIVO_MIGRACION.md" />
+          <option value="file://$PROJECT_DIR$/EQUIVALENCIAS_FIREBASE_SUPABASE.md" />
+        </set>
+      </entry>
+      <entry key="e6ef2816-498a-4498-bfb2-26209da09573">
+        <set>
+          <option value="file://$PROJECT_DIR$/app/build.gradle.kts" />
+        </set>
+      </entry>
       <entry key="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4" />
     </pendingWorkingSetItems>
   </component>

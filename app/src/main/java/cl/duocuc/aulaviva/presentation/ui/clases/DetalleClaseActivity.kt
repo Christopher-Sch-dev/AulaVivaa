@@ -369,27 +369,46 @@ class DetalleClaseActivity : AppCompatActivity() {
 
     private fun intentarAbrirPdfFijo() {
         val clase = claseActual ?: return
-        // 1) URL local
-        if (!clase.archivoPdfUrl.isNullOrEmpty()) {
-            abrirPdf(clase.archivoPdfUrl); return
+
+        // 1) Si tiene URL local válida, abrir directamente
+        if (!clase.archivoPdfUrl.isNullOrEmpty() &&
+            (clase.archivoPdfUrl.startsWith("content://") ||
+                    clase.archivoPdfUrl.startsWith("http://") ||
+                    clase.archivoPdfUrl.startsWith("https://"))
+        ) {
+            abrirPdf(clase.archivoPdfUrl)
+            return
         }
-        // 2) Intentar desde Firestore
+
+        // 2) Si no hay URL, intentar cargar desde Firestore
+        val loading = mostrarDialogoCarga("📄 Cargando PDF...", "Obteniendo documento...")
         FirebaseFirestore.getInstance().collection("clases").document(clase.id).get()
             .addOnSuccessListener { doc ->
+                loading.dismiss()
                 val urlFs = doc.getString("archivoPdfUrl").orEmpty()
-                if (urlFs.isNotEmpty()) {
+                if (urlFs.isNotEmpty() &&
+                    (urlFs.startsWith("content://") ||
+                            urlFs.startsWith("http://") ||
+                            urlFs.startsWith("https://"))
+                ) {
                     claseActual = clase.copy(archivoPdfUrl = urlFs)
                     abrirPdf(urlFs)
                 } else {
-                    // 3) Fallback: demo_url conocida si no hay PDF
-                    val demo =
-                        "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-                    abrirPdf(demo)
+                    // No hay PDF disponible
+                    Toast.makeText(
+                        this@DetalleClaseActivity,
+                        "❌ Esta clase no tiene un PDF asociado",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
-            .addOnFailureListener {
-                val demo = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-                abrirPdf(demo)
+            .addOnFailureListener { e ->
+                loading.dismiss()
+                Toast.makeText(
+                    this@DetalleClaseActivity,
+                    "❌ Error al cargar PDF: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
     }
 }
