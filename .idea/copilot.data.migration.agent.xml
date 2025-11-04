@@ -3,11 +3,48 @@
   <component name="AgentMigrationStateService">
     <option name="migrationStatus" value="IN_PROGRESS" />
     <option name="pendingSessionIds">
+      <option value="27843963-4e30-420e-b960-d859fd5c38ae" />
+      <option value="5a16e508-12d9-40d8-95e6-9be5a922e9c8" />
       <option value="9bf7bb71-31e5-4ee4-88d9-719eccde22d1" />
       <option value="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4" />
     </option>
     <option name="pendingTurns">
       <map>
+        <entry key="27843963-4e30-420e-b960-d859fd5c38ae">
+          <value>
+            <set>
+              <option value="f18f1605-747b-4d8f-89de-414ab38944c6" />
+              <option value="8c504465-7ef2-4672-9723-bcd0d87a4e91" />
+              <option value="ed18374d-78f2-46de-9c47-4f94c6a894a6" />
+              <option value="7994cd28-7006-48a0-b888-3170c9f2a396" />
+              <option value="9761a60e-c70d-45b4-bb0a-dbecc6153186" />
+              <option value="597e9984-ca4d-40c0-b3b9-fdce0ce5eb93" />
+              <option value="747f1026-dfb1-4224-8bea-dcbbb0f976fe" />
+              <option value="66411496-aa30-4e90-b3b6-88a7acc8cd67" />
+              <option value="99fc8bf8-2644-4f10-ac97-597274867933" />
+            </set>
+          </value>
+        </entry>
+        <entry key="5a16e508-12d9-40d8-95e6-9be5a922e9c8">
+          <value>
+            <set>
+              <option value="0ba91da7-9065-4641-aef2-5471ed2e26b9" />
+              <option value="43eedb49-f4c2-4040-b502-13cd090084b3" />
+              <option value="55f12990-673f-40e8-9e6b-8c70e77eb4ba" />
+              <option value="57e88752-be67-4ae0-b75e-77af299b17c4" />
+              <option value="59b16943-57ed-4527-ba9e-0fdec2186682" />
+              <option value="5c5ff87c-3807-487c-bb86-778fa4de3ca2" />
+              <option value="8716fe61-38bf-4854-9d3d-819755f97016" />
+              <option value="a4e43936-22a1-4ce7-8e93-759b98bfa1fd" />
+              <option value="aaef8187-5a4d-4264-a251-bba959a9621e" />
+              <option value="b5ff0ec0-1c1f-4ee2-b4ea-8773b6825e30" />
+              <option value="c6f1a775-c56f-437c-9a30-5cc37527e1bc" />
+              <option value="ca08a80f-94b0-497e-8e73-34c406382352" />
+              <option value="d8138ee9-0e3e-4f84-923d-9c4397d738d7" />
+              <option value="f139ed43-219b-4296-a358-f5a74b04211d" />
+            </set>
+          </value>
+        </entry>
         <entry key="9bf7bb71-31e5-4ee4-88d9-719eccde22d1">
           <value>
             <set>
@@ -17,6 +54,7 @@
               <option value="1c552ff8-df4e-4c26-944a-6529752341ca" />
               <option value="1cb7090f-c795-4462-8a04-e83c1f85dce0" />
               <option value="25442a45-456d-493d-9524-ebee85ff8198" />
+              <option value="2a191c0c-5aea-4fed-9029-86202741800e" />
               <option value="2d7dcd13-4c76-4806-a6e9-d7b3b0f9d9b3" />
               <option value="389c897c-86d2-4126-bc06-c5f4ce2dc374" />
               <option value="3ee2c39b-d238-4ce5-9eed-128b731bcd53" />
@@ -27,11 +65,14 @@
               <option value="6b4bdcdb-b222-43d6-a95f-4dd0022a18da" />
               <option value="7243acb6-0374-4e28-b6f2-3bb0a41c6177" />
               <option value="8605c4b4-a4a1-4933-87c2-830eb76e2ada" />
+              <option value="889ecad5-25e6-42c0-ad10-efa5c2af372c" />
               <option value="931018d2-6f57-43f1-b353-3187e0ed99fe" />
               <option value="9a96508b-b098-4570-be3e-94d76294edf4" />
               <option value="9f9e4516-470e-428c-818b-9e837e04ac78" />
+              <option value="a938de06-da86-4ae7-9a40-53ccf63ef3cf" />
               <option value="b3583bc9-b820-4509-a529-8e02cb028931" />
               <option value="b6f26bff-76fe-4df6-8c6c-1004cf5f37c9" />
+              <option value="bd7c40fe-4813-4907-b1fa-baa732ce46ea" />
               <option value="c59b934e-6716-4082-9ae4-12545239e847" />
               <option value="ca93312c-bbeb-4592-86da-017ccd9fcfe4" />
               <option value="e11a87b7-d2fd-4609-b4dd-ddba909a5f1e" />
@@ -58,31 +99,37 @@
       </map>
     </option>
     <pendingWorkingSetItems>
-      <entry key="9bf7bb71-31e5-4ee4-88d9-719eccde22d1">
+      <entry key="27843963-4e30-420e-b960-d859fd5c38ae">
         <set>
-          <option value="file://$PROJECT_DIR$/app/build.gradle.kts" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/IARepository.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/LoginActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/ListaClasesActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/main/PanelPrincipalActivity.kt" />
-          <option value="file://$PROJECT_DIR$/COMO_USAR_GEMINI.md" />
-          <option value="file://$PROJECT_DIR$/GUION_DEFENSA_EV2.md" />
-          <option value="file://$PROJECT_DIR$/CREDENCIALES_TESTING.md" />
-          <option value="file://$PROJECT_DIR$/CHECKLIST_FINAL_EV2.md" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/RegisterActivity.kt" />
-          <option value="file://$PROJECT_DIR$/ARREGLOS_ULTIMOS.md" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/ClaseRepository.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/model/Clase.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/local/ClaseEntity.kt" />
           <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_panel_principal.xml" />
-          <option value="file://$PROJECT_DIR$/GEMINI_ACTIVADO_FINAL.md" />
-          <option value="file://$PROJECT_DIR$/TODO_ARREGLADO_FINAL.md" />
-          <option value="file://$PROJECT_DIR$/PRUEBA_RAPIDA_FINAL.md" />
-          <option value="file://$PROJECT_DIR$/IA_ARREGLADA_100.md" />
-          <option value="file://$PROJECT_DIR$/REST_API_GEMINI_FINAL.md" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/remote/GeminiApiService.kt" />
-          <option value="file://$PROJECT_DIR$/RETROFIT_GEMINI_FINAL.md" />
-          <option value="file://$PROJECT_DIR$/GEMINI_2_5_FLASH_FINAL.md" />
+          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_lista_clases.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/dialog_crear_clase.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/item_clase.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_detalle_clase.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/ClaseRepository.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/local/ClaseDao.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/adapter/ClaseAdapter.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/ListaClasesActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/DetalleClaseActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/IARepository.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/viewmodel/ClaseViewModel.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_panel_principal_new.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/main/PanelPrincipalActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/main/PanelAlumnoActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_panel_alumno.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/res/values/strings.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/local/AppDatabase.kt" />
         </set>
       </entry>
+      <entry key="5a16e508-12d9-40d8-95e6-9be5a922e9c8">
+        <set>
+          <option value="file://$PROJECT_DIR$/VERIFICACION_DEPENDENCIAS.md" />
+        </set>
+      </entry>
+      <entry key="9bf7bb71-31e5-4ee4-88d9-719eccde22d1" />
       <entry key="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4" />
     </pendingWorkingSetItems>
   </component>

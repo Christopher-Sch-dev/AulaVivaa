@@ -4,8 +4,8 @@
     <!-- Permisos necesarios para la app -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Permiso para notificaciones en Android 13+ (Recurso Nativo) -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -19,13 +19,23 @@
             android:name=".presentation.ui.clases.ListaClasesActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.ui.clases.DetalleClaseActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.ui.main.PanelPrincipalActivity"
             android:exported="false" />
         <activity
+            android:name=".presentation.ui.main.PanelAlumnoActivity"
+            android:exported="false" />
+        <activity
             android:name=".presentation.ui.auth.RegisterActivity"
-            android:exported="true" />
+            android:exported="false" />
         <activity
             android:name=".presentation.ui.auth.LoginActivity"
+            android:exported="false" />
+        <!-- Pantalla de bienvenida - Punto de entrada de la app -->
+        <activity
+            android:name=".presentation.ui.auth.WelcomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

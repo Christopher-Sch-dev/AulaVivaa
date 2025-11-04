@@ -1,3 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AulaViva</string>
+    <!-- Generales -->
+    <string name="app_name">Aula Viva</string>
+    <string name="ok">Listo</string>
+    <string name="cancelar">Cancelar</string>
+    <string name="compartir">Compartir</string>
+
+    <!-- Panel principal / roles -->
+    <string name="panel_docente_titulo">¡Bienvenid@ Profesor!</string>
+    <string name="panel_subtitulo">Panel de control docente</string>
+    <string name="btn_gestionar_clases">Gestionar mis clases</string>
+    <string name="btn_ver_clases">Ver clases</string>
+    <string name="btn_crear_demo">Crear clase de demostración</string>
+    <string name="btn_cerrar_sesion">Cerrar sesión</string>
+    <string name="demo_desc">Genera automáticamente una clase de ejemplo con contenido educativo completo, perfecto para probar todas las funcionalidades de la app</string>
+
+    <!-- Lista clases -->
+    <string name="mis_clases">Mis Clases</string>
+    <string name="crear_nueva_clase">Crear nueva clase</string>
+    <string name="tus_clases_activas">Tus clases activas</string>
+    <string name="empty_clases">No tienes clases creadas aún.\n¡Crea tu primera clase!</string>
+
+    <!-- Dialog crear clase -->
+    <string name="dlg_crear_titulo">📝 Crear nueva clase</string>
+    <string name="hint_titulo_clase">Título de la clase</string>
+    <string name="hint_desc_clase">Descripción de las actividades</string>
+    <string name="hint_fecha">Fecha (dd/MM/yyyy)</string>
+    <string name="btn_sel_pdf">Seleccionar archivo PDF</string>
+    <string name="msg_pdf_proximamente">Función de subir PDF próximamente</string>
+    <string name="btn_crear_clase">Crear clase</string>
+    <string name="err_titulo">El título es obligatorio</string>
+    <string name="err_desc">La descripción es obligatoria</string>
+    <string name="err_fecha">La fecha es obligatoria</string>
+    <string name="ok_clase_creada">Clase creada exitosamente</string>
+
+    <!-- Detalle clase -->
+    <string name="lbl_fecha">Fecha: %1$s</string>
+    <string name="err_clase_no_encontrada">No se pudo cargar la clase</string>
+    <string name="err_pdf_no_disponible">PDF no disponible</string>
+    <string name="err_abrir_pdf">No se puede abrir el PDF</string>
+    <string name="ver_pdf">📖 Ver PDF</string>
+
+    <!-- IA Docente -->
+    <string name="ia_herramientas">🤖 Herramientas IA para docente</string>
+    <string name="ia_generar_ideas">💡 Generar ideas para la clase</string>
+    <string name="ia_sugerir_act_btn">🎯 Sugerir actividades dinámicas</string>
+    <string name="ia_estructurar">⏱️ Estructurar clase por minutos</string>
+    <string name="ia_analizar_pdf">📄 Analizar PDF con IA</string>
+    <string name="ia_generando_ideas">💡 Generando ideas...</string>
+    <string name="ia_sugerir_act">🎯 Diseñando actividades...</string>
+    <string name="ia_estructurando">⏱️ Estructurando...</string>
+    <string name="ia_analizando_pdf">📄 Analizando PDF...</string>
+    <string name="ia_espera">La IA está trabajando, por favor espera</string>
+    <string name="ia_ideas_titulo">💡 Ideas para tu clase</string>
+    <string name="ia_actividades_titulo">🎯 Actividades sugeridas</string>
+    <string name="ia_pdf_titulo">📄 Análisis del material PDF</string>
+    <string name="ia_elegir_duracion">⏱️ Duración de la clase</string>
+    <string name="ia_estructura_titulo">⏱️ Estructura de %1$s</string>
 </resources>

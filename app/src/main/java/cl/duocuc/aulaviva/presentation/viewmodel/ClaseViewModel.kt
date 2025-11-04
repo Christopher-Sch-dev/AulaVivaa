@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 /**
  * ViewModel para manejar la lógica de clases.
  * Ahora usa AndroidViewModel para tener acceso al Context (necesario para Room).
- * 
+ *
  * viewModelScope: Todas las corrutinas se cancelan automáticamente cuando se destruye el ViewModel.
  * Esto evita memory leaks y operaciones fantasma.
  */
@@ -49,7 +49,7 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 repository.sincronizarDesdeFirestore()
                 _isLoading.value = false
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _isLoading.value = false
                 // No muestro error porque Room sigue funcionando offline
             }
@@ -60,15 +60,38 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
      * Crea una nueva clase.
      * Se guarda primero en Room (instantáneo) y luego intenta subir a Firestore.
      */
-    fun crearClase(nombre: String, fecha: String) {
-        // Validación simple
-        if (nombre.isEmpty() || fecha.isEmpty()) {
-            _error.value = "Nombre y fecha son obligatorios"
+    fun crearClase(
+        nombre: String,
+        descripcion: String,
+        fecha: String,
+        archivoPdfUrl: String = "",
+        archivoPdfNombre: String = ""
+    ) {
+        // Validación completa
+        if (nombre.trim().isEmpty()) {
+            _error.value = "El título de la clase es obligatorio"
+            return
+        }
+
+        if (descripcion.trim().isEmpty()) {
+            _error.value = "La descripción es obligatoria"
+            return
+        }
+
+        if (fecha.trim().isEmpty()) {
+            _error.value = "La fecha es obligatoria"
             return
         }
 
         _isLoading.value = true
-        val nuevaClase = Clase(nombre = nombre, fecha = fecha, creador = uid)
+        val nuevaClase = Clase(
+            nombre = nombre.trim(),
+            descripcion = descripcion.trim(),
+            fecha = fecha.trim(),
+            archivoPdfUrl = archivoPdfUrl,
+            archivoPdfNombre = archivoPdfNombre,
+            creador = uid
+        )
 
         viewModelScope.launch {
             repository.crearClase(
@@ -88,9 +111,21 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Actualiza una clase existente
      */
-    fun actualizarClase(claseId: String, nombre: String, fecha: String) {
-        if (nombre.isEmpty() || fecha.isEmpty()) {
+    fun actualizarClase(
+        claseId: String,
+        nombre: String,
+        descripcion: String,
+        fecha: String,
+        archivoPdfUrl: String = "",
+        archivoPdfNombre: String = ""
+    ) {
+        if (nombre.trim().isEmpty() || fecha.trim().isEmpty()) {
             _error.value = "Nombre y fecha son obligatorios"
+            return
+        }
+
+        if (descripcion.trim().isEmpty()) {
+            _error.value = "La descripción es obligatoria"
             return
         }
 
@@ -99,8 +134,11 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.actualizarClase(
                 claseId = claseId,
-                nombre = nombre,
-                fecha = fecha,
+                nombre = nombre.trim(),
+                descripcion = descripcion.trim(),
+                fecha = fecha.trim(),
+                archivoPdfUrl = archivoPdfUrl,
+                archivoPdfNombre = archivoPdfNombre,
                 onSuccess = {
                     _isLoading.value = false
                     _operationSuccess.value = "Clase actualizada"
@@ -140,5 +178,49 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
     fun clearMessages() {
         _error.value = null
         _operationSuccess.value = null
+    }
+
+    /**
+     * Obtiene una clase específica por ID
+     */
+    @Suppress("unused")
+    suspend fun obtenerClasePorId(claseId: String): Clase? {
+        return try {
+            if (claseId.isEmpty()) {
+                _error.value = "ID de clase no válido"
+                return null
+            }
+            repository.obtenerClasePorId(claseId)
+        } catch (e: Exception) {
+            _error.value = "Error al obtener la clase: ${e.message}"
+            null
+        }
+    }
+
+    /**
+     * Valida que el UID del usuario esté disponible
+     */
+    @Suppress("unused")
+    fun validarUsuario(): Boolean {
+        if (uid.isEmpty()) {
+            _error.value = "Usuario no autenticado. Por favor, inicia sesión nuevamente"
+            return false
+        }
+        return true
+    }
+
+    /**
+     * Limpia los datos locales (útil al cerrar sesión)
+     */
+    @Suppress("unused")
+    fun limpiarDatosLocales() {
+        viewModelScope.launch {
+            try {
+                repository.limpiarLocal()
+                _operationSuccess.value = "Datos locales limpiados"
+            } catch (e: Exception) {
+                _error.value = "Error al limpiar datos: ${e.message}"
+            }
+        }
     }
 }

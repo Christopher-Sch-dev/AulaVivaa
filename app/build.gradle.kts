@@ -1,20 +1,18 @@
 plugins {
-    alias(libs.plugins.kotlin.android)
     id("com.android.application")
-    // Add the Google services Gradle plugin
+    id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
-    // KSP para Room (genera código en tiempo de compilación)
-    id("com.google.devtools.ksp") version "1.9.20-1.0.14"
+    id("com.google.devtools.ksp")
 }
 
 android {
     namespace = "cl.duocuc.aulaviva"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "cl.duocuc.aulaviva"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -32,56 +30,58 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
+
     buildFeatures {
         viewBinding = true
     }
 }
 
 dependencies {
+    // AndroidX Core - Últimas versiones (Diciembre 2024)
+    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.google.android.material:material:1.13.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.0")
 
-    // AndroidX y Material
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.annotation)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.lifecycle.livedata.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.activity)
-    
-    // Activity KTX (necesario para viewModels())
-    implementation("androidx.activity:activity-ktx:1.8.2")
-    implementation("androidx.fragment:fragment-ktx:1.6.2")
+    // Lifecycle (ViewModel, LiveData) - Última versión noviembre 2024
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
 
-    // Firebase BoM (gestiona versiones automáticamente)
-    implementation(platform(libs.firebase.bom))
+    // Activity y Fragment KTX - Última versión noviembre 2024
+    implementation("androidx.activity:activity-ktx:1.9.3")
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
 
-    // Firebase products (sin versión, BoM se encarga)
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.firestore.ktx)
-    implementation(libs.firebase.analytics)
+    // Firebase BoM (Bill of Materials) - Última versión noviembre 2024
+    implementation(platform("com.google.firebase:firebase-bom:33.6.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-analytics-ktx")
 
-    // Room Database para persistencia local (funciona offline)
+    // Room Database - Última versión diciembre 2024
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
 
-    // Corrutinas para operaciones asíncronas con Room
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    // Corrutinas - Última versión estable
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
-    // 🤖 Retrofit para Gemini AI (REST API profesional)
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    // Retrofit para APIs - Últimas versiones estables
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("com.google.code.gson:gson:2.13.2")
 
-    // Test
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    // Testing - Últimas versiones
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 }

@@ -1,55 +1,157 @@
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:padding="24dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="#F8FCFF">
 
-    <!-- Título del diálogo -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Crear nueva clase"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#4F3BB8"
-        android:layout_marginBottom="18dp"/>
-
-    <!-- Campo nombre (con validación visual) -->
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Nombre de la clase"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        app:boxStrokeColor="#4F3BB8"
-        app:boxBackgroundColor="@android:color/white"
-        android:layout_marginBottom="12dp">
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputNombreClase"
+        <!-- Título del diálogo -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:text="📝 Crear nueva clase"
+            android:textColor="#4F3BB8"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <!-- Campo nombre -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutNombreClase"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#2C2C2C"
-            android:textSize="15sp"/>
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginBottom="16dp"
+            android:hint="Título de la clase"
+            app:boxBackgroundColor="@android:color/white"
+            app:boxStrokeColor="#4F3BB8"
+            app:startIconDrawable="@android:drawable/ic_menu_edit"
+            app:startIconTint="#4F3BB8">
 
-    <!-- Campo fecha -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Fecha (dd/MM/yyyy)"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        app:boxStrokeColor="#4F3BB8"
-        app:boxBackgroundColor="@android:color/white">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputNombreClase"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapSentences"
+                android:maxLines="1"
+                android:textColor="#2C2C2C"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputFechaClase"
+        <!-- Campo descripción de actividades -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutDescripcionClase"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#2C2C2C"
-            android:textSize="15sp"/>
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginBottom="16dp"
+            android:hint="Descripción de las actividades"
+            app:boxBackgroundColor="@android:color/white"
+            app:boxStrokeColor="#4F3BB8"
+            app:startIconDrawable="@android:drawable/ic_menu_info_details"
+            app:startIconTint="#4F3BB8">
 
-</LinearLayout>
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputDescripcionClase"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top|start"
+                android:inputType="textMultiLine|textCapSentences"
+                android:maxLines="5"
+                android:minLines="3"
+                android:textColor="#2C2C2C"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Campo fecha -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutFechaClase"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:hint="Fecha (dd/MM/yyyy)"
+            app:boxBackgroundColor="@android:color/white"
+            app:boxStrokeColor="#4F3BB8"
+            app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
+            app:startIconTint="#4F3BB8">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputFechaClase"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="date"
+                android:maxLines="1"
+                android:textColor="#2C2C2C"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Sección de archivo PDF -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="📎 Material de estudio (opcional)"
+            android:textColor="#666666"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <!-- Botón para seleccionar PDF -->
+        <Button
+            android:id="@+id/btnSeleccionarPdf"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Seleccionar archivo PDF"
+            android:textAllCaps="false"
+            android:textColor="#039BE5"
+            app:icon="@android:drawable/ic_menu_upload"
+            app:iconTint="#039BE5"
+            app:strokeColor="#039BE5" />
+
+        <!-- Texto que muestra el PDF seleccionado -->
+        <TextView
+            android:id="@+id/textPdfSeleccionado"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:text="Ningún archivo seleccionado"
+            android:textColor="#999999"
+            android:textSize="12sp" />
+
+        <!-- Botones de acción -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnCancelar"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="Cancelar"
+                android:textAllCaps="false"
+                android:textColor="#666666" />
+
+            <Button
+                android:id="@+id/btnGuardarClase"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="#4F3BB8"
+                android:minWidth="120dp"
+                android:text="Crear clase"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

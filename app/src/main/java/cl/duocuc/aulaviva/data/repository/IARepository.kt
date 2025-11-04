@@ -1,6 +1,10 @@
 package cl.duocuc.aulaviva.data.repository
 
-import cl.duocuc.aulaviva.data.remote.*
+import cl.duocuc.aulaviva.data.remote.Content
+import cl.duocuc.aulaviva.data.remote.GeminiApiService
+import cl.duocuc.aulaviva.data.remote.GeminiRequest
+import cl.duocuc.aulaviva.data.remote.GenerationConfig
+import cl.duocuc.aulaviva.data.remote.Part
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -15,9 +19,9 @@ import java.util.concurrent.TimeUnit
  * Modelo: gemini-2.5-flash (vigente octubre 2025)
  */
 class IARepository {
-    
+
     private val GEMINI_API_KEY = "AIzaSyA6e4Wle5UkV93rOKIWm4FIKTQBDaOy8EY"
-    
+
     // ...existing code...
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -27,20 +31,20 @@ class IARepository {
             level = HttpLoggingInterceptor.Level.BODY
         })
         .build()
-    
+
     // Retrofit configurado para Gemini API
     private val retrofit = Retrofit.Builder()
         .baseUrl("https://generativelanguage.googleapis.com/")
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
-    
+
     private val geminiService = retrofit.create(GeminiApiService::class.java)
-    
+
     init {
         println("✅ Gemini AI Retrofit activado - Modelo: gemini-2.5-flash")
     }
-    
+
     /**
      * Llama a Gemini API con Retrofit
      */
@@ -64,17 +68,17 @@ class IARepository {
                             maxOutputTokens = 1024
                         )
                     )
-                    
+
                     // Hacer petición
                     val response = geminiService.generateContent(GEMINI_API_KEY, request)
-                    
+
                     if (response.isSuccessful) {
                         // Extraer texto de la respuesta
                         val text = response.body()
                             ?.candidates?.firstOrNull()
                             ?.content?.parts?.firstOrNull()
                             ?.text
-                        
+
                         text ?: throw Exception("Respuesta vacía de Gemini")
                     } else {
                         throw Exception("HTTP ${response.code()}: ${response.message()}")
@@ -85,7 +89,25 @@ class IARepository {
             }
         }
     }
-    
+
+    /**
+     * 🤖 Genera respuesta personalizada para cualquier prompt
+     */
+    suspend fun generarRespuestaPersonalizada(prompt: String): String {
+        return try {
+            llamarGemini(prompt)
+        } catch (e: Exception) {
+            """
+            ⚠️ Error al conectar con Gemini AI
+            
+            No se pudo procesar tu solicitud en este momento.
+            Por favor, verifica tu conexión a internet.
+            
+            Error: ${e.message?.take(150) ?: "Desconocido"}
+            """.trimIndent()
+        }
+    }
+
     /**
      * 🤖 Genera resumen educativo
      */
@@ -101,13 +123,13 @@ class IARepository {
                 🎯 3 puntos clave (bullets)
                 💡 1 consejo de estudio
                 
-                Termina con: "⚡ Generado por Gemini AI Real de Google"
+                Termina con: "⚡ Generado por Gemini AI Real de Google po LOCO e.e"
                 
                 Máximo 200 palabras, formato claro.
             """.trimIndent()
-            
+
             llamarGemini(prompt)
-            
+
         } catch (e: Exception) {
             """
             ⚠️ No pude conectar con Gemini ahora
@@ -127,7 +149,7 @@ class IARepository {
             """.trimIndent()
         }
     }
-    
+
     /**
      * 🤖 Genera glosario de términos
      */
@@ -153,9 +175,9 @@ class IARepository {
                 
                 Máximo 250 palabras.
             """.trimIndent()
-            
+
             llamarGemini(prompt)
-            
+
         } catch (e: Exception) {
             """
             ⚠️ Error con Gemini
@@ -175,7 +197,7 @@ class IARepository {
             """.trimIndent()
         }
     }
-    
+
     /**
      * 🤖 Ideas pedagógicas para profesor
      */
@@ -200,9 +222,9 @@ class IARepository {
                 
                 Máximo 200 palabras, ideas específicas y prácticas.
             """.trimIndent()
-            
+
             llamarGemini(prompt)
-            
+
         } catch (e: Exception) {
             """
             ⚠️ Error con Gemini

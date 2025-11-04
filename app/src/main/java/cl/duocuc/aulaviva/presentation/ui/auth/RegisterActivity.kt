@@ -5,7 +5,6 @@ import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Observer
 import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.databinding.ActivityRegisterBinding
 import cl.duocuc.aulaviva.presentation.viewmodel.AuthViewModel
@@ -26,68 +25,101 @@ class RegisterActivity : AppCompatActivity() {
 
     private fun setupObservers() {
         // Observer para loading
-        viewModel.isLoading.observe(this, Observer { isLoading ->
-            binding.registerButton.isEnabled = !isLoading
-            binding.backToLoginButton.isEnabled = !isLoading
-        })
+        viewModel.isLoading.observe(this) { isLoading ->
+            updateUIState(isLoading)
+        }
 
         // Observer para errores
-        viewModel.error.observe(this, Observer { error ->
+        viewModel.error.observe(this) { error ->
             error?.let {
                 Toast.makeText(this, it, Toast.LENGTH_LONG).show()
                 viewModel.clearError()
+                // Asegurar que la UI vuelva al estado normal después de un error
+                updateUIState(false)
             }
-        })
+        }
 
         // Observer para registro exitoso
-        viewModel.registerSuccess.observe(this, Observer { success ->
+        viewModel.registerSuccess.observe(this) { success ->
             if (success) {
-                Toast.makeText(this, "Registro exitoso! Ahora inicia sesión", Toast.LENGTH_SHORT).show()
-                finish()
+                Toast.makeText(this, "✓ Cuenta creada exitosamente", Toast.LENGTH_LONG).show()
+
+                // Pequeño delay para que el usuario vea el mensaje de éxito
+                binding.root.postDelayed({
+                    finish()
+                    // Animación de transición suave
+                    @Suppress("DEPRECATION")
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                }, 600)
             }
-        })
+        }
+    }
+
+    private fun updateUIState(isLoading: Boolean) {
+        // Actualizar botones
+        binding.registerButton.isEnabled = !isLoading
+        binding.backToLoginButton.isEnabled = !isLoading
+
+        // Actualizar texto del botón
+        binding.registerButton.text = if (isLoading) "Registrando..." else "Registrarse"
+
+        // Actualizar campos de entrada
+        binding.registerEmailInput.isEnabled = !isLoading
+        binding.registerPasswordInput.isEnabled = !isLoading
+        binding.radioDocente.isEnabled = !isLoading
+        binding.radioAlumno.isEnabled = !isLoading
     }
 
     private fun setupListeners() {
-        // Botón para volver a login
+        // Botón para volver a la pantalla de bienvenida
         binding.backToLoginButton.setOnClickListener {
             finish()
+            @Suppress("DEPRECATION")
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         }
 
         // Botón de registro
         binding.registerButton.setOnClickListener {
-            // ANIMACIÓN: Feedback visual al tocar
+            // Animación de feedback al tocar el botón
             it.startAnimation(AnimationUtils.loadAnimation(this, R.anim.button_scale))
-            
+
+            // Obtener datos ingresados por el usuario
             val email = binding.registerEmailInput.text?.toString()?.trim() ?: ""
             val password = binding.registerPasswordInput.text?.toString() ?: ""
-            
-            // Capturo el rol seleccionado según el RadioButton marcado
+
+            // Detectar qué rol seleccionó el usuario (Docente o Alumno)
+            // El RadioGroup solo permite tener un RadioButton seleccionado a la vez
             val rol = when (binding.radioGroupRol.checkedRadioButtonId) {
-                R.id.radioDocente -> "docente"
-                R.id.radioAlumno -> "alumno"
-                else -> "alumno" // Por defecto alumno
+                R.id.radioDocente -> "docente"  // Si seleccionó el botón de Docente
+                R.id.radioAlumno -> "alumno"    // Si seleccionó el botón de Alumno
+                else -> "alumno"                 // Por defecto será alumno
             }
 
-            // Validación
+            // Validación de datos antes de registrar
             var valid = true
+
+            // Validar email
             if (!viewModel.isValidEmail(email)) {
                 binding.registerEmailLayout.error = "Correo inválido"
                 valid = false
             } else {
-                binding.registerEmailLayout.error = null
+                binding.registerEmailLayout.error = null // Limpiar error si está correcto
             }
 
+            // Validar contraseña (mínimo 6 caracteres)
             if (!viewModel.isValidPassword(password)) {
-                binding.registerPasswordLayout.error = "La contraseña debe tener al menos 6 caracteres"
+                binding.registerPasswordLayout.error =
+                    "La contraseña debe tener al menos 6 caracteres"
                 valid = false
             } else {
-                binding.registerPasswordLayout.error = null
+                binding.registerPasswordLayout.error = null // Limpiar error si está correcto
             }
 
+            // Si todo es válido, proceder con el registro
             if (valid) {
-                // Paso el rol al ViewModel
+                // Mostrar mensaje de confirmación con el rol seleccionado
                 Toast.makeText(this, "Registrando como $rol...", Toast.LENGTH_SHORT).show()
+                // Enviar datos al ViewModel para crear cuenta en Firebase
                 viewModel.register(email, password, rol)
             }
         }

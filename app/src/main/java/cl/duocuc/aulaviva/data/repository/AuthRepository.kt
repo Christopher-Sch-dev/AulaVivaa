@@ -23,12 +23,45 @@ class AuthRepository {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
+        // Timeout de seguridad de 15 segundos
+        var completed = false
+        val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        val timeoutRunnable = Runnable {
+            if (!completed) {
+                completed = true
+                onError("La operación tardó demasiado. Verifica tu conexión a internet.")
+            }
+        }
+        timeoutHandler.postDelayed(timeoutRunnable, 15000)
+
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
+                if (completed) return@addOnCompleteListener
+
+                completed = true
+                timeoutHandler.removeCallbacks(timeoutRunnable)
+
                 if (task.isSuccessful) {
                     onSuccess()
                 } else {
-                    onError(task.exception?.message ?: "Error desconocido")
+                    val errorMsg = task.exception?.message ?: ""
+                    when {
+                        errorMsg.contains("password") -> {
+                            onError("Contraseña incorrecta")
+                        }
+
+                        errorMsg.contains("no user") || errorMsg.contains("not found") -> {
+                            onError("No existe una cuenta con ese correo")
+                        }
+
+                        errorMsg.contains("network") || errorMsg.contains("internet") -> {
+                            onError("Sin conexión a internet. Verifica tu red.")
+                        }
+
+                        else -> {
+                            onError(errorMsg.ifEmpty { "Error desconocido al iniciar sesión" })
+                        }
+                    }
                 }
             }
     }
@@ -37,30 +70,75 @@ class AuthRepository {
     fun register(
         email: String,
         password: String,
-        rol: String = "alumno",  // Nuevo parámetro: rol del usuario
+        rol: String = "alumno",
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
+        // Timeout de seguridad de 15 segundos
+        var completed = false
+        val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        val timeoutRunnable = Runnable {
+            if (!completed) {
+                completed = true
+                onError("La operación tardó demasiado. Verifica tu conexión a internet.")
+            }
+        }
+        timeoutHandler.postDelayed(timeoutRunnable, 15000)
+
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
+                if (completed) return@addOnCompleteListener
+
                 if (task.isSuccessful) {
                     // Guardamos datos extra en Firestore incluyendo el rol
-                    val uid = auth.currentUser?.uid ?: ""
-                    val usuario = hashMapOf(
-                        "email" to email,
-                        "rol" to rol,  // "docente" o "alumno"
-                        "fechaRegistro" to System.currentTimeMillis()
-                    )
-                    firestore.collection("usuarios").document(uid)
-                        .set(usuario)
-                        .addOnSuccessListener { onSuccess() }
-                        .addOnFailureListener { e -> onError(e.message ?: "Error al guardar datos") }
-                } else {
-                    val errorMsg = task.exception?.message ?: ""
-                    if (errorMsg.contains("The email address is already in use")) {
-                        onError("Ese correo ya está registrado. Inicia sesión o usa otro.")
+                    val uid = auth.currentUser?.uid
+                    if (uid != null) {
+                        val usuario = hashMapOf(
+                            "email" to email,
+                            "rol" to rol,
+                            "fechaRegistro" to System.currentTimeMillis()
+                        )
+                        firestore.collection("usuarios").document(uid)
+                            .set(usuario)
+                            .addOnSuccessListener {
+                                if (!completed) {
+                                    completed = true
+                                    timeoutHandler.removeCallbacks(timeoutRunnable)
+                                    onSuccess()
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                if (!completed) {
+                                    completed = true
+                                    timeoutHandler.removeCallbacks(timeoutRunnable)
+                                    onError(e.message ?: "Error al guardar datos")
+                                }
+                            }
                     } else {
-                        onError(errorMsg)
+                        if (!completed) {
+                            completed = true
+                            timeoutHandler.removeCallbacks(timeoutRunnable)
+                            onError("Error al obtener usuario")
+                        }
+                    }
+                } else {
+                    if (!completed) {
+                        completed = true
+                        timeoutHandler.removeCallbacks(timeoutRunnable)
+                        val errorMsg = task.exception?.message ?: ""
+                        when {
+                            errorMsg.contains("The email address is already in use") -> {
+                                onError("Ese correo ya está registrado. Inicia sesión o usa otro.")
+                            }
+
+                            errorMsg.contains("network") || errorMsg.contains("internet") -> {
+                                onError("Sin conexión a internet. Verifica tu red.")
+                            }
+
+                            else -> {
+                                onError(errorMsg.ifEmpty { "Error desconocido al registrar" })
+                            }
+                        }
                     }
                 }
             }

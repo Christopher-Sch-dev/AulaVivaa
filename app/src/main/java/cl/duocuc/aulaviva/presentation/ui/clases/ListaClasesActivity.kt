@@ -1,6 +1,9 @@
 package cl.duocuc.aulaviva.presentation.ui.clases
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
@@ -8,31 +11,26 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import cl.duocuc.aulaviva.databinding.ActivityListaClasesBinding
-import cl.duocuc.aulaviva.data.repository.IARepository
+import androidx.recyclerview.widget.RecyclerView
+import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.presentation.adapter.ClaseAdapter
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class ListaClasesActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityListaClasesBinding
     private val viewModel: ClaseViewModel by viewModels()
     private lateinit var adapter: ClaseAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityListaClasesBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_lista_clases)
 
         setupRecyclerView()
         setupObservers()
         setupListeners()
 
-        // Sincronizar clases desde Firestore al abrir la pantalla
-        // Room mostrará datos inmediatamente, y Firestore actualizará si hay conexión
         viewModel.sincronizarConFirestore()
     }
 
@@ -40,29 +38,27 @@ class ListaClasesActivity : AppCompatActivity() {
         adapter = ClaseAdapter(
             clases = emptyList(),
             onClaseClick = { clase ->
-                Toast.makeText(this, "Clase: ${clase.nombre}", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, DetalleClaseActivity::class.java)
+                intent.putExtra("CLASE_ID", clase.id)
+                startActivity(intent)
             }
         )
 
-        binding.recyclerViewClases.apply {
-            layoutManager = LinearLayoutManager(this@ListaClasesActivity)
-            adapter = this@ListaClasesActivity.adapter
-        }
+        val rv = findViewById<RecyclerView>(R.id.recyclerViewClases)
+        rv.layoutManager = LinearLayoutManager(this)
+        rv.adapter = adapter
     }
 
     private fun setupObservers() {
-        // Observer para lista de clases
         viewModel.clases.observe(this, Observer { clases ->
             adapter.updateList(clases)
+            val empty = findViewById<TextView>(R.id.textEmptyState)
+            empty?.visibility =
+                if (clases.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
         })
 
-        // Observer para loading (sin progressBar por ahora)
-        viewModel.isLoading.observe(this, Observer { _ ->
-            // Aquí podrías mostrar un loading si agregas un ProgressBar al layout
-            // Por ahora se mantiene sin UI para simplificar
-        })
+        viewModel.isLoading.observe(this, Observer { _ -> })
 
-        // Observer para errores
         viewModel.error.observe(this, Observer { error ->
             error?.let {
                 Toast.makeText(this, it, Toast.LENGTH_LONG).show()
@@ -70,7 +66,6 @@ class ListaClasesActivity : AppCompatActivity() {
             }
         })
 
-        // Observer para operaciones exitosas
         viewModel.operationSuccess.observe(this, Observer { message ->
             message?.let {
                 Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
@@ -80,109 +75,98 @@ class ListaClasesActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        // Botón para crear nueva clase
-        binding.crearClaseButton.setOnClickListener {
-            // Aquí podrías abrir un diálogo o nueva actividad para crear clase
-            Toast.makeText(this, "Función para agregar clase", Toast.LENGTH_SHORT).show()
-        }
-        
-        // INTEGRACIÓN IA: Botón para generar resumen con IA
-        binding.btnGenerarResumenIA.setOnClickListener {
-            generarResumenConIA()
+        findViewById<Button>(R.id.crearClaseButton)?.setOnClickListener {
+            mostrarDialogoCrearClase()
         }
     }
-    
-    /**
-     * Genera un resumen automático usando IA.
-     * Esta función demuestra la integración de IA en la app.
-     */
-    private fun generarResumenConIA() {
-        val iaRepo = IARepository()
-        
-        // Texto de ejemplo (en producción vendría del contenido de las clases)
-        val textoClase = """
-            Aula Viva es una aplicación Android desarrollada con Kotlin que implementa
-            arquitectura MVVM, Room Database, Firebase Firestore, notificaciones push,
-            y funciones de IA para potenciar la educación presencial.
-        """.trimIndent()
-        
-        // Muestro diálogo de carga mientras la IA procesa
-        val loadingDialog = AlertDialog.Builder(this)
-            .setTitle("🤖 IA procesando...")
-            .setMessage("La Inteligencia Artificial está analizando el contenido")
-            .setCancelable(false)
+
+    private fun mostrarDialogoCrearClase() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_crear_clase, null)
+
+        val inputNombre =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputNombreClase)
+        val inputDescripcion =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputDescripcionClase)
+        val inputFecha =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputFechaClase)
+        val btnSeleccionarPdf = dialogView.findViewById<Button>(R.id.btnSeleccionarPdf)
+        val textPdfSeleccionado = dialogView.findViewById<TextView>(R.id.textPdfSeleccionado)
+        val layoutNombre =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutNombreClase)
+        val layoutDescripcion =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutDescripcionClase)
+        val layoutFecha =
+            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutFechaClase)
+
+        val pdfNombreSeleccionado = ""
+        val pdfUrlSeleccionada = ""
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
             .create()
-        loadingDialog.show()
-        
-        // Ejecuto la IA en background (corrutina)
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                // Llamo al repositorio de IA
-                val resumen = iaRepo.generarResumen(textoClase)
-                
-                // Vuelvo al hilo principal para mostrar resultado
-                withContext(Dispatchers.Main) {
-                    loadingDialog.dismiss()
-                    
-                    // Muestro el resumen en un diálogo
-                    AlertDialog.Builder(this@ListaClasesActivity)
-                        .setTitle("📝 Resumen generado por IA")
-                        .setMessage(resumen)
-                        .setPositiveButton("Entendido", null)
-                        .setNeutralButton("Generar Glosario") { _, _ ->
-                            generarGlosarioConIA(textoClase)
+
+        btnSeleccionarPdf.setOnClickListener {
+            textPdfSeleccionado.text = "Función de subir PDF próximamente"
+            Toast.makeText(this, "Función de subir PDF próximamente", Toast.LENGTH_SHORT).show()
+        }
+
+        dialogView.findViewById<Button>(R.id.btnCancelar).setOnClickListener { dialog.dismiss() }
+
+        dialogView.findViewById<Button>(R.id.btnGuardarClase).setOnClickListener {
+            val nombre = inputNombre?.text?.toString()?.trim() ?: ""
+            val descripcion = inputDescripcion?.text?.toString()?.trim() ?: ""
+            val fecha = inputFecha?.text?.toString()?.trim() ?: ""
+
+            var valid = true
+            if (nombre.isEmpty()) {
+                layoutNombre?.error = "El título es obligatorio"; valid = false
+            } else layoutNombre?.error = null
+            if (descripcion.isEmpty()) {
+                layoutDescripcion?.error = "La descripción es obligatoria"; valid = false
+            } else layoutDescripcion?.error = null
+            if (fecha.isEmpty()) {
+                layoutFecha?.error = "La fecha es obligatoria"; valid = false
+            } else layoutFecha?.error = null
+
+            if (valid) {
+                val nuevaClase = cl.duocuc.aulaviva.data.model.Clase(
+                    id = "",
+                    nombre = nombre,
+                    descripcion = descripcion,
+                    fecha = fecha,
+                    archivoPdfUrl = pdfUrlSeleccionada,
+                    archivoPdfNombre = pdfNombreSeleccionado,
+                    creador = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                        ?: ""
+                )
+
+                val repository = cl.duocuc.aulaviva.data.repository.ClaseRepository(this)
+                repository.crearClaseAsync(
+                    clase = nuevaClase,
+                    onSuccess = {
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            Toast.makeText(
+                                this@ListaClasesActivity,
+                                "✅ Clase creada exitosamente",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            dialog.dismiss()
+                            viewModel.sincronizarConFirestore()
                         }
-                        .show()
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    loadingDialog.dismiss()
-                    Toast.makeText(
-                        this@ListaClasesActivity,
-                        "Error al generar resumen: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+                    },
+                    onError = { error ->
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            Toast.makeText(
+                                this@ListaClasesActivity,
+                                "Error: $error",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                )
             }
         }
-    }
-    
-    /**
-     * Genera un glosario automático de términos técnicos.
-     */
-    private fun generarGlosarioConIA(textoClase: String) {
-        val iaRepo = IARepository()
-        
-        val loadingDialog = AlertDialog.Builder(this)
-            .setTitle("🤖 IA analizando términos...")
-            .setMessage("Identificando conceptos clave")
-            .setCancelable(false)
-            .create()
-        loadingDialog.show()
-        
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val glosario = iaRepo.generarGlosario(textoClase)
-                
-                withContext(Dispatchers.Main) {
-                    loadingDialog.dismiss()
-                    
-                    AlertDialog.Builder(this@ListaClasesActivity)
-                        .setTitle("📚 Glosario generado por IA")
-                        .setMessage(glosario)
-                        .setPositiveButton("Entendido", null)
-                        .show()
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    loadingDialog.dismiss()
-                    Toast.makeText(
-                        this@ListaClasesActivity,
-                        "Error: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
+
+        dialog.show()
     }
 }

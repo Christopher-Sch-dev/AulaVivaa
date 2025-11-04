@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -12,7 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.databinding.ActivityPanelPrincipalBinding
-import cl.duocuc.aulaviva.presentation.ui.clases.ListaClasesActivity
 import cl.duocuc.aulaviva.presentation.ui.auth.LoginActivity
 import cl.duocuc.aulaviva.utils.NotificationHelper
 import com.google.firebase.auth.FirebaseAuth
@@ -22,7 +22,8 @@ class PanelPrincipalActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPanelPrincipalBinding
     private lateinit var notificationHelper: NotificationHelper
-    
+    private var rolActual: String = ""
+
     // Launcher para pedir permiso de notificaciones (Android 13+)
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -41,12 +42,12 @@ class PanelPrincipalActivity : AppCompatActivity() {
 
         // Inicializo el helper de notificaciones (RECURSO NATIVO #1)
         notificationHelper = NotificationHelper(this)
-        
+
         setupListeners()
         pedirPermisoNotificaciones()
         cargarDatosUsuario()  // Cargo info del usuario desde Firestore
     }
-    
+
     /**
      * Carga los datos del usuario desde Firestore y personaliza la UI.
      * Muestra el rol (docente/alumno) y adapta las opciones disponibles.
@@ -54,13 +55,14 @@ class PanelPrincipalActivity : AppCompatActivity() {
     private fun cargarDatosUsuario() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-        
+
         firestore.collection("usuarios").document(uid).get()
             .addOnSuccessListener { documento ->
                 if (documento.exists()) {
                     val email = documento.getString("email") ?: "Usuario"
                     val rol = documento.getString("rol") ?: "alumno"
-                    
+                    rolActual = rol
+
                     // Personalizo el mensaje según el rol y email
                     val emoji = if (rol == "docente") "👨‍🏫" else "🎓"
                     val nombreCorto = email.substringBefore("@")
@@ -69,23 +71,19 @@ class PanelPrincipalActivity : AppCompatActivity() {
                     } else {
                         "Bienvenido Estudiante $nombreCorto"
                     }
-                    
                     binding.bienvenidaTextView.text = "$emoji $mensaje"
-                    
-                    // Adapto el botón según el rol
-                    if (rol == "alumno") {
-                        binding.irAClasesButton.text = "📚 Ver mis clases"
-                    } else {
-                        binding.irAClasesButton.text = "📊 Gestionar clases"
-                    }
+
+                    // Botón principal se ajusta por rol
+                    binding.irAClasesButton.text =
+                        if (rol == "docente") "📊 Gestionar clases" else "📚 Ver clases"
                 }
             }
-            .addOnFailureListener {
-                // Si falla, uso valores por defecto
+            .addOnFailureListener { e ->
+                Log.w("PanelPrincipal", "Error cargando usuario", e)
                 binding.bienvenidaTextView.text = "¡Bienvenido!"
             }
     }
-    
+
     /**
      * Pide permiso para notificaciones solo en Android 13+ (Tiramisu).
      * En versiones anteriores no es necesario pedir permiso.
@@ -100,6 +98,7 @@ class PanelPrincipalActivity : AppCompatActivity() {
                     // Ya tengo el permiso, envío notificación
                     enviarNotificacionBienvenida()
                 }
+
                 else -> {
                     // Pido el permiso
                     requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -110,7 +109,7 @@ class PanelPrincipalActivity : AppCompatActivity() {
             enviarNotificacionBienvenida()
         }
     }
-    
+
     /**
      * Envía una notificación de bienvenida personalizada
      */
@@ -121,12 +120,27 @@ class PanelPrincipalActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        // Botón para ver clases
         binding.irAClasesButton.setOnClickListener {
-            val intent = Intent(this, ListaClasesActivity::class.java)
-            startActivity(intent)
+            try {
+                if (rolActual.isEmpty()) {
+                    Toast.makeText(this, "Cargando tu perfil...", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                if (rolActual == "docente") {
+                    startActivity(
+                        Intent(
+                            this,
+                            cl.duocuc.aulaviva.presentation.ui.clases.ListaClasesActivity::class.java
+                        )
+                    )
+                } else {
+                    startActivity(Intent(this, PanelAlumnoActivity::class.java))
+                }
+            } catch (ex: Exception) {
+                Toast.makeText(this, "No se pudo abrir el módulo", Toast.LENGTH_SHORT).show()
+            }
         }
-        
+
         // 🎓 Botón NUEVO: Crear clase de prueba
         binding.crearClasePruebaButton.setOnClickListener {
             crearClaseDemostracion()
@@ -148,7 +162,7 @@ class PanelPrincipalActivity : AppCompatActivity() {
                 .show()
         }
     }
-    
+
     /**
      * 🎓 Crea una clase de demostración con contenido rico
      * Esto sirve para testing y para la defensa EV2
@@ -159,13 +173,22 @@ class PanelPrincipalActivity : AppCompatActivity() {
             .setMessage("¿Quieres crear una clase de prueba con contenido educativo completo?\n\nIncluye:\n• Material educativo rico\n• PDF simulado de Kotlin\n• Links a documentación\n• Listo para probar IA")
             .setPositiveButton("Crear") { _, _ ->
                 lifecycleScope.launch {
-                    val repository = cl.duocuc.aulaviva.data.repository.ClaseRepository(this@PanelPrincipalActivity)
+                    val repository =
+                        cl.duocuc.aulaviva.data.repository.ClaseRepository(this@PanelPrincipalActivity)
                     repository.crearClaseDePrueba(
                         onSuccess = {
-                            Toast.makeText(this@PanelPrincipalActivity, "✅ Clase de prueba creada! Ve a 'Ver clases'", Toast.LENGTH_LONG).show()
+                            Toast.makeText(
+                                this@PanelPrincipalActivity,
+                                "✅ Clase de prueba creada! Ve a 'Ver clases'",
+                                Toast.LENGTH_LONG
+                            ).show()
                         },
                         onError = { error ->
-                            Toast.makeText(this@PanelPrincipalActivity, "Error: $error", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this@PanelPrincipalActivity,
+                                "Error: $error",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     )
                 }
