@@ -16,6 +16,7 @@ import cl.duocuc.aulaviva.databinding.ActivityPanelPrincipalBinding
 import cl.duocuc.aulaviva.presentation.ui.auth.LoginActivity
 import cl.duocuc.aulaviva.utils.NotificationHelper
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
 class PanelPrincipalActivity : AppCompatActivity() {
@@ -24,15 +25,12 @@ class PanelPrincipalActivity : AppCompatActivity() {
     private lateinit var notificationHelper: NotificationHelper
     private var rolActual: String = ""
 
-    // Launcher para pedir permiso de notificaciones (Android 13+)
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-            // Permiso concedido, envío notificación de bienvenida
             enviarNotificacionBienvenida()
         }
-        // Si no lo concede, la app sigue funcionando normal
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,21 +38,27 @@ class PanelPrincipalActivity : AppCompatActivity() {
         binding = ActivityPanelPrincipalBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Inicializo el helper de notificaciones (RECURSO NATIVO #1)
         notificationHelper = NotificationHelper(this)
+
+        // 1. Desactivar botones al inicio para evitar condiciones de carrera
+        binding.irAClasesButton.isEnabled = false
+        binding.crearClasePruebaButton.isEnabled = false
 
         setupListeners()
         pedirPermisoNotificaciones()
-        cargarDatosUsuario()  // Cargo info del usuario desde Firestore
+        cargarDatosUsuario()
     }
 
-    /**
-     * Carga los datos del usuario desde Firestore y personaliza la UI.
-     * Muestra el rol (docente/alumno) y adapta las opciones disponibles.
-     */
     private fun cargarDatosUsuario() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            Toast.makeText(this, "Error de autenticación. Por favor, inicia sesión de nuevo.", Toast.LENGTH_LONG).show()
+            // Redirigir a Login si no hay usuario
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+        val firestore = FirebaseFirestore.getInstance()
 
         firestore.collection("usuarios").document(uid).get()
             .addOnSuccessListener { documento ->
@@ -75,77 +79,55 @@ class PanelPrincipalActivity : AppCompatActivity() {
 
                     binding.irAClasesButton.text =
                         if (rolActual == "docente") "📊 Gestionar clases" else "📚 Ver clases"
+                    
+                    // 2. Activar botones una vez que los datos están cargados
+                    binding.irAClasesButton.isEnabled = true
+                    binding.crearClasePruebaButton.isEnabled = true
+                } else {
+                    binding.bienvenidaTextView.text = "Perfil no encontrado."
+                    Toast.makeText(this, "No se pudo encontrar tu perfil en la base de datos.", Toast.LENGTH_LONG).show()
                 }
             }
             .addOnFailureListener { e ->
                 Log.w("PanelPrincipal", "Error cargando usuario", e)
                 binding.bienvenidaTextView.text = "¡Bienvenido!"
+                Toast.makeText(this, "Error al cargar el perfil. Revisa tu conexión.", Toast.LENGTH_LONG).show()
             }
     }
 
-    /**
-     * Pide permiso para notificaciones solo en Android 13+ (Tiramisu).
-     * En versiones anteriores no es necesario pedir permiso.
-     */
     private fun pedirPermisoNotificaciones() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            when {
-                ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED -> {
-                    // Ya tengo el permiso, envío notificación
-                    enviarNotificacionBienvenida()
-                }
-
-                else -> {
-                    // Pido el permiso
-                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                enviarNotificacionBienvenida()
             }
         } else {
-            // En Android 12 o inferior no necesito pedir permiso
             enviarNotificacionBienvenida()
         }
     }
 
-    /**
-     * Envía una notificación de bienvenida personalizada
-     */
     private fun enviarNotificacionBienvenida() {
         val email = FirebaseAuth.getInstance().currentUser?.email ?: "Usuario"
-        val nombre = email.substringBefore("@")  // Extraigo nombre del email
+        val nombre = email.substringBefore("@")
         notificationHelper.enviarNotificacionBienvenida(nombre)
     }
 
     private fun setupListeners() {
         binding.irAClasesButton.setOnClickListener {
-            try {
-                if (rolActual.isEmpty()) {
-                    Toast.makeText(this, "Cargando tu perfil...", Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-                if (rolActual == "docente") {
-                    startActivity(
-                        Intent(
-                            this,
-                            cl.duocuc.aulaviva.presentation.ui.clases.ListaClasesActivity::class.java
-                        )
-                    )
-                } else {
-                    startActivity(Intent(this, PanelAlumnoActivity::class.java))
-                }
-            } catch (ex: Exception) {
-                Toast.makeText(this, "No se pudo abrir el módulo", Toast.LENGTH_SHORT).show()
+            // La comprobación de rolActual.isEmpty() ya no es necesaria aquí
+            val targetActivity = if (rolActual == "docente") {
+                cl.duocuc.aulaviva.presentation.ui.clases.ListaClasesActivity::class.java
+            } else {
+                PanelAlumnoActivity::class.java // Asegúrate que esta clase exista
             }
+            startActivity(Intent(this, targetActivity))
         }
 
-        // 🎓 Botón NUEVO: Crear clase de prueba
         binding.crearClasePruebaButton.setOnClickListener {
             crearClaseDemostracion()
         }
 
-        // Botón para cerrar sesión con confirmación
         binding.logoutButton.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Cerrar sesión")
@@ -162,14 +144,11 @@ class PanelPrincipalActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * 🎓 Crea una clase de demostración con contenido rico
-     * Esto sirve para testing y para la defensa EV2
-     */
     private fun crearClaseDemostracion() {
+         // Se mantiene la misma lógica de antes
         AlertDialog.Builder(this)
             .setTitle("🎓 Clase de Demostración")
-            .setMessage("¿Quieres crear una clase de prueba con contenido educativo completo?\n\nIncluye:\n• Material educativo rico\n• PDF simulado de Kotlin\n• Links a documentación\n• Listo para probar IA")
+            .setMessage("¿Quieres crear una clase de prueba con contenido educativo completo?")
             .setPositiveButton("Crear") { _, _ ->
                 lifecycleScope.launch {
                     val repository =

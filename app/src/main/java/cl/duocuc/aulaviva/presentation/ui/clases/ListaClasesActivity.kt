@@ -12,15 +12,12 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.presentation.adapter.ClaseAdapter
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 import com.google.android.material.datepicker.MaterialDatePicker
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -34,7 +31,6 @@ class ListaClasesActivity : AppCompatActivity() {
     // Estado temporal para selección de PDF en el diálogo
     private var tempPdfUri: String = ""
     private var tempPdfName: String = ""
-    private var isSaving: Boolean = false
 
     private val pickPdfLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -94,7 +90,9 @@ class ListaClasesActivity : AppCompatActivity() {
                 if (clases.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
         })
 
-        viewModel.isLoading.observe(this, Observer { _ -> })
+        viewModel.isLoading.observe(this, Observer { isLoading ->
+            // Aquí podrías mostrar un ProgressBar mientras se guarda
+        })
 
         viewModel.error.observe(this, Observer { error ->
             error?.let {
@@ -128,12 +126,6 @@ class ListaClasesActivity : AppCompatActivity() {
             dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.inputFechaClase)
         val btnSeleccionarPdf = dialogView.findViewById<Button>(R.id.btnSeleccionarPdf)
         val textPdfSeleccionado = dialogView.findViewById<TextView>(R.id.textPdfSeleccionado)
-        val layoutNombre =
-            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutNombreClase)
-        val layoutDescripcion =
-            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutDescripcionClase)
-        val layoutFecha =
-            dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutFechaClase)
         val btnGuardar = dialogView.findViewById<Button>(R.id.btnGuardarClase)
 
         // Reset estado PDF al abrir diálogo
@@ -172,67 +164,12 @@ class ListaClasesActivity : AppCompatActivity() {
         dialogView.findViewById<Button>(R.id.btnCancelar).setOnClickListener { dialog.dismiss() }
 
         btnGuardar.setOnClickListener {
-            if (isSaving) return@setOnClickListener
+            val nombre = inputNombre?.text?.toString() ?: ""
+            val descripcion = inputDescripcion?.text?.toString() ?: ""
+            val fecha = inputFecha?.text?.toString() ?: ""
 
-            val nombre = inputNombre?.text?.toString()?.trim() ?: ""
-            val descripcion = inputDescripcion?.text?.toString()?.trim() ?: ""
-            val fecha = inputFecha?.text?.toString()?.trim() ?: ""
-
-            var valid = true
-            if (nombre.isEmpty()) {
-                layoutNombre?.error = "El título es obligatorio"; valid = false
-            } else layoutNombre?.error = null
-            if (descripcion.isEmpty()) {
-                layoutDescripcion?.error = "La descripción es obligatoria"; valid = false
-            } else layoutDescripcion?.error = null
-            if (fecha.isEmpty()) {
-                layoutFecha?.error = "La fecha es obligatoria"; valid = false
-            } else layoutFecha?.error = null
-
-            if (valid) {
-                isSaving = true
-                btnGuardar.isEnabled = false
-
-                val nuevaClase = cl.duocuc.aulaviva.data.model.Clase(
-                    id = "",
-                    nombre = nombre,
-                    descripcion = descripcion,
-                    fecha = fecha,
-                    archivoPdfUrl = tempPdfUri,
-                    archivoPdfNombre = tempPdfName,
-                    creador = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
-                        ?: ""
-                )
-
-                val repository = cl.duocuc.aulaviva.data.repository.ClaseRepository(this)
-                repository.crearClaseAsync(
-                    clase = nuevaClase,
-                    onSuccess = {
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            Toast.makeText(
-                                this@ListaClasesActivity,
-                                "✅ Clase creada",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            dialog.dismiss()
-                            isSaving = false
-                            btnGuardar.isEnabled = true
-                            viewModel.sincronizarConFirestore()
-                        }
-                    },
-                    onError = { error ->
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            Toast.makeText(
-                                this@ListaClasesActivity,
-                                "Error: $error",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            isSaving = false
-                            btnGuardar.isEnabled = true
-                        }
-                    }
-                )
-            }
+            viewModel.crearClase(nombre, descripcion, fecha, tempPdfUri, tempPdfName)
+            dialog.dismiss() // Cierra el diálogo inmediatamente
         }
 
         dialog.show()
