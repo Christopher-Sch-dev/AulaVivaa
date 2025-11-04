@@ -139,6 +139,8 @@ class DetalleClaseActivity : AppCompatActivity() {
     // ---- IA Docente ----
     private fun generarIdeasParaClase() {
         val clase = claseActual ?: return
+        val pdfHint =
+            if (!clase.archivoPdfUrl.isNullOrEmpty() && clase.archivoPdfUrl.startsWith("http")) "\nEnlace PDF: ${clase.archivoPdfUrl}" else ""
         val loading =
             mostrarDialogoCarga("💡 Generando ideas...", "La IA está trabajando, por favor espera")
         lifecycleScope.launch(Dispatchers.IO) {
@@ -146,7 +148,7 @@ class DetalleClaseActivity : AppCompatActivity() {
                 val prompt = """
                     Eres un asistente educativo para docentes. Analiza esta clase y genera ideas creativas:
                     Título: ${clase.nombre}
-                    Descripción: ${clase.descripcion}
+                    Descripción: ${clase.descripcion}$pdfHint
                     Genera 5 ideas en lista numerada, máximo 2 líneas cada una.
                 """.trimIndent()
                 val resultado = iaRepository.generarRespuestaPersonalizada(prompt)

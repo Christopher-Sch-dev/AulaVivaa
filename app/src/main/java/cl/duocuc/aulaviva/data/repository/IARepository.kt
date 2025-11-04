@@ -12,6 +12,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 
 /**
@@ -22,11 +23,11 @@ class IARepository {
 
     private val GEMINI_API_KEY = "AIzaSyA6e4Wle5UkV93rOKIWm4FIKTQBDaOy8EY"
 
-    // ...existing code...
+    // Cliente HTTP configurado con timeouts y logging
     private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
         .addInterceptor(HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         })
@@ -50,7 +51,7 @@ class IARepository {
      */
     private suspend fun llamarGemini(prompt: String): String {
         return withContext(Dispatchers.IO) {
-            withTimeout(40000L) {
+            withTimeout(60000L) {
                 var intento = 0
                 var ultimoError: Exception? = null
                 val maxIntentos = 3
@@ -60,7 +61,7 @@ class IARepository {
                         val request = GeminiRequest(
                             contents = listOf(Content(parts = listOf(Part(text = prompt)))),
                             generationConfig = GenerationConfig(
-                                temperature = 0.6f, topK = 40, topP = 0.9f, maxOutputTokens = 2048
+                                temperature = 0.6f, topK = 40, topP = 0.9f, maxOutputTokens = 4096
                             )
                         )
 
@@ -77,15 +78,26 @@ class IARepository {
                             if (!text.isNullOrBlank()) return@withTimeout text
                             throw Exception("Respuesta vacía de Gemini")
                         } else {
-                            throw Exception("HTTP ${response.code()}: ${response.message()}")
+                            val code = response.code()
+                            throw Exception("HTTP $code: ${response.message()}")
                         }
                     } catch (e: Exception) {
                         ultimoError = e
                         intento++
-                        if (intento < maxIntentos) {
-                            // backoff simple
+                        if (intento < maxIntentos && (e is SocketTimeoutException || e.message?.contains(
+                                "HTTP 503"
+                            ) == true || e.message?.contains("HTTP 504") == true || e.message?.contains(
+                                "vacía"
+                            ) == true)
+                        ) {
                             try {
-                                Thread.sleep(500L * intento)
+                                Thread.sleep((800L * intento))
+                            } catch (_: InterruptedException) {
+                            }
+                            continue
+                        } else if (intento < maxIntentos) {
+                            try {
+                                Thread.sleep(400L)
                             } catch (_: InterruptedException) {
                             }
                             continue
