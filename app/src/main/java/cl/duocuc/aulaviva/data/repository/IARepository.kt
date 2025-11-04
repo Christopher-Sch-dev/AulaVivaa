@@ -50,44 +50,76 @@ class IARepository {
      */
     private suspend fun llamarGemini(prompt: String): String {
         return withContext(Dispatchers.IO) {
-            withTimeout(30000L) {
-                try {
-                    // Construir request según docs oficiales
-                    val request = GeminiRequest(
-                        contents = listOf(
-                            Content(
-                                parts = listOf(
-                                    Part(text = prompt)
-                                )
+            withTimeout(40000L) {
+                var intento = 0
+                var ultimoError: Exception? = null
+                val maxIntentos = 3
+                while (intento < maxIntentos) {
+                    try {
+                        // Construir request según docs oficiales
+                        val request = GeminiRequest(
+                            contents = listOf(Content(parts = listOf(Part(text = prompt)))),
+                            generationConfig = GenerationConfig(
+                                temperature = 0.6f, topK = 40, topP = 0.9f, maxOutputTokens = 2048
                             )
-                        ),
-                        generationConfig = GenerationConfig(
-                            temperature = 0.7f,
-                            topK = 40,
-                            topP = 0.95f,
-                            maxOutputTokens = 1024
                         )
-                    )
 
-                    // Hacer petición
-                    val response = geminiService.generateContent(GEMINI_API_KEY, request)
+                        // Hacer petición
+                        val response = geminiService.generateContent(GEMINI_API_KEY, request)
 
-                    if (response.isSuccessful) {
-                        // Extraer texto de la respuesta
-                        val text = response.body()
-                            ?.candidates?.firstOrNull()
-                            ?.content?.parts?.firstOrNull()
-                            ?.text
+                        if (response.isSuccessful) {
+                            // Extraer texto de la respuesta
+                            val text = response.body()
+                                ?.candidates?.firstOrNull()
+                                ?.content?.parts?.firstOrNull()
+                                ?.text
 
-                        text ?: throw Exception("Respuesta vacía de Gemini")
-                    } else {
-                        throw Exception("HTTP ${response.code()}: ${response.message()}")
+                            if (!text.isNullOrBlank()) return@withTimeout text
+                            throw Exception("Respuesta vacía de Gemini")
+                        } else {
+                            throw Exception("HTTP ${response.code()}: ${response.message()}")
+                        }
+                    } catch (e: Exception) {
+                        ultimoError = e
+                        intento++
+                        if (intento < maxIntentos) {
+                            // backoff simple
+                            try {
+                                Thread.sleep(500L * intento)
+                            } catch (_: InterruptedException) {
+                            }
+                            continue
+                        } else {
+                            throw Exception("Error Gemini: ${e.message}")
+                        }
                     }
-                } catch (e: Exception) {
-                    throw Exception("Error Gemini: ${e.message}")
                 }
+                throw Exception("Error Gemini: ${ultimoError?.message ?: "Desconocido"}")
             }
         }
+    }
+
+    fun markdownToHtml(md: String): String {
+        var html = md
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        // Encabezados
+        html = html
+            .replace(Regex("""^# (.*)$""", RegexOption.MULTILINE), "<h1>$1</h1>")
+            .replace(Regex("""^## (.*)$""", RegexOption.MULTILINE), "<h2>$1</h2>")
+            .replace(Regex("""^### (.*)$""", RegexOption.MULTILINE), "<h3>$1</h3>")
+        // Bullets y listas numeradas
+        html = html
+            .replace(Regex("""^-\s+(.*)$""", RegexOption.MULTILINE), "<br/>• $1")
+            .replace(Regex("""^\d+\.\s+(.*)$""", RegexOption.MULTILINE), "<br/>$0")
+        // Negrita e itálica
+        html = html
+            .replace(Regex("""\*\*(.*?)\*\*"""), "<b>$1</b>")
+            .replace(Regex("""\*(.*?)\*"""), "<i>$1</i>")
+        // Saltos de línea
+        html = html.replace("\n", "<br/>")
+        return "<html><head><meta charset='utf-8'/></head><body style='font-family:sans-serif;padding:12px'>$html</body></html>"
     }
 
     /**
@@ -97,14 +129,7 @@ class IARepository {
         return try {
             llamarGemini(prompt)
         } catch (e: Exception) {
-            """
-            ⚠️ Error al conectar con Gemini AI
-            
-            No se pudo procesar tu solicitud en este momento.
-            Por favor, verifica tu conexión a internet.
-            
-            Error: ${e.message?.take(150) ?: "Desconocido"}
-            """.trimIndent()
+            "⚠️ Error al conectar con Gemini AI\n\n${e.message?.take(200) ?: "Desconocido"}"
         }
     }
 

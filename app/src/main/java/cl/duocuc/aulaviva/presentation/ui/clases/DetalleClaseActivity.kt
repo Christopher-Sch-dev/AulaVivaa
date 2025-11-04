@@ -128,7 +128,12 @@ class DetalleClaseActivity : AppCompatActivity() {
             intent.flags = Intent.FLAG_ACTIVITY_NO_HISTORY
             startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(this, "No se puede abrir el PDF", Toast.LENGTH_SHORT).show()
+            try {
+                val gview = "https://docs.google.com/gview?embedded=1&url=" + Uri.encode(url)
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(gview)))
+            } catch (_: Exception) {
+                Toast.makeText(this, "No se puede abrir el PDF", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -142,19 +147,11 @@ class DetalleClaseActivity : AppCompatActivity() {
     }
 
     private fun mostrarResultadoIA(titulo: String, contenido: String) {
-        AlertDialog.Builder(this)
-            .setTitle(titulo)
-            .setMessage(contenido)
-            .setPositiveButton("Listo", null)
-            .setNeutralButton("Compartir") { _, _ ->
-                val compartirIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_SUBJECT, titulo)
-                    putExtra(Intent.EXTRA_TEXT, "$titulo\n\n$contenido\n\nGenerado por Aula Viva 🤖")
-                }
-                startActivity(Intent.createChooser(compartirIntent, "Compartir"))
-            }
-            .show()
+        val intent =
+            Intent(this, cl.duocuc.aulaviva.presentation.ui.ia.ResultadoIAActivity::class.java)
+        intent.putExtra("TITULO", titulo)
+        intent.putExtra("CONTENIDO", contenido)
+        startActivity(intent)
     }
 
     // ---- IA Docente ----
