@@ -59,9 +59,6 @@ captures/
 .externalNativeBuild
 .cxx/
 
-# Google Services (e.g. APIs or Firebase)
-# Uncomment this line if you want to protect your Firebase credentials
-google-services.json
 
 # Freeline
 freeline.py
