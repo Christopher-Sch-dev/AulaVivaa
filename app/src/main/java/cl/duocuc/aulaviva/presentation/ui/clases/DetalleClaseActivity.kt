@@ -116,6 +116,9 @@ class DetalleClaseActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnSugerirActividades)?.setOnClickListener { sugerirActividades() }
         findViewById<Button>(R.id.btnEstructurarClase)?.setOnClickListener { estructurarClasePorTiempo() }
         findViewById<Button>(R.id.btnAnalizarPdf)?.setOnClickListener { analizarPdfConIA() }
+        findViewById<Button>(R.id.btnResumirPdf)?.setOnClickListener { resumirContenidoPdf() }
+        findViewById<Button>(R.id.btnReordenarTemas)?.setOnClickListener { reordenarTemasParaClase() }
+        findViewById<Button>(R.id.btnIdeasDocentePdf)?.setOnClickListener { ideasDocenteBasadasEnPdf() }
     }
 
     private fun abrirPdf(url: String) {
@@ -274,6 +277,100 @@ class DetalleClaseActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     loading.dismiss(); mostrarResultadoIA(
                     "📄 Análisis del material PDF",
+                    resultado
+                )
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    loading.dismiss(); Toast.makeText(
+                    this@DetalleClaseActivity,
+                    e.message,
+                    Toast.LENGTH_SHORT
+                ).show()
+                }
+            }
+        }
+    }
+
+    private fun resumirContenidoPdf() {
+        val clase = claseActual ?: return
+        val loading = mostrarDialogoCarga(
+            "📝 Resumiendo contenido...",
+            "La IA está trabajando, por favor espera"
+        )
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val prompt = """
+                    Eres un asistente docente. Resume los puntos clave del material de esta clase.
+                    Título: ${clase.nombre}
+                    Descripción: ${clase.descripcion}
+                    Si hay PDF: ${clase.archivoPdfNombre}. Resume en 5-7 bullets claros.
+                """.trimIndent()
+                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
+                withContext(Dispatchers.Main) {
+                    loading.dismiss(); mostrarResultadoIA(
+                    "📝 Resumen del contenido",
+                    resultado
+                )
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    loading.dismiss(); Toast.makeText(
+                    this@DetalleClaseActivity,
+                    e.message,
+                    Toast.LENGTH_SHORT
+                ).show()
+                }
+            }
+        }
+    }
+
+    private fun reordenarTemasParaClase() {
+        val clase = claseActual ?: return
+        val loading =
+            mostrarDialogoCarga("🧩 Reordenando temas...", "La IA está trabajando, por favor espera")
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val prompt = """
+                    Eres experto en didáctica. Reordena los temas del contenido para presentarlos en clase de forma progresiva.
+                    Título: ${clase.nombre}
+                    Descripción: ${clase.descripcion}
+                    Lista los bloques en orden lógico con breve objetivo.
+                """.trimIndent()
+                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
+                withContext(Dispatchers.Main) {
+                    loading.dismiss(); mostrarResultadoIA(
+                    "🧩 Secuencia didáctica (orden sugerido)",
+                    resultado
+                )
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    loading.dismiss(); Toast.makeText(
+                    this@DetalleClaseActivity,
+                    e.message,
+                    Toast.LENGTH_SHORT
+                ).show()
+                }
+            }
+        }
+    }
+
+    private fun ideasDocenteBasadasEnPdf() {
+        val clase = claseActual ?: return
+        val loading =
+            mostrarDialogoCarga("🎓 Generando ideas...", "La IA está trabajando, por favor espera")
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val prompt = """
+                    Eres docente con foco en aprendizaje activo. Usando el contenido de la clase y el PDF (${clase.archivoPdfNombre}),
+                    genera ideas de: 1) cómo iniciar la clase, 2) actividades interactivas, 3) cierre/reflexión.
+                    Da 3 ideas por sección, en bullets.
+                """.trimIndent()
+                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
+                withContext(Dispatchers.Main) {
+                    loading.dismiss(); mostrarResultadoIA(
+                    "🎓 Ideas para dictar la clase (con PDF)",
                     resultado
                 )
                 }

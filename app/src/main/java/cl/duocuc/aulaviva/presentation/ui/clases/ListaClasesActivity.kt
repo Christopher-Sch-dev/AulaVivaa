@@ -1,10 +1,13 @@
 package cl.duocuc.aulaviva.presentation.ui.clases
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -15,13 +18,47 @@ import androidx.recyclerview.widget.RecyclerView
 import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.presentation.adapter.ClaseAdapter
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
+import com.google.android.material.datepicker.MaterialDatePicker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
 
 class ListaClasesActivity : AppCompatActivity() {
 
     private val viewModel: ClaseViewModel by viewModels()
     private lateinit var adapter: ClaseAdapter
+
+    // Estado temporal para selección de PDF en el diálogo
+    private var tempPdfUri: String = ""
+    private var tempPdfName: String = ""
+    private var isSaving: Boolean = false
+
+    private val pickPdfLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+            uri?.let {
+                contentResolver.takePersistableUriPermission(
+                    it,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                tempPdfUri = it.toString()
+                // Obtener nombre del archivo
+                var displayName = "archivo.pdf"
+                contentResolver.query(it, null, null, null, null)?.use { cursor ->
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (cursor.moveToFirst() && nameIndex != -1) {
+                        displayName = cursor.getString(nameIndex)
+                    }
+                }
+                tempPdfName = displayName
+                // Actualizo texto si el diálogo está visible
+                currentPdfTextView?.text = displayName
+            }
+        }
+
+    private var currentPdfTextView: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,22 +134,46 @@ class ListaClasesActivity : AppCompatActivity() {
             dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutDescripcionClase)
         val layoutFecha =
             dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutFechaClase)
+        val btnGuardar = dialogView.findViewById<Button>(R.id.btnGuardarClase)
 
-        val pdfNombreSeleccionado = ""
-        val pdfUrlSeleccionada = ""
+        // Reset estado PDF al abrir diálogo
+        tempPdfUri = ""
+        tempPdfName = ""
+        currentPdfTextView = textPdfSeleccionado
+
+        // Fecha: abrir selector y formatear dd/MM/yyyy
+        inputFecha?.isFocusable = false
+        inputFecha?.isClickable = true
+        val datePicker = MaterialDatePicker.Builder.datePicker()
+            .setTitleText("Selecciona la fecha")
+            .build()
+        inputFecha?.setOnClickListener {
+            datePicker.show(supportFragmentManager, "DATE_PICKER")
+        }
+        datePicker.addOnPositiveButtonClickListener { selection ->
+            try {
+                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                cal.timeInMillis = selection
+                inputFecha?.setText(sdf.format(cal.time))
+            } catch (_: Exception) {
+            }
+        }
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .create()
 
         btnSeleccionarPdf.setOnClickListener {
-            textPdfSeleccionado.text = "Función de subir PDF próximamente"
-            Toast.makeText(this, "Función de subir PDF próximamente", Toast.LENGTH_SHORT).show()
+            currentPdfTextView = textPdfSeleccionado
+            pickPdfLauncher.launch(arrayOf("application/pdf"))
         }
 
         dialogView.findViewById<Button>(R.id.btnCancelar).setOnClickListener { dialog.dismiss() }
 
-        dialogView.findViewById<Button>(R.id.btnGuardarClase).setOnClickListener {
+        btnGuardar.setOnClickListener {
+            if (isSaving) return@setOnClickListener
+
             val nombre = inputNombre?.text?.toString()?.trim() ?: ""
             val descripcion = inputDescripcion?.text?.toString()?.trim() ?: ""
             val fecha = inputFecha?.text?.toString()?.trim() ?: ""
@@ -129,13 +190,16 @@ class ListaClasesActivity : AppCompatActivity() {
             } else layoutFecha?.error = null
 
             if (valid) {
+                isSaving = true
+                btnGuardar.isEnabled = false
+
                 val nuevaClase = cl.duocuc.aulaviva.data.model.Clase(
                     id = "",
                     nombre = nombre,
                     descripcion = descripcion,
                     fecha = fecha,
-                    archivoPdfUrl = pdfUrlSeleccionada,
-                    archivoPdfNombre = pdfNombreSeleccionado,
+                    archivoPdfUrl = tempPdfUri,
+                    archivoPdfNombre = tempPdfName,
                     creador = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
                         ?: ""
                 )
@@ -147,10 +211,12 @@ class ListaClasesActivity : AppCompatActivity() {
                         lifecycleScope.launch(Dispatchers.Main) {
                             Toast.makeText(
                                 this@ListaClasesActivity,
-                                "✅ Clase creada exitosamente",
+                                "✅ Clase creada",
                                 Toast.LENGTH_SHORT
                             ).show()
                             dialog.dismiss()
+                            isSaving = false
+                            btnGuardar.isEnabled = true
                             viewModel.sincronizarConFirestore()
                         }
                     },
@@ -161,6 +227,8 @@ class ListaClasesActivity : AppCompatActivity() {
                                 "Error: $error",
                                 Toast.LENGTH_SHORT
                             ).show()
+                            isSaving = false
+                            btnGuardar.isEnabled = true
                         }
                     }
                 )

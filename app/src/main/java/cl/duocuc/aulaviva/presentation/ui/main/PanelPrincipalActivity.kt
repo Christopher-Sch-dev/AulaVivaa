@@ -60,22 +60,21 @@ class PanelPrincipalActivity : AppCompatActivity() {
             .addOnSuccessListener { documento ->
                 if (documento.exists()) {
                     val email = documento.getString("email") ?: "Usuario"
-                    val rol = documento.getString("rol") ?: "alumno"
-                    rolActual = rol
+                    val rolBruto = documento.getString("rol") ?: "alumno"
+                    val rolNormalized = rolBruto.trim().lowercase()
+                    rolActual = if (rolNormalized.contains("doc")) "docente" else "alumno"
 
-                    // Personalizo el mensaje según el rol y email
-                    val emoji = if (rol == "docente") "👨‍🏫" else "🎓"
+                    val emoji = if (rolActual == "docente") "👨‍🏫" else "🎓"
                     val nombreCorto = email.substringBefore("@")
-                    val mensaje = if (rol == "docente") {
+                    val mensaje = if (rolActual == "docente") {
                         "Bienvenido Profesor $nombreCorto"
                     } else {
                         "Bienvenido Estudiante $nombreCorto"
                     }
                     binding.bienvenidaTextView.text = "$emoji $mensaje"
 
-                    // Botón principal se ajusta por rol
                     binding.irAClasesButton.text =
-                        if (rol == "docente") "📊 Gestionar clases" else "📚 Ver clases"
+                        if (rolActual == "docente") "📊 Gestionar clases" else "📚 Ver clases"
                 }
             }
             .addOnFailureListener { e ->

@@ -293,8 +293,8 @@ class ClaseRepository(context: Context) {
                     Material incluido: Guía completa en PDF con ejemplos prácticos.
                 """.trimIndent(),
                 fecha = "Lunes 4 de Noviembre, 14:00hrs",
-                archivoPdfUrl = "",
-                archivoPdfNombre = "Guía_Kotlin_Android.pdf",
+                archivoPdfUrl = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+                archivoPdfNombre = "Demo_Material_Kotlin.pdf",
                 creador = uid,
                 sincronizado = false
             )

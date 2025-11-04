@@ -199,5 +199,38 @@
             android:textColor="@android:color/white"
             android:visibility="gone" />
 
+        <!-- Botón: Resumir contenido PDF -->
+        <Button
+            android:id="@+id/btnResumirPdf"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:backgroundTint="#455A64"
+            android:text="📝 Resumir contenido del PDF"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white" />
+
+        <!-- Botón: Reordenar temas para la clase -->
+        <Button
+            android:id="@+id/btnReordenarTemas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:backgroundTint="#5D4037"
+            android:text="🧩 Reordenar temas para presentar"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white" />
+
+        <!-- Botón: Ideas para docente en base al PDF -->
+        <Button
+            android:id="@+id/btnIdeasDocentePdf"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:backgroundTint="#303F9F"
+            android:text="🎓 Ideas para dictar la clase (con PDF)"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white" />
+
     </LinearLayout>
 </ScrollView>
