@@ -51,18 +51,34 @@ class PanelPrincipalActivity : AppCompatActivity() {
     /**
      * Carga los datos del usuario desde Firestore y personaliza la UI.
      * Muestra el rol (docente/alumno) y adapta las opciones disponibles.
+     *
+     * ✅ Ahora con mejor manejo de errores y feedback al usuario
      */
     private fun cargarDatosUsuario() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            Log.e("PanelPrincipal", "❌ UID es null - Usuario no autenticado")
+            Toast.makeText(this, "Error: Usuario no autenticado", Toast.LENGTH_LONG).show()
+            // Redirigir al login
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+
         val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        Log.d("PanelPrincipal", "🔄 Cargando datos para UID: $uid")
 
         firestore.collection("usuarios").document(uid).get()
             .addOnSuccessListener { documento ->
+                Log.d("PanelPrincipal", "✅ Documento obtenido: ${documento.exists()}")
+
                 if (documento.exists()) {
                     val email = documento.getString("email") ?: "Usuario"
                     val rolBruto = documento.getString("rol") ?: "alumno"
                     val rolNormalized = rolBruto.trim().lowercase()
                     rolActual = if (rolNormalized.contains("doc")) "docente" else "alumno"
+
+                    Log.d("PanelPrincipal", "✅ Rol cargado: $rolActual (original: $rolBruto)")
 
                     val emoji = if (rolActual == "docente") "👨‍🏫" else "🎓"
                     val nombreCorto = email.substringBefore("@")
@@ -75,11 +91,27 @@ class PanelPrincipalActivity : AppCompatActivity() {
 
                     binding.irAClasesButton.text =
                         if (rolActual == "docente") "📊 Gestionar clases" else "📚 Ver clases"
+                } else {
+                    Log.w("PanelPrincipal", "⚠️ Documento no existe para UID: $uid")
+                    Toast.makeText(
+                        this,
+                        "Usuario no encontrado en la base de datos",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    // Usar rol por defecto
+                    rolActual = "alumno"
                 }
             }
             .addOnFailureListener { e ->
-                Log.w("PanelPrincipal", "Error cargando usuario", e)
+                Log.e("PanelPrincipal", "❌ Error cargando usuario: ${e.message}", e)
+                Toast.makeText(
+                    this,
+                    "Error de conexión: ${e.message?.take(100)}",
+                    Toast.LENGTH_LONG
+                ).show()
                 binding.bienvenidaTextView.text = "¡Bienvenido!"
+                // Usar rol por defecto para que la app no se quede bloqueada
+                rolActual = "alumno"
             }
     }
 
@@ -122,9 +154,19 @@ class PanelPrincipalActivity : AppCompatActivity() {
         binding.irAClasesButton.setOnClickListener {
             try {
                 if (rolActual.isEmpty()) {
-                    Toast.makeText(this, "Cargando tu perfil...", Toast.LENGTH_SHORT).show()
+                    Log.w("PanelPrincipal", "⚠️ Rol vacío al hacer clic - Esperando carga...")
+                    Toast.makeText(
+                        this,
+                        "⏳ Cargando tu perfil... Intenta de nuevo en un momento",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    // Intentar recargar datos
+                    cargarDatosUsuario()
                     return@setOnClickListener
                 }
+
+                Log.d("PanelPrincipal", "✅ Navegando con rol: $rolActual")
+
                 if (rolActual == "docente") {
                     startActivity(
                         Intent(
@@ -136,6 +178,7 @@ class PanelPrincipalActivity : AppCompatActivity() {
                     startActivity(Intent(this, PanelAlumnoActivity::class.java))
                 }
             } catch (ex: Exception) {
+                Log.e("PanelPrincipal", "❌ Error abriendo módulo: ${ex.message}", ex)
                 Toast.makeText(this, "No se pudo abrir el módulo", Toast.LENGTH_SHORT).show()
             }
         }
@@ -165,31 +208,56 @@ class PanelPrincipalActivity : AppCompatActivity() {
     /**
      * 🎓 Crea una clase de demostración con contenido rico
      * Esto sirve para testing y para la defensa EV2
+     *
+     * ✅ Ahora con mejor logging y manejo de errores
      */
     private fun crearClaseDemostracion() {
+        if (rolActual.isEmpty()) {
+            Toast.makeText(
+                this,
+                "⏳ Espera a que se cargue tu perfil...",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
         AlertDialog.Builder(this)
             .setTitle("🎓 Clase de Demostración")
             .setMessage("¿Quieres crear una clase de prueba con contenido educativo completo?\n\nIncluye:\n• Material educativo rico\n• PDF simulado de Kotlin\n• Links a documentación\n• Listo para probar IA")
             .setPositiveButton("Crear") { _, _ ->
+                Log.d("PanelPrincipal", "🔄 Creando clase demo...")
+                Toast.makeText(this, "⏳ Creando clase demo...", Toast.LENGTH_SHORT).show()
+
                 lifecycleScope.launch {
-                    val repository =
-                        cl.duocuc.aulaviva.data.repository.ClaseRepository(this@PanelPrincipalActivity)
-                    repository.crearClaseDePrueba(
-                        onSuccess = {
-                            Toast.makeText(
-                                this@PanelPrincipalActivity,
-                                "✅ Clase de prueba creada! Ve a 'Ver clases'",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        },
-                        onError = { error ->
-                            Toast.makeText(
-                                this@PanelPrincipalActivity,
-                                "Error: $error",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    )
+                    try {
+                        val repository =
+                            cl.duocuc.aulaviva.data.repository.ClaseRepository(this@PanelPrincipalActivity)
+                        repository.crearClaseDePrueba(
+                            onSuccess = {
+                                Log.d("PanelPrincipal", "✅ Clase demo creada exitosamente")
+                                Toast.makeText(
+                                    this@PanelPrincipalActivity,
+                                    "✅ Clase de prueba creada! Ve a 'Gestionar clases'",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            },
+                            onError = { error ->
+                                Log.e("PanelPrincipal", "❌ Error creando clase demo: $error")
+                                Toast.makeText(
+                                    this@PanelPrincipalActivity,
+                                    "❌ Error: $error",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        )
+                    } catch (e: Exception) {
+                        Log.e("PanelPrincipal", "❌ Excepción creando clase demo", e)
+                        Toast.makeText(
+                            this@PanelPrincipalActivity,
+                            "❌ Error inesperado: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
             }
             .setNegativeButton("Cancelar", null)

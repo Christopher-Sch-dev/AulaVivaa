@@ -1,0 +1,23 @@
+## ⚠️ ARCHIVO DE CONFIGURACIÓN LOCAL
+## Este archivo NO se sube a Git (está en .gitignore)
+## Cada persona debe crearlo en su PC
+
+# Ruta del SDK de Android
+# IMPORTANTE: Ajusta esta ruta según tu instalación
+#
+# Windows (común):
+sdk.dir=C\:\\Users\\TU_USUARIO\\AppData\\Local\\Android\\Sdk
+#
+# Otra ubicación común:
+# sdk.dir=C\:\\Android\\Sdk
+# sdk.dir=E\:\\SDK
+
+# API Key de Gemini AI (OBLIGATORIA para funcionalidad de IA)
+# ✅ Esta key está configurada para el proyecto AulaViva
+GEMINI_API_KEY=AIzaSyA6e4Wle5UkV93rOKIWm4FIKTQBDaOy8EY
+
+## INSTRUCCIONES:
+## 1. Copia este archivo y renómbralo a: local.properties
+## 2. Ajusta la ruta sdk.dir a la de TU PC
+## 3. Mantén la GEMINI_API_KEY tal cual
+## 4. NO subas este archivo a Git (ya está en .gitignore)

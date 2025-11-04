@@ -60,8 +60,9 @@ captures/
 .cxx/
 
 # Google Services (e.g. APIs or Firebase)
-# Uncomment this line if you want to protect your Firebase credentials
-google-services.json
+# ✅ IMPORTANTE: google-services.json DEBE subirse al repo para que funcione en todos los PCs
+# Comentado para que Firebase funcione en DUOC
+# google-services.json
 
 # Freeline
 freeline.py

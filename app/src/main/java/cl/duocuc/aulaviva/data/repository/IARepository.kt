@@ -1,5 +1,6 @@
 package cl.duocuc.aulaviva.data.repository
 
+import cl.duocuc.aulaviva.BuildConfig
 import cl.duocuc.aulaviva.data.remote.Content
 import cl.duocuc.aulaviva.data.remote.GeminiApiService
 import cl.duocuc.aulaviva.data.remote.GeminiRequest
@@ -18,10 +19,13 @@ import java.util.concurrent.TimeUnit
 /**
  * 🤖 GEMINI AI con Retrofit - PROFESIONAL Y RÁPIDO
  * Modelo: gemini-2.5-flash (vigente octubre 2025)
+ *
+ * ✅ API Key cargada desde BuildConfig (portable entre PCs)
  */
 class IARepository {
 
-    private val GEMINI_API_KEY = "AIzaSyA6e4Wle5UkV93rOKIWm4FIKTQBDaOy8EY"
+    // ✅ API Key cargada desde local.properties vía BuildConfig
+    private val GEMINI_API_KEY = BuildConfig.GEMINI_API_KEY
 
     // Cliente HTTP configurado con timeouts y logging
     private val okHttpClient = OkHttpClient.Builder()
