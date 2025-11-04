@@ -27,6 +27,7 @@
               <option value="bf291ee8-3091-42df-b190-8a21c5925add" />
               <option value="4c5c696d-b465-463b-ab9c-1bd82d8308b0" />
               <option value="02c5f4eb-c0a0-4993-8297-ebfda794d164" />
+              <option value="89f70dd4-f645-41a1-8719-c024938c49bc" />
             </set>
           </value>
         </entry>
@@ -129,6 +130,7 @@
           <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/local/AppDatabase.kt" />
           <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/ia/ResultadoIAActivity.kt" />
           <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_resultado_ia.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/pdf/PdfViewerActivity.kt" />
         </set>
       </entry>
       <entry key="5a16e508-12d9-40d8-95e6-9be5a922e9c8">
