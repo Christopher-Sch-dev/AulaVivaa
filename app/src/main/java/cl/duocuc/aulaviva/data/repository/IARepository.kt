@@ -127,7 +127,8 @@ class IARepository {
      */
     suspend fun generarRespuestaPersonalizada(prompt: String): String {
         return try {
-            llamarGemini(prompt)
+            val res = llamarGemini(prompt)
+            if (res.contains("ESTE FUE GEMINI REAL BRO e.e")) res else "$res\n\n— ESTE FUE GEMINI REAL BRO e.e"
         } catch (e: Exception) {
             "⚠️ Error al conectar con Gemini AI\n\n${e.message?.take(200) ?: "Desconocido"}"
         }

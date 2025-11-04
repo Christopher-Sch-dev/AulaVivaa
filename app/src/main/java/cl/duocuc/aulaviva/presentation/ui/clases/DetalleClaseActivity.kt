@@ -105,11 +105,39 @@ class DetalleClaseActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnVerPdf)?.setOnClickListener {
             val url = claseActual?.archivoPdfUrl
-            if (!url.isNullOrEmpty()) abrirPdf(url) else Toast.makeText(
-                this,
-                "PDF no disponible",
-                Toast.LENGTH_SHORT
-            ).show()
+            if (!url.isNullOrEmpty()) {
+                abrirPdf(url)
+            } else {
+                // Intento recuperar desde Firestore por si la URL no fue sincronizada
+                val id = claseActual?.id ?: return@setOnClickListener
+                FirebaseFirestore.getInstance().collection("clases").document(id).get()
+                    .addOnSuccessListener { doc ->
+                        val urlFs = doc.getString("archivoPdfUrl").orEmpty()
+                        if (urlFs.isNotEmpty()) {
+                            // Actualizo en memoria y Room
+                            claseActual = claseActual?.copy(archivoPdfUrl = urlFs)
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                val repo = claseRepository
+                                repo.actualizarClase(
+                                    claseId = id,
+                                    nombre = claseActual?.nombre ?: "",
+                                    descripcion = claseActual?.descripcion ?: "",
+                                    fecha = claseActual?.fecha ?: "",
+                                    archivoPdfUrl = urlFs,
+                                    archivoPdfNombre = claseActual?.archivoPdfNombre ?: "",
+                                    onSuccess = {},
+                                    onError = {}
+                                )
+                            }
+                            abrirPdf(urlFs)
+                        } else {
+                            Toast.makeText(this, "PDF no disponible", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .addOnFailureListener {
+                        Toast.makeText(this, "PDF no disponible", Toast.LENGTH_SHORT).show()
+                    }
+            }
         }
 
         findViewById<Button>(R.id.btnGenerarIdeas)?.setOnClickListener { generarIdeasParaClase() }
