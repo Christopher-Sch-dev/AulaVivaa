@@ -46,6 +46,9 @@
         <activity
             android:name=".presentation.ui.ia.ResultadoIAActivity"
             android:exported="false" />
+        <activity
+            android:name=".presentation.ui.pdf.PdfViewerActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
