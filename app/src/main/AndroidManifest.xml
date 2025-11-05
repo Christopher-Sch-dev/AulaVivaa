@@ -5,8 +5,24 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Permiso para notificaciones en Android 13+ (Recurso Nativo) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Permisos para caché de PDFs (Android < 13) -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!-- Intent queries para buscar visores PDF (Android 11+) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/pdf" />
+        </intent>
+    </queries>
 
     <application
+        android:name=".AulaVivaApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -45,9 +61,6 @@
         </activity>
         <activity
             android:name=".presentation.ui.ia.ResultadoIAActivity"
-            android:exported="false" />
-        <activity
-            android:name=".presentation.ui.pdf.PdfViewerActivity"
             android:exported="false" />
     </application>
 

@@ -119,7 +119,7 @@ class RegisterActivity : AppCompatActivity() {
             if (valid) {
                 // Mostrar mensaje de confirmación con el rol seleccionado
                 Toast.makeText(this, "Registrando como $rol...", Toast.LENGTH_SHORT).show()
-                // Enviar datos al ViewModel para crear cuenta en Firebase
+                // Enviar datos al ViewModel para crear cuenta en Supabase
                 viewModel.register(email, password, rol)
             }
         }

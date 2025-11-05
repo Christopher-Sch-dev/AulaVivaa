@@ -8,7 +8,7 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.data.repository.ClaseRepository
-import com.google.firebase.auth.FirebaseAuth
+import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
 import kotlinx.coroutines.launch
 
 /**
@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 class ClaseViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = ClaseRepository(application.applicationContext)
-    private val uid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    private val uid = SupabaseAuthManager.getCurrentUserId() ?: ""
 
     // LiveData que lee directamente de Room usando Flow.
     // Cada vez que Room cambia, la UI se actualiza automáticamente.
@@ -40,14 +40,15 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
     val operationSuccess: LiveData<String?> = _operationSuccess
 
     /**
-     * Sincroniza clases desde Firestore a Room.
+     * Sincroniza clases desde Supabase a Room.
      * Esto se ejecuta al abrir la pantalla de clases.
      */
     fun sincronizarConFirestore() {
+        // Mantener nombre para compatibilidad, pero ahora usa Supabase
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                repository.sincronizarDesdeFirestore()
+                repository.sincronizarDesdeFirestore()  // Internamente usa Supabase
                 _isLoading.value = false
             } catch (_: Exception) {
                 _isLoading.value = false

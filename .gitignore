@@ -59,6 +59,10 @@ captures/
 .externalNativeBuild
 .cxx/
 
+# Google Services (e.g. APIs or Firebase)
+# ✅ IMPORTANTE: google-services.json DEBE subirse al repo para que funcione en todos los PCs
+# Comentado para que Firebase funcione en DUOC
+# google-services.json
 
 # Freeline
 freeline.py

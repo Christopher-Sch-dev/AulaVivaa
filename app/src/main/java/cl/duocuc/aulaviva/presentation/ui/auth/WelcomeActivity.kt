@@ -6,17 +6,16 @@ import android.view.animation.AnimationUtils
 import androidx.appcompat.app.AppCompatActivity
 import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.databinding.ActivityWelcomeBinding
-import com.google.firebase.auth.FirebaseAuth
 
 /**
  * WelcomeActivity - Pantalla de bienvenida inicial
- * 
+ *
  * Esta es la primera pantalla que ve el usuario al abrir la app.
  * Muestra 2 opciones principales:
  * - Iniciar Sesión (para usuarios que ya tienen cuenta)
  * - Crear Cuenta (para nuevos usuarios)
- * 
- * Si el usuario ya tiene una sesión activa en Firebase,
+ *
+ * Si el usuario ya tiene una sesión activa en Supabase,
  * esta pantalla se salta automáticamente y va directo al Panel Principal.
  */
 class WelcomeActivity : AppCompatActivity() {
@@ -28,41 +27,48 @@ class WelcomeActivity : AppCompatActivity() {
         binding = ActivityWelcomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Verificar si el usuario ya inició sesión antes
-        checkIfUserIsLoggedIn()
+        // NO verificar sesión automáticamente - forzar login manual
+        // checkIfUserIsLoggedIn()
 
         setupListeners()
         setupAnimations()
     }
 
     /**
-     * Verifica si hay una sesión activa en Firebase.
-     * Si el usuario ya está logueado, lo lleva directo al panel principal.
+     * DESHABILITADO: No auto-login para evitar usuarios sin rol
+     * Forzar login manual cada vez para verificar rol en tabla usuarios
      */
+    /*
     private fun checkIfUserIsLoggedIn() {
-        val currentUser = FirebaseAuth.getInstance().currentUser
-        if (currentUser != null) {
-            // Usuario ya tiene sesión activa, ir directo al panel
-            val intent = Intent(this, cl.duocuc.aulaviva.presentation.ui.main.PanelPrincipalActivity::class.java)
+        if (SupabaseAuthManager.isLoggedIn()) {
+            val intent = Intent(
+                this,
+                cl.duocuc.aulaviva.presentation.ui.main.PanelPrincipalActivity::class.java
+            )
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
             finish()
         }
     }
+    */
 
     private fun setupListeners() {
         // Botón "Iniciar Sesión" - Va a LoginActivity
         binding.btnSignIn.setOnClickListener {
             // Animación de feedback al tocar
             it.startAnimation(AnimationUtils.loadAnimation(this, R.anim.button_scale))
-            
+
             // Navegar a la pantalla de login
             val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
-            
+
             // Animación de transición entre pantallas
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, R.anim.slide_in_right, R.anim.slide_out_left)
+                overrideActivityTransition(
+                    OVERRIDE_TRANSITION_OPEN,
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left
+                )
             } else {
                 @Suppress("DEPRECATION")
                 overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
@@ -73,14 +79,18 @@ class WelcomeActivity : AppCompatActivity() {
         binding.btnSignUp.setOnClickListener {
             // Animación de feedback al tocar
             it.startAnimation(AnimationUtils.loadAnimation(this, R.anim.button_scale))
-            
+
             // Navegar a la pantalla de registro
             val intent = Intent(this, RegisterActivity::class.java)
             startActivity(intent)
-            
+
             // Animación de transición entre pantallas
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, R.anim.slide_in_right, R.anim.slide_out_left)
+                overrideActivityTransition(
+                    OVERRIDE_TRANSITION_OPEN,
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left
+                )
             } else {
                 @Suppress("DEPRECATION")
                 overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)

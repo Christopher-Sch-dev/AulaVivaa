@@ -6,10 +6,14 @@ import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.R
+import cl.duocuc.aulaviva.data.repository.AuthRepository
 import cl.duocuc.aulaviva.databinding.ActivityLoginBinding
+import cl.duocuc.aulaviva.presentation.ui.main.PanelAlumnoActivity
 import cl.duocuc.aulaviva.presentation.ui.main.PanelPrincipalActivity
 import cl.duocuc.aulaviva.presentation.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
@@ -18,6 +22,9 @@ class LoginActivity : AppCompatActivity() {
 
     // ViewModel usando delegado by viewModels()
     private val viewModel: AuthViewModel by viewModels()
+
+    // Repository para consultar rol
+    private val authRepository = AuthRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,14 +59,61 @@ class LoginActivity : AppCompatActivity() {
             if (success) {
                 Toast.makeText(this, "✓ Bienvenido!", Toast.LENGTH_SHORT).show()
 
-                // Pequeño delay para feedback visual
-                binding.root.postDelayed({
-                    val intent = Intent(this, PanelPrincipalActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
-                    @Suppress("DEPRECATION")
-                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                }, 400)
+                // Verificar rol y redirigir según corresponda
+                lifecycleScope.launch {
+                    try {
+                        val resultRol = authRepository.obtenerRolUsuario()
+
+                        val rol = resultRol.getOrNull() ?: "docente" // Default a docente si falla
+
+                        // Pequeño delay para feedback visual
+                        binding.root.postDelayed({
+                            val intent = when (rol.lowercase()) {
+                                "docente" -> Intent(
+                                    this@LoginActivity,
+                                    PanelPrincipalActivity::class.java
+                                )
+
+                                "alumno" -> Intent(
+                                    this@LoginActivity,
+                                    PanelAlumnoActivity::class.java
+                                )
+
+                                else -> Intent(
+                                    this@LoginActivity,
+                                    PanelPrincipalActivity::class.java
+                                ) // Default docente
+                            }
+
+                            intent.flags =
+                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
+                            @Suppress("DEPRECATION")
+                            overridePendingTransition(
+                                android.R.anim.fade_in,
+                                android.R.anim.fade_out
+                            )
+                            finish()
+                        }, 400)
+
+                    } catch (e: Exception) {
+                        // Error obteniendo rol - Permitir entrada con rol por defecto
+                        Toast.makeText(
+                            this@LoginActivity,
+                            "Accediendo como docente...",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                        binding.root.postDelayed({
+                            val intent =
+                                Intent(this@LoginActivity, PanelPrincipalActivity::class.java)
+                            intent.flags =
+                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
+                            finish()
+                        }, 400)
+                    }
+                }
             }
         }
     }
@@ -115,7 +169,7 @@ class LoginActivity : AppCompatActivity() {
 
             // Si los datos son válidos, intentar hacer login
             if (valid) {
-                viewModel.login(email, password) // Llama a Firebase para autenticar
+                viewModel.login(email, password) // Llama a Supabase para autenticar
             }
         }
     }

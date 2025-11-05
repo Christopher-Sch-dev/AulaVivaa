@@ -13,8 +13,6 @@ import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.data.repository.ClaseRepository
 import cl.duocuc.aulaviva.data.repository.IARepository
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -47,10 +45,8 @@ class DetalleClaseActivity : AppCompatActivity() {
     }
 
     private fun obtenerRolUsuario() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        FirebaseFirestore.getInstance().collection("usuarios").document(uid).get()
-            .addOnSuccessListener { doc -> rolActual = doc.getString("rol") ?: "alumno" }
-            .addOnFailureListener { rolActual = "alumno" }
+        // Por defecto todos los usuarios registrados son docentes
+        rolActual = "docente"
     }
 
     private fun cargarDatosClase(claseId: String) {
@@ -112,11 +108,20 @@ class DetalleClaseActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnIdeasDocentePdf)?.setOnClickListener { ideasDocenteBasadasEnPdf() }
     }
 
-    private fun abrirPdf(url: String) {
-        val intent =
-            Intent(this, cl.duocuc.aulaviva.presentation.ui.pdf.PdfViewerActivity::class.java)
-        intent.putExtra("PDF_URL", url)
-        startActivity(intent)
+    /**
+     * Abre PDF con el visor nativo del sistema usando PdfUtils.
+     * Solución centralizada y profesional.
+     */
+    private fun abrirPdf(pdfUrl: String) {
+        cl.duocuc.aulaviva.presentation.utils.PdfUtils.abrirPdfExterno(this, pdfUrl)
+    }
+
+    /**
+     * Fallback: Abre PDF en navegador (DEPRECADO - ahora maneja PdfUtils).
+     * Mantenido por compatibilidad pero ya no se usa directamente.
+     */
+    private fun abrirEnNavegador(pdfUrl: String) {
+        cl.duocuc.aulaviva.presentation.utils.PdfUtils.abrirPdfExterno(this, pdfUrl)
     }
 
     private fun mostrarDialogoCarga(titulo: String, mensaje: String): AlertDialog {
@@ -139,32 +144,23 @@ class DetalleClaseActivity : AppCompatActivity() {
     // ---- IA Docente ----
     private fun generarIdeasParaClase() {
         val clase = claseActual ?: return
-        val pdfHint =
-            if (!clase.archivoPdfUrl.isNullOrEmpty() && clase.archivoPdfUrl.startsWith("http")) "\nEnlace PDF: ${clase.archivoPdfUrl}" else ""
         val loading =
             mostrarDialogoCarga("💡 Generando ideas...", "La IA está trabajando, por favor espera")
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    Eres un asistente educativo para docentes. Analiza esta clase y genera ideas creativas:
-                    Título: ${clase.nombre}
-                    Descripción: ${clase.descripcion}$pdfHint
-                    Genera 5 ideas en lista numerada, máximo 2 líneas cada una.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "💡 Ideas para tu clase",
-                    resultado
+                val resultado = iaRepository.generarIdeasParaClase(
+                    clase.nombre,
+                    clase.descripcion,
+                    clase.archivoPdfUrl
                 )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("💡 Ideas para tu clase", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -178,26 +174,18 @@ class DetalleClaseActivity : AppCompatActivity() {
         )
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    Eres experto en pedagogía. Diseña 4 actividades dinámicas:
-                    Título: ${clase.nombre}
-                    Descripción: ${clase.descripcion}
-                    Para cada actividad: nombre, objetivo, duración, materiales.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "🎯 Actividades sugeridas",
-                    resultado
+                val resultado = iaRepository.sugerirActividades(
+                    clase.nombre,
+                    clase.descripcion
                 )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("🎯 Actividades sugeridas", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -216,26 +204,20 @@ class DetalleClaseActivity : AppCompatActivity() {
                 )
                 lifecycleScope.launch(Dispatchers.IO) {
                     try {
-                        val prompt = """
-                            Estructura esta clase de $duracion:
-                            Título: ${clase.nombre}
-                            Descripción: ${clase.descripcion}
-                            Divide en bloques con minutos exactos y actividades.
-                        """.trimIndent()
-                        val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                        withContext(Dispatchers.Main) {
-                            loading.dismiss(); mostrarResultadoIA(
-                            "⏱️ Estructura de $duracion",
-                            resultado
+                        val resultado = iaRepository.estructurarClasePorTiempo(
+                            clase.nombre,
+                            clase.descripcion,
+                            duracion
                         )
+                        withContext(Dispatchers.Main) {
+                            loading.dismiss()
+                            mostrarResultadoIA("⏱️ Estructura de $duracion", resultado)
                         }
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
-                            loading.dismiss(); Toast.makeText(
-                            this@DetalleClaseActivity,
-                            e.message,
-                            Toast.LENGTH_SHORT
-                        ).show()
+                            loading.dismiss()
+                            Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
                 }
@@ -250,24 +232,15 @@ class DetalleClaseActivity : AppCompatActivity() {
             mostrarDialogoCarga("📄 Analizando PDF...", "La IA está trabajando, por favor espera")
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    El docente tiene un PDF para: ${clase.nombre}
-                    Sugiere 3 formas de aprovechar el material en clase: lectura crítica, debate, práctica.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
+                val resultado = iaRepository.analizarPdfConIA(clase.nombre)
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "📄 Análisis del material PDF",
-                    resultado
-                )
+                    loading.dismiss()
+                    mostrarResultadoIA("📄 Análisis del material PDF", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -281,26 +254,19 @@ class DetalleClaseActivity : AppCompatActivity() {
         )
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    Eres un asistente docente. Resume los puntos clave del material de esta clase.
-                    Título: ${clase.nombre}
-                    Descripción: ${clase.descripcion}
-                    Si hay PDF: ${clase.archivoPdfNombre}. Resume en 5-7 bullets claros.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "📝 Resumen del contenido",
-                    resultado
+                val resultado = iaRepository.resumirContenidoPdf(
+                    clase.nombre,
+                    clase.descripcion,
+                    clase.archivoPdfNombre ?: "Material educativo"
                 )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("📝 Resumen del contenido", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -309,29 +275,24 @@ class DetalleClaseActivity : AppCompatActivity() {
     private fun reordenarTemasParaClase() {
         val clase = claseActual ?: return
         val loading =
-            mostrarDialogoCarga("🧩 Reordenando temas...", "La IA está trabajando, por favor espera")
+            mostrarDialogoCarga(
+                "🎤 Preparando presentación...",
+                "La IA está trabajando, por favor espera"
+            )
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    Eres experto en didáctica. Reordena los temas del contenido para presentarlos en clase de forma progresiva.
-                    Título: ${clase.nombre}
-                    Descripción: ${clase.descripcion}
-                    Lista los bloques en orden lógico con breve objetivo.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "🧩 Secuencia didáctica (orden sugerido)",
-                    resultado
+                val resultado = iaRepository.generarGuiaPresentacion(
+                    clase.nombre,
+                    clase.descripcion
                 )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("🎤 Guía de Presentación", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -340,28 +301,25 @@ class DetalleClaseActivity : AppCompatActivity() {
     private fun ideasDocenteBasadasEnPdf() {
         val clase = claseActual ?: return
         val loading =
-            mostrarDialogoCarga("🎓 Generando ideas...", "La IA está trabajando, por favor espera")
+            mostrarDialogoCarga(
+                "🎮 Creando actividades...",
+                "La IA está trabajando, por favor espera"
+            )
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    Eres docente con foco en aprendizaje activo. Usando el contenido de la clase y el PDF (${clase.archivoPdfNombre}),
-                    genera ideas de: 1) cómo iniciar la clase, 2) actividades interactivas, 3) cierre/reflexión.
-                    Da 3 ideas por sección, en bullets.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "🎓 Ideas para dictar la clase (con PDF)",
-                    resultado
+                val resultado = iaRepository.generarActividadesInteractivas(
+                    clase.nombre,
+                    clase.descripcion,
+                    clase.archivoPdfNombre
                 )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("🎮 Actividades Interactivas", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -369,27 +327,22 @@ class DetalleClaseActivity : AppCompatActivity() {
 
     private fun intentarAbrirPdfFijo() {
         val clase = claseActual ?: return
-        // 1) URL local
-        if (!clase.archivoPdfUrl.isNullOrEmpty()) {
-            abrirPdf(clase.archivoPdfUrl); return
+
+        // 1) Si tiene URL local válida, abrir directamente
+        if (!clase.archivoPdfUrl.isNullOrEmpty() &&
+            (clase.archivoPdfUrl.startsWith("content://") ||
+                    clase.archivoPdfUrl.startsWith("http://") ||
+                    clase.archivoPdfUrl.startsWith("https://"))
+        ) {
+            abrirPdf(clase.archivoPdfUrl)
+            return
         }
-        // 2) Intentar desde Firestore
-        FirebaseFirestore.getInstance().collection("clases").document(clase.id).get()
-            .addOnSuccessListener { doc ->
-                val urlFs = doc.getString("archivoPdfUrl").orEmpty()
-                if (urlFs.isNotEmpty()) {
-                    claseActual = clase.copy(archivoPdfUrl = urlFs)
-                    abrirPdf(urlFs)
-                } else {
-                    // 3) Fallback: demo_url conocida si no hay PDF
-                    val demo =
-                        "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-                    abrirPdf(demo)
-                }
-            }
-            .addOnFailureListener {
-                val demo = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-                abrirPdf(demo)
-            }
+
+        // No hay PDF disponible
+        Toast.makeText(
+            this@DetalleClaseActivity,
+            "❌ Esta clase no tiene un PDF asociado",
+            Toast.LENGTH_LONG
+        ).show()
     }
 }
