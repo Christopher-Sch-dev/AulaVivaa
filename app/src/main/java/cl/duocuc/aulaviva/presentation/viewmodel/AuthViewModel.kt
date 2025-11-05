@@ -85,7 +85,7 @@ class AuthViewModel : ViewModel() {
 
     // Obtener usuario actual
     fun getCurrentUserEmail(): String? {
-        return repository.getCurrentUser()?.email
+        return repository.getCurrentUserEmail()
     }
 
     // Resetear mensajes de error

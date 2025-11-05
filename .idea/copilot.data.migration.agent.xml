@@ -121,6 +121,32 @@
             </set>
           </value>
         </entry>
+        <entry key="aa091703-1fcc-4b16-b281-c059c8fe4be0">
+          <value>
+            <set>
+              <option value="0d3f5008-b961-4b7f-8409-8df486800160" />
+              <option value="5f26659e-6f08-463f-b776-4d318554e542" />
+              <option value="9f87f35f-6fba-4538-946c-5e11d0e6445e" />
+              <option value="d48eaa0a-bf27-40a2-ace1-8814ab04cc6d" />
+              <option value="56179b4d-d71d-4b9a-baf3-186f6a256aca" />
+              <option value="af5a453d-f9c9-4d2c-a895-14d2a4a6a8f6" />
+              <option value="c18975b8-cd9d-4e0d-b591-ac5d0228c454" />
+              <option value="ba8da70a-2b4e-4df8-943b-7de5d1419a3e" />
+              <option value="5f5d676c-39a4-4935-a28a-d46708ffb75a" />
+              <option value="6538ab60-6ba2-433f-a7e2-de0c04817728" />
+              <option value="fee62f45-b78f-4f50-9ae7-836f576f43ab" />
+              <option value="d2c4aeac-e2d7-463e-9ec3-33c8059b17bd" />
+              <option value="e1f970a7-a6c6-4925-9235-6394de4e4a38" />
+              <option value="97da7479-4c55-437e-bba7-80cde8ddbd95" />
+              <option value="0cea0c53-0faf-4603-8352-074ff6de2b0a" />
+              <option value="97f58029-4a3f-4313-93c0-349bf4682a03" />
+              <option value="d9158345-8c8c-401e-8605-c67f21657848" />
+              <option value="6b0ff517-7269-4cfe-ae01-ed57f42e724d" />
+              <option value="81bea88c-9813-47b0-a30b-2c0c72b1808f" />
+              <option value="329e1ce4-ac67-4204-b649-53c2cd97331a" />
+            </set>
+          </value>
+        </entry>
         <entry key="c62c1a13-009a-463b-93c1-fa95042c9182">
           <value>
             <set>
@@ -183,6 +209,36 @@
       </entry>
       <entry key="5a16e508-12d9-40d8-95e6-9be5a922e9c8" />
       <entry key="9bf7bb71-31e5-4ee4-88d9-719eccde22d1" />
+      <entry key="aa091703-1fcc-4b16-b281-c059c8fe4be0">
+        <set>
+          <option value="file://$PROJECT_DIR$/app/build.gradle.kts" />
+          <option value="file://$PROJECT_DIR$/build.gradle.kts" />
+          <option value="file://$PROJECT_DIR$/local.properties" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/supabase/SupabaseClient.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/supabase/SupabaseAuthManager.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/supabase/SupabaseClaseRepository.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/AuthRepository.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/ClaseRepository.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/WelcomeActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/main/PanelPrincipalActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/viewmodel/ClaseViewModel.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/DetalleClaseActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/ListaClasesActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/AulaVivaApplication.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
+          <option value="file://$PROJECT_DIR$/MIGRACION_SUPABASE.md" />
+          <option value="file://$PROJECT_DIR$/GUIA_RAPIDA.md" />
+          <option value="file://$PROJECT_DIR$/SUPABASE_VERIFICACION.md" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/UsuarioRepository.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/LoginActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/ai/GeminiHelper.kt" />
+          <option value="file://$PROJECT_DIR$/CHECKLIST_FINAL.md" />
+          <option value="file://$PROJECT_DIR$/app/src/main/res/values/themes.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/res/values-night/themes.xml" />
+          <option value="file://$PROJECT_DIR$/settings.gradle.kts" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/pdf/PdfViewerActivity.kt" />
+        </set>
+      </entry>
       <entry key="c62c1a13-009a-463b-93c1-fa95042c9182">
         <set>
           <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_lista_clases.xml" />

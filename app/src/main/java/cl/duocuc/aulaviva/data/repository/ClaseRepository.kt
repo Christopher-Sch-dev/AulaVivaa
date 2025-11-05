@@ -7,45 +7,44 @@ import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.local.ClaseDao
 import cl.duocuc.aulaviva.data.local.ClaseEntity
 import cl.duocuc.aulaviva.data.model.Clase
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
+import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
+import cl.duocuc.aulaviva.data.supabase.SupabaseClaseRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 /**
  * Repository que maneja toda la lógica de clases.
+ * AHORA USA SUPABASE 100% (NO Firebase).
+ *
  * Usa DOS fuentes de datos:
  * 1. Room (BD local) - Funciona sin internet
- * 2. Firestore (nube) - Se sincroniza cuando hay conexión
+ * 2. Supabase Postgres + Storage - Se sincroniza cuando hay conexión
  *
  * ESTRATEGIA:
  * - Siempre leo primero de Room (rápido, offline)
- * - Intento sincronizar con Firestore en segundo plano
+ * - Intento sincronizar con Supabase en segundo plano
  * - Si no hay internet, guardo en Room con sincronizado=false
  * - Cuando vuelve internet, subo lo pendiente
- *
- * Pensamiento: Esta es la magia de hacer apps que funcionan sin internet.
- * El usuario no nota si hay wifi o no, todo sigue funcionando.
  */
 class ClaseRepository(context: Context) {
 
-    private val firestore = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
-    private val uid: String get() = auth.currentUser?.uid ?: ""
+    private val uid: String get() = SupabaseAuthManager.getCurrentUserId() ?: ""
 
     // Referencia al DAO de Room (BD local)
     private val claseDao: ClaseDao = AppDatabase.getDatabase(context).claseDao()
 
+    // Referencia al repository de Supabase
+    private val supabaseRepo = SupabaseClaseRepository(claseDao)
+
+    private val appContext = context.applicationContext
+
     /**
      * Obtiene las clases del usuario desde Room (local).
      * Flow emite automáticamente cuando los datos cambian.
-     * Mapeo ClaseEntity (BD) a Clase (modelo de la app).
      */
     fun obtenerClasesLocal(): Flow<List<Clase>> {
         return claseDao.obtenerClasesPorUsuario(uid).map { entities ->
@@ -53,7 +52,10 @@ class ClaseRepository(context: Context) {
                 Clase(
                     id = entity.id,
                     nombre = entity.nombre,
+                    descripcion = entity.descripcion,
                     fecha = entity.fecha,
+                    archivoPdfUrl = entity.archivoPdfUrl,
+                    archivoPdfNombre = entity.archivoPdfNombre,
                     creador = entity.creador
                 )
             }
@@ -83,42 +85,64 @@ class ClaseRepository(context: Context) {
     }
 
     /**
-     * Sincroniza clases desde Firestore a Room.
-     * Esto se llama al abrir la app o al refrescar.
+     * Sincroniza clases desde Supabase a Room.
      */
     suspend fun sincronizarDesdeFirestore() {
+        // Renombrado para mantener compatibilidad, pero ahora usa Supabase
         try {
-            val snapshot = firestore.collection("clases")
-                .whereEqualTo("creador", uid)
-                .get()
-                .await()
-
-            val clasesFirestore = snapshot.documents.map { doc ->
-                ClaseEntity(
-                    id = doc.id,
-                    nombre = doc.getString("nombre") ?: "",
-                    descripcion = doc.getString("descripcion") ?: "",
-                    fecha = doc.getString("fecha") ?: "",
-                    archivoPdfUrl = doc.getString("archivoPdfUrl") ?: "",
-                    archivoPdfNombre = doc.getString("archivoPdfNombre") ?: "",
-                    creador = doc.getString("creador") ?: "",
-                    sincronizado = true
-                )
+            // PASO 1: Subir clases pendientes desde Room a Supabase
+            val clasesNoSincronizadas = claseDao.obtenerNoSincronizadas()
+            Log.d("ClaseRepository", "🔄 Intentando subir ${clasesNoSincronizadas.size} clases pendientes...")
+            clasesNoSincronizadas.forEach { claseEntity ->
+                try {
+                    val clase = Clase(
+                        id = claseEntity.id,
+                        nombre = claseEntity.nombre,
+                        descripcion = claseEntity.descripcion,
+                        fecha = claseEntity.fecha,
+                        archivoPdfUrl = claseEntity.archivoPdfUrl,
+                        archivoPdfNombre = claseEntity.archivoPdfNombre,
+                        creador = claseEntity.creador
+                    )
+                    // Intentar crear/actualizar en Supabase
+                    val result = if (supabaseRepo.obtenerClasePorId(clase.id).isSuccess) {
+                        supabaseRepo.actualizarClase(clase)
+                    } else {
+                        supabaseRepo.crearClase(clase)
+                    }
+                    result.fold(
+                        onSuccess = {
+                            // Si se subió, marcar como sincronizada en Room
+                            claseDao.insertarClase(claseEntity.copy(sincronizado = true))
+                            Log.d("ClaseRepository", "✅ Clase ${clase.id} sincronizada a Supabase")
+                        },
+                        onFailure = { error ->
+                            Log.e("ClaseRepository", "❌ Error subiendo clase ${clase.id}: ${error.message}")
+                        }
+                    )
+                } catch (e: Exception) {
+                    Log.e("ClaseRepository", "❌ Excepción al procesar clase pendiente ${claseEntity.id}", e)
+                }
             }
 
-            // Guardo todas las clases de Firestore en Room
-            claseDao.insertarVarias(clasesFirestore)
-
+            // PASO 2: Descargar clases desde Supabase y actualizar Room
+            val result = supabaseRepo.obtenerClases()
+            result.fold(
+                onSuccess = {
+                    Log.d("ClaseRepository", "✅ Sincronización exitosa: ${it.size} clases descargadas")
+                    // El supabaseRepo.obtenerClases ya actualiza Room.
+                },
+                onFailure = { error ->
+                    Log.e("ClaseRepository", "❌ Error en sincronización de descarga", error)
+                }
+            )
         } catch (e: Exception) {
-            // Si no hay internet, no pasa nada. Room sigue funcionando.
+            Log.e("ClaseRepository", "❌ Error general sincronizando", e)
         }
     }
 
     /**
      * Crea una nueva clase.
-     * 1. La guardo primero en Room (instantáneo)
-     * 2. Intento subirla a Firestore
-     * 3. Si no hay internet, queda marcada como no sincronizada
      */
     suspend fun crearClase(
         clase: Clase,
@@ -126,51 +150,42 @@ class ClaseRepository(context: Context) {
         onError: (String) -> Unit
     ) {
         try {
-            // Primero guardo en Room (siempre funciona)
-            val entity = ClaseEntity(
-                id = clase.id.ifEmpty { firestore.collection("clases").document().id },
-                nombre = clase.nombre,
-                descripcion = clase.descripcion,
-                fecha = clase.fecha,
-                archivoPdfUrl = clase.archivoPdfUrl,
-                archivoPdfNombre = clase.archivoPdfNombre,
-                creador = uid,
-                sincronizado = false  // Aún no está en Firestore
-            )
-            claseDao.insertarClase(entity)
-
-            // Intento subir a Firestore
-            try {
-                firestore.collection("clases")
-                    .document(entity.id)
-                    .set(
-                        hashMapOf(
-                            "nombre" to entity.nombre,
-                            "descripcion" to entity.descripcion,
-                            "fecha" to entity.fecha,
-                            "archivoPdfUrl" to entity.archivoPdfUrl,
-                            "archivoPdfNombre" to entity.archivoPdfNombre,
-                            "creador" to entity.creador
-                        )
-                    )
-                    .await()
-
-                // Actualizo en Room como sincronizado
-                claseDao.actualizarClase(entity.copy(sincronizado = true))
-                onSuccess()
-
-            } catch (e: Exception) {
-                // No hay internet, pero ya está en Room
-                onSuccess()  // El usuario no nota la diferencia
+            // Generar ID si no existe
+            val claseConId = if (clase.id.isEmpty()) {
+                clase.copy(id = "clase_${System.currentTimeMillis()}_${uid.take(8)}")
+            } else {
+                clase
             }
 
+            val result = supabaseRepo.crearClase(claseConId)
+            result.fold(
+                onSuccess = {
+                    Log.d("ClaseRepository", "✅ Clase creada exitosamente en Supabase")
+                    // Ya se guarda en Room dentro de supabaseRepo.crearClase
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    Log.e("ClaseRepository", "❌ Error creando clase en Supabase: $error")
+                    // Guardar localmente con sincronizado = false
+                    val claseLocal = claseConId.copy(sincronizado = false)
+                    claseDao.insertarClase(claseLocal.toEntity())
+                    Log.d("ClaseRepository", "💾 Clase guardada localmente por error en Supabase: ${claseLocal.id}")
+                    onSuccess() // Consideramos éxito local para la UI
+                    // No llamamos onError aquí ya que la guardamos localmente
+                }
+            )
         } catch (e: Exception) {
-            onError(e.message ?: "Error al crear clase")
+            Log.e("ClaseRepository", "❌ Error general en crearClase: $e")
+            // Guardar localmente con sincronizado = false
+            val claseLocal = clase.copy(id = clase.id.ifEmpty { "clase_${System.currentTimeMillis()}_${uid.take(8)}" }, sincronizado = false)
+            claseDao.insertarClase(claseLocal.toEntity())
+            Log.d("ClaseRepository", "💾 Clase guardada localmente por excepción: ${claseLocal.id}")
+            onSuccess() // Consideramos éxito local para la UI
         }
     }
 
     /**
-     * Wrapper no-suspend para crearClase y evitar errores de corrutina desde UI
+     * Wrapper no-suspend para crearClase
      */
     fun crearClaseAsync(
         clase: Clase,
@@ -184,7 +199,6 @@ class ClaseRepository(context: Context) {
 
     /**
      * Actualiza una clase existente.
-     * Mismo flujo: primero Room, luego Firestore.
      */
     suspend fun actualizarClase(
         claseId: String,
@@ -197,7 +211,36 @@ class ClaseRepository(context: Context) {
         onError: (String) -> Unit
     ) {
         try {
-            val entity = ClaseEntity(
+            val clase = Clase(
+                id = claseId,
+                nombre = nombre,
+                descripcion = descripcion,
+                fecha = fecha,
+                archivoPdfUrl = archivoPdfUrl,
+                archivoPdfNombre = archivoPdfNombre,
+                creador = uid
+            )
+
+            val result = supabaseRepo.actualizarClase(clase)
+            result.fold(
+                onSuccess = {
+                    Log.d("ClaseRepository", "✅ Clase actualizada exitosamente en Supabase")
+                    // Ya se guarda en Room dentro de supabaseRepo.actualizarClase
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    Log.e("ClaseRepository", "❌ Error actualizando clase en Supabase: $error")
+                    // Actualizar localmente con sincronizado = false
+                    val claseLocal = clase.copy(sincronizado = false)
+                    claseDao.actualizarClase(claseLocal.toEntity())
+                    Log.d("ClaseRepository", "💾 Clase actualizada localmente por error en Supabase: ${claseLocal.id}")
+                    onSuccess() // Consideramos éxito local para la UI
+                }
+            )
+        } catch (e: Exception) {
+            Log.e("ClaseRepository", "❌ Error general en actualizarClase: $e")
+            // Actualizar localmente con sincronizado = false
+            val claseLocal = Clase(
                 id = claseId,
                 nombre = nombre,
                 descripcion = descripcion,
@@ -207,75 +250,41 @@ class ClaseRepository(context: Context) {
                 creador = uid,
                 sincronizado = false
             )
-            claseDao.actualizarClase(entity)
-
-            // Intento actualizar en Firestore
-            try {
-                firestore.collection("clases")
-                    .document(claseId)
-                    .update(
-                        hashMapOf<String, Any>(
-                            "nombre" to nombre,
-                            "descripcion" to descripcion,
-                            "fecha" to fecha,
-                            "archivoPdfUrl" to archivoPdfUrl,
-                            "archivoPdfNombre" to archivoPdfNombre
-                        )
-                    )
-                    .await()
-
-                claseDao.actualizarClase(entity.copy(sincronizado = true))
-                onSuccess()
-
-            } catch (e: Exception) {
-                onSuccess()  // Actualizado en Room al menos
-            }
-
-        } catch (e: Exception) {
-            onError(e.message ?: "Error al actualizar")
+            claseDao.actualizarClase(claseLocal.toEntity())
+            Log.d("ClaseRepository", "💾 Clase actualizada localmente por excepción: ${claseLocal.id}")
+            onSuccess() // Consideramos éxito local para la UI
         }
     }
 
     /**
-     * ✅ TAREA 3: Método sobrecargado para actualizar clase usando objeto Clase
+     * Método sobrecargado para actualizar clase usando objeto Clase
      */
     suspend fun actualizarClase(clase: Clase) {
-        val entity = ClaseEntity(
-            id = clase.id,
-            nombre = clase.nombre,
-            descripcion = clase.descripcion,
-            fecha = clase.fecha,
-            archivoPdfUrl = clase.archivoPdfUrl,
-            archivoPdfNombre = clase.archivoPdfNombre,
-            creador = clase.creador,
-            sincronizado = false
-        )
-        claseDao.actualizarClase(entity)
-
-        // Intento actualizar en Firestore
         try {
-            firestore.collection("clases")
-                .document(clase.id)
-                .update(
-                    hashMapOf<String, Any>(
-                        "nombre" to clase.nombre,
-                        "descripcion" to clase.descripcion,
-                        "fecha" to clase.fecha,
-                        "archivoPdfUrl" to clase.archivoPdfUrl,
-                        "archivoPdfNombre" to clase.archivoPdfNombre
-                    )
-                )
-                .await()
-
-            claseDao.actualizarClase(entity.copy(sincronizado = true))
-        } catch (_: Exception) {
-            // No importa si falla en Firestore, ya se actualizó en Room
+            val result = supabaseRepo.actualizarClase(clase)
+            result.fold(
+                onSuccess = {
+                    Log.d("ClaseRepository", "✅ Clase actualizada")
+                    // Ya se guarda en Room dentro de supabaseRepo.actualizarClase
+                },
+                onFailure = { error ->
+                    Log.e("ClaseRepository", "❌ Error actualizando clase en Supabase (sobrecarga): $error")
+                    // Actualizar localmente con sincronizado = false
+                    val claseLocal = clase.copy(sincronizado = false)
+                    claseDao.actualizarClase(claseLocal.toEntity())
+                    Log.d("ClaseRepository", "💾 Clase actualizada localmente por error en Supabase (sobrecarga): ${claseLocal.id}")
+                }
+            )
+        } catch (e: Exception) {
+            Log.e("ClaseRepository", "❌ Error general en actualizarClase (sobrecarga): $e")
+            val claseLocal = clase.copy(sincronizado = false)
+            claseDao.actualizarClase(claseLocal.toEntity())
+            Log.d("ClaseRepository", "💾 Clase actualizada localmente por excepción (sobrecarga): ${claseLocal.id}")
         }
     }
 
     /**
      * Elimina una clase.
-     * Primero de Room, luego de Firestore.
      */
     suspend fun eliminarClase(
         claseId: String,
@@ -283,39 +292,44 @@ class ClaseRepository(context: Context) {
         onError: (String) -> Unit
     ) {
         try {
-            val entity = ClaseEntity(id = claseId, nombre = "", fecha = "", creador = uid)
-            claseDao.eliminarClase(entity)
-
-            try {
-                firestore.collection("clases")
-                    .document(claseId)
-                    .delete()
-                    .await()
-            } catch (e: Exception) {
-                // No importa si falla en Firestore, ya se borró de Room
-            }
-
-            onSuccess()
-
+            val result = supabaseRepo.eliminarClase(claseId)
+            result.fold(
+                onSuccess = {
+                    Log.d("ClaseRepository", "✅ Clase eliminada exitosamente de Supabase")
+                    // Ya se elimina de Room dentro de supabaseRepo.eliminarClase
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    Log.e("ClaseRepository", "❌ Error eliminando clase de Supabase: $error")
+                    // Si falla la eliminación en Supabase, simplemente no la eliminamos localmente
+                    // El usuario puede intentar de nuevo más tarde o manejarlo manualmente.
+                    onError(error.message ?: "Error al eliminar clase en Supabase")
+                }
+            )
         } catch (e: Exception) {
-            onError(e.message ?: "Error al eliminar")
+            Log.e("ClaseRepository", "❌ Error general en eliminarClase: $e")
+            onError(e.message ?: "Error al eliminar clase")
         }
     }
 
     /**
-     * ✅ TAREA 3: Método sobrecargado para eliminar clase usando solo el ID
+     * Método sobrecargado para eliminar clase usando solo el ID
      */
     suspend fun eliminarClase(claseId: String) {
-        val entity = ClaseEntity(id = claseId, nombre = "", fecha = "", creador = uid)
-        claseDao.eliminarClase(entity)
-
         try {
-            firestore.collection("clases")
-                .document(claseId)
-                .delete()
-                .await()
+            val result = supabaseRepo.eliminarClase(claseId)
+            result.fold(
+                onSuccess = {
+                    Log.d("ClaseRepository", "✅ Clase eliminada")
+                    // Ya se elimina de Room dentro de supabaseRepo.eliminarClase
+                },
+                onFailure = { error ->
+                    Log.e("ClaseRepository", "❌ Error eliminando clase (sobrecarga): $error")
+                    // Si falla la eliminación en Supabase, simplemente no la eliminamos localmente
+                }
+            )
         } catch (e: Exception) {
-            // No importa si falla en Firestore, ya se borró de Room
+            Log.e("ClaseRepository", "❌ Error general en eliminarClase (sobrecarga): $e")
         }
     }
 
@@ -327,15 +341,29 @@ class ClaseRepository(context: Context) {
     }
 
     /**
-     * 🎓 Crea una CLASE DE PRUEBA automáticamente
-     * Para demostrar funcionalidades de la app
+     * Crea una CLASE DE PRUEBA automáticamente
      */
     suspend fun crearClaseDePrueba(onSuccess: () -> Unit, onError: (String) -> Unit) {
         try {
             val claseDemoId = "clase_demo_${System.currentTimeMillis()}"
+            val nombreArchivoDemo = "clase_demo.pdf"
+            // TODO: Replace with actual Uri from assets, e.g., Uri.parse("android.resource://" + appContext.packageName + "/raw/clase_demo")
+            val dummyAssetUri: Uri = Uri.EMPTY // Placeholder for asset Uri
 
-            // Primero creo la clase con todos los campos
-            val entity = ClaseEntity(
+            var pdfUrl: String = "https://www.bluebooksoft.com/DISENO_PROGRAMACION_WEB/1366.pdf"
+
+            if (dummyAssetUri != Uri.EMPTY) {
+                try {
+                    pdfUrl = subirPdfASupabaseStorage(dummyAssetUri, nombreArchivoDemo)
+                    Log.d("ClaseRepository", "✅ PDF de demostración subido a Supabase Storage: $pdfUrl")
+                } catch (e: Exception) {
+                    Log.e("ClaseRepository", "❌ Error subiendo PDF de demostración desde assets: ${e.message}", e)
+                    // Fallback to external URL if asset upload fails
+                    pdfUrl = "https://www.bluebooksoft.com/DISENO_PROGRAMACION_WEB/1366.pdf"
+                }
+            }
+
+            val claseDemo = Clase(
                 id = claseDemoId,
                 nombre = "Introducción a Desarrollo Android con Kotlin",
                 descripcion = """
@@ -346,94 +374,57 @@ class ClaseRepository(context: Context) {
                     • Sintaxis básica de Kotlin
                     • Creación de la primera aplicación
                     • Arquitectura MVVM
-                    • Integración con Firebase
+                    • Integración con Supabase
                     
                     Material incluido: Guía completa en PDF con ejemplos prácticos.
                 """.trimIndent(),
                 fecha = "Lunes 4 de Noviembre, 14:00hrs",
-                archivoPdfUrl = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-                archivoPdfNombre = "Demo_Material_Kotlin.pdf",
-                creador = uid,
-                sincronizado = false
+                archivoPdfUrl = pdfUrl,
+                archivoPdfNombre = nombreArchivoDemo,
+                creador = uid
             )
-            claseDao.insertarClase(entity)
 
-            // Subo a Firestore
-            firestore.collection("clases")
-                .document(claseDemoId)
-                .set(
-                    hashMapOf(
-                        "nombre" to entity.nombre,
-                        "descripcion" to entity.descripcion,
-                        "fecha" to entity.fecha,
-                        "archivoPdfUrl" to entity.archivoPdfUrl,
-                        "archivoPdfNombre" to entity.archivoPdfNombre,
-                        "creador" to uid
-                    )
-                )
-                .await()
-
-            // Actualizo como sincronizado
-            claseDao.actualizarClase(entity.copy(sincronizado = true))
-            onSuccess()
-
+            val result = supabaseRepo.crearClase(claseDemo)
+            result.fold(
+                onSuccess = {
+                    Log.d("ClaseRepository", "✅ Clase de prueba creada")
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    Log.e("ClaseRepository", "❌ Error creando clase de prueba", error)
+                    onError(error.message ?: "Error al crear clase de prueba")
+                }
+            )
         } catch (e: Exception) {
+            Log.e("ClaseRepository", "❌ Error en crearClaseDePrueba", e)
             onError(e.message ?: "Error al crear clase de prueba")
         }
     }
 
     /**
-     * 📤 TAREA 2: Sube un PDF a Firebase Storage y retorna la URL pública
-     *
-     * Esta función permite que los PDFs funcionen en múltiples dispositivos.
-     * En lugar de guardar content:// (que solo funciona local), subimos el archivo
-     * a Firebase Storage y obtenemos una URL pública que funciona en cualquier lugar.
-     *
-     * Ruta de almacenamiento: clases/{UID_DOCENTE}/{TIMESTAMP}_{NOMBRE_ARCHIVO}
-     * - UID_DOCENTE: identifica al docente propietario
-     * - TIMESTAMP: evita colisiones de nombres
-     *
-     * @param pdfUri URI local del PDF seleccionado (content://...)
-     * @param nombreArchivo Nombre original del archivo
-     * @return URL pública del PDF en Firebase Storage (https://firebasestorage.googleapis.com/...)
-     * @throws Exception si falla la autenticación o la subida
+     * Sube un PDF a Supabase Storage y retorna la URL pública.
      */
-    suspend fun subirPdfAFirebaseStorage(
+    suspend fun subirPdfASupabaseStorage(
         pdfUri: Uri,
         nombreArchivo: String
     ): String = withContext(Dispatchers.IO) {
         try {
-            // Obtener UID del docente actual (necesario para seguridad)
-            val uidDocente = auth.currentUser?.uid
-                ?: throw Exception("Docente no autenticado")
+            Log.d("ClaseRepository", "📤 Iniciando subida de PDF: $nombreArchivo")
 
-            // Referencia a Firebase Storage
-            val storage = FirebaseStorage.getInstance()
-            val storageRef = storage.reference
+            val result = supabaseRepo.subirPdf(appContext, pdfUri, nombreArchivo)
 
-            // Crear ruta segura: clases/{UID}/{TIMESTAMP}_{NOMBRE}
-            // Ejemplo: clases/abc123/1699123456789_Material_Kotlin.pdf
-            val timestamp = System.currentTimeMillis()
-            val rutaPdf = "clases/$uidDocente/${timestamp}_$nombreArchivo"
-
-            Log.d("ClaseRepository", "📤 Iniciando subida de PDF a: $rutaPdf")
-
-            // Subir archivo de forma síncrona en corrutina
-            val fileRef = storageRef.child(rutaPdf)
-            fileRef.putFile(pdfUri).await()
-
-            Log.d("ClaseRepository", "✅ PDF subido correctamente")
-
-            // Obtener URL pública del PDF (esta URL funciona en cualquier dispositivo)
-            val downloadUrl = fileRef.downloadUrl.await()
-            val urlPublica = downloadUrl.toString()
-
-            Log.d("ClaseRepository", "🔗 URL pública obtenida: $urlPublica")
-
-            return@withContext urlPublica
-
+            result.fold(
+                onSuccess = { url ->
+                    Log.d("ClaseRepository", "✅ PDF subido exitosamente")
+                    return@withContext url
+                },
+                onFailure = { error ->
+                    Log.e("ClaseRepository", "❌ Error subiendo PDF", error)
+                    throw Exception(error.message ?: "Error subiendo PDF")
+                }
+            )
         } catch (e: Exception) {
-            Log.e("ClaseRepository", "❌ Error al subir PDF a Storage", e)
+            Log.e("ClaseRepository", "❌ Error en subirPdfASupabaseStorage", e)
             throw Exception("Error subiendo PDF: ${e.message}")
         }
     }

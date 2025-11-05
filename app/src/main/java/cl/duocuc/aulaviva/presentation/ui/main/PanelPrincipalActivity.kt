@@ -12,10 +12,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
 import cl.duocuc.aulaviva.databinding.ActivityPanelPrincipalBinding
 import cl.duocuc.aulaviva.presentation.ui.auth.LoginActivity
 import cl.duocuc.aulaviva.utils.NotificationHelper
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 class PanelPrincipalActivity : AppCompatActivity() {
@@ -49,15 +49,15 @@ class PanelPrincipalActivity : AppCompatActivity() {
     }
 
     /**
-     * Carga los datos del usuario desde Firestore y personaliza la UI.
+     * Carga los datos del usuario desde Supabase y personaliza la UI.
      * Muestra el rol (docente/alumno) y adapta las opciones disponibles.
-     *
-     * ✅ Ahora con mejor manejo de errores y feedback al usuario
      */
     private fun cargarDatosUsuario() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (uid == null) {
-            Log.e("PanelPrincipal", "❌ UID es null - Usuario no autenticado")
+        val uid = SupabaseAuthManager.getCurrentUserId()
+        val email = SupabaseAuthManager.getCurrentUserEmail()
+
+        if (uid == null || email == null) {
+            Log.e("PanelPrincipal", "❌ Usuario no autenticado")
             Toast.makeText(this, "Error: Usuario no autenticado", Toast.LENGTH_LONG).show()
             // Redirigir al login
             startActivity(Intent(this, LoginActivity::class.java))
@@ -65,54 +65,17 @@ class PanelPrincipalActivity : AppCompatActivity() {
             return
         }
 
-        val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-        Log.d("PanelPrincipal", "🔄 Cargando datos para UID: $uid")
+        Log.d("PanelPrincipal", "✅ Usuario cargado: $email")
 
-        firestore.collection("usuarios").document(uid).get()
-            .addOnSuccessListener { documento ->
-                Log.d("PanelPrincipal", "✅ Documento obtenido: ${documento.exists()}")
+        // Por defecto, todos los usuarios registrados son docentes
+        rolActual = "docente"
 
-                if (documento.exists()) {
-                    val email = documento.getString("email") ?: "Usuario"
-                    val rolBruto = documento.getString("rol") ?: "alumno"
-                    val rolNormalized = rolBruto.trim().lowercase()
-                    rolActual = if (rolNormalized.contains("doc")) "docente" else "alumno"
+        val emoji = "👨‍🏫"
+        val nombreCorto = email.substringBefore("@")
+        val mensaje = "Bienvenido Profesor $nombreCorto"
 
-                    Log.d("PanelPrincipal", "✅ Rol cargado: $rolActual (original: $rolBruto)")
-
-                    val emoji = if (rolActual == "docente") "👨‍🏫" else "🎓"
-                    val nombreCorto = email.substringBefore("@")
-                    val mensaje = if (rolActual == "docente") {
-                        "Bienvenido Profesor $nombreCorto"
-                    } else {
-                        "Bienvenido Estudiante $nombreCorto"
-                    }
-                    binding.bienvenidaTextView.text = "$emoji $mensaje"
-
-                    binding.irAClasesButton.text =
-                        if (rolActual == "docente") "📊 Gestionar clases" else "📚 Ver clases"
-                } else {
-                    Log.w("PanelPrincipal", "⚠️ Documento no existe para UID: $uid")
-                    Toast.makeText(
-                        this,
-                        "Usuario no encontrado en la base de datos",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    // Usar rol por defecto
-                    rolActual = "alumno"
-                }
-            }
-            .addOnFailureListener { e ->
-                Log.e("PanelPrincipal", "❌ Error cargando usuario: ${e.message}", e)
-                Toast.makeText(
-                    this,
-                    "Error de conexión: ${e.message?.take(100)}",
-                    Toast.LENGTH_LONG
-                ).show()
-                binding.bienvenidaTextView.text = "¡Bienvenido!"
-                // Usar rol por defecto para que la app no se quede bloqueada
-                rolActual = "alumno"
-            }
+        binding.bienvenidaTextView.text = "$emoji $mensaje"
+        binding.irAClasesButton.text = "📊 Gestionar clases"
     }
 
     /**
@@ -145,7 +108,7 @@ class PanelPrincipalActivity : AppCompatActivity() {
      * Envía una notificación de bienvenida personalizada
      */
     private fun enviarNotificacionBienvenida() {
-        val email = FirebaseAuth.getInstance().currentUser?.email ?: "Usuario"
+        val email = SupabaseAuthManager.getCurrentUserEmail() ?: "Usuario"
         val nombre = email.substringBefore("@")  // Extraigo nombre del email
         notificationHelper.enviarNotificacionBienvenida(nombre)
     }
@@ -194,11 +157,14 @@ class PanelPrincipalActivity : AppCompatActivity() {
                 .setTitle("Cerrar sesión")
                 .setMessage("¿Estás seguro que quieres salir de Aula Viva?")
                 .setPositiveButton("Sí, salir") { _, _ ->
-                    FirebaseAuth.getInstance().signOut()
-                    val intent = Intent(this, LoginActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
-                    finish()
+                    lifecycleScope.launch {
+                        SupabaseAuthManager.logout()
+                        val intent = Intent(this@PanelPrincipalActivity, LoginActivity::class.java)
+                        intent.flags =
+                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
                 }
                 .setNegativeButton("Cancelar", null)
                 .show()

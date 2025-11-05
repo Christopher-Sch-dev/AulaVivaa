@@ -41,20 +41,11 @@
     <string name="err_abrir_pdf">No se puede abrir el PDF</string>
     <string name="ver_pdf">📖 Ver PDF</string>
 
-    <!-- IA Docente -->
-    <string name="ia_herramientas">🤖 Herramientas IA para docente</string>
-    <string name="ia_generar_ideas">💡 Generar ideas para la clase</string>
-    <string name="ia_sugerir_act_btn">🎯 Sugerir actividades dinámicas</string>
-    <string name="ia_estructurar">⏱️ Estructurar clase por minutos</string>
-    <string name="ia_analizar_pdf">📄 Analizar PDF con IA</string>
-    <string name="ia_generando_ideas">💡 Generando ideas...</string>
-    <string name="ia_sugerir_act">🎯 Diseñando actividades...</string>
-    <string name="ia_estructurando">⏱️ Estructurando...</string>
-    <string name="ia_analizando_pdf">📄 Analizando PDF...</string>
-    <string name="ia_espera">La IA está trabajando, por favor espera</string>
-    <string name="ia_ideas_titulo">💡 Ideas para tu clase</string>
-    <string name="ia_actividades_titulo">🎯 Actividades sugeridas</string>
-    <string name="ia_pdf_titulo">📄 Análisis del material PDF</string>
-    <string name="ia_elegir_duracion">⏱️ Duración de la clase</string>
-    <string name="ia_estructura_titulo">⏱️ Estructura de %1$s</string>
+    <!-- PDF Viewer -->
+    <string name="pdf_viewer_title">Ver PDF</string>
+    <string name="pdf_url_empty_error">❌ URL de PDF vacía</string>
+    <string name="pdf_loading_title">Cargando PDF</string>
+    <string name="pdf_loading_message">Preparando visualización...</string>
+    <string name="pdf_loading_error">❌ Error cargando PDF</string>
+    <string name="pdf_unexpected_error">Error: %1$s</string>
 </resources>

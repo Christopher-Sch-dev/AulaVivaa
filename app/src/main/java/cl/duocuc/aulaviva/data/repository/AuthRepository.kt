@@ -1,151 +1,198 @@
 package cl.duocuc.aulaviva.data.repository
 
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.FirebaseFirestore
+import android.util.Log
+import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
- * Repository que maneja toda la lógica de autenticación
- * Separa la lógica de Firebase de las Activities
+ * Repository que maneja toda la lógica de autenticación.
+ * AHORA USA SUPABASE 100% (NO Firebase).
+ *
+ * Adaptador entre Activities y SupabaseAuthManager.
  */
 class AuthRepository {
 
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val usuarioRepository = UsuarioRepository()
 
-    // Obtener usuario actual
-    fun getCurrentUser(): FirebaseUser? = auth.currentUser
+    /**
+     * Obtener UID del usuario actual.
+     */
+    fun getCurrentUserId(): String? = SupabaseAuthManager.getCurrentUserId()
 
-    // Login con email y password
+    /**
+     * Obtener email del usuario actual.
+     */
+    fun getCurrentUserEmail(): String? = SupabaseAuthManager.getCurrentUserEmail()
+
+    /**
+     * Verificar si hay sesión activa.
+     */
+    fun isLoggedIn(): Boolean = SupabaseAuthManager.isLoggedIn()
+
+    /**
+     * Login con email y password.
+     * Usa callbacks para mantener compatibilidad con Activities existentes.
+     */
     fun login(
         email: String,
         password: String,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        // Timeout de seguridad de 15 segundos
-        var completed = false
-        val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
-        val timeoutRunnable = Runnable {
-            if (!completed) {
-                completed = true
-                onError("La operación tardó demasiado. Verifica tu conexión a internet.")
-            }
-        }
-        timeoutHandler.postDelayed(timeoutRunnable, 15000)
-
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (completed) return@addOnCompleteListener
-
-                completed = true
-                timeoutHandler.removeCallbacks(timeoutRunnable)
-
-                if (task.isSuccessful) {
-                    onSuccess()
-                } else {
-                    val errorMsg = task.exception?.message ?: ""
-                    when {
-                        errorMsg.contains("password") -> {
-                            onError("Contraseña incorrecta")
-                        }
-
-                        errorMsg.contains("no user") || errorMsg.contains("not found") -> {
-                            onError("No existe una cuenta con ese correo")
-                        }
-
-                        errorMsg.contains("network") || errorMsg.contains("internet") -> {
-                            onError("Sin conexión a internet. Verifica tu red.")
-                        }
-
-                        else -> {
-                            onError(errorMsg.ifEmpty { "Error desconocido al iniciar sesión" })
-                        }
-                    }
+        CoroutineScope(Dispatchers.Main).launch {
+            // Timeout de seguridad de 15 segundos
+            var completed = false
+            val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
+            val timeoutRunnable = Runnable {
+                if (!completed) {
+                    completed = true
+                    onError("La operación tardó demasiado. Verifica tu conexión a internet.")
                 }
             }
+            timeoutHandler.postDelayed(timeoutRunnable, 15000)
+
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    SupabaseAuthManager.login(email, password)
+                }
+
+                if (!completed) {
+                    completed = true
+                    timeoutHandler.removeCallbacks(timeoutRunnable)
+
+                    result.fold(
+                        onSuccess = {
+                            onSuccess()
+                        },
+                        onFailure = { e ->
+                            onError(e.message ?: "Error desconocido al iniciar sesión")
+                        }
+                    )
+                }
+            } catch (e: Exception) {
+                if (!completed) {
+                    completed = true
+                    timeoutHandler.removeCallbacks(timeoutRunnable)
+                    onError(e.message ?: "Error desconocido")
+                }
+            }
+        }
     }
 
-    // Registro de nuevo usuario
+    /**
+     * Registro de nuevo usuario.
+     * Guarda el usuario en Auth y sus datos en tabla usuarios.
+     */
     fun register(
         email: String,
         password: String,
-        rol: String = "alumno",
+        rol: String = "docente",
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        // Timeout de seguridad de 15 segundos
-        var completed = false
-        val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
-        val timeoutRunnable = Runnable {
-            if (!completed) {
-                completed = true
-                onError("La operación tardó demasiado. Verifica tu conexión a internet.")
-            }
-        }
-        timeoutHandler.postDelayed(timeoutRunnable, 15000)
-
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (completed) return@addOnCompleteListener
-
-                if (task.isSuccessful) {
-                    // Guardamos datos extra en Firestore incluyendo el rol
-                    val uid = auth.currentUser?.uid
-                    if (uid != null) {
-                        val usuario = hashMapOf(
-                            "email" to email,
-                            "rol" to rol,
-                            "fechaRegistro" to System.currentTimeMillis()
-                        )
-                        firestore.collection("usuarios").document(uid)
-                            .set(usuario)
-                            .addOnSuccessListener {
-                                if (!completed) {
-                                    completed = true
-                                    timeoutHandler.removeCallbacks(timeoutRunnable)
-                                    onSuccess()
-                                }
-                            }
-                            .addOnFailureListener { e ->
-                                if (!completed) {
-                                    completed = true
-                                    timeoutHandler.removeCallbacks(timeoutRunnable)
-                                    onError(e.message ?: "Error al guardar datos")
-                                }
-                            }
-                    } else {
-                        if (!completed) {
-                            completed = true
-                            timeoutHandler.removeCallbacks(timeoutRunnable)
-                            onError("Error al obtener usuario")
-                        }
-                    }
-                } else {
-                    if (!completed) {
-                        completed = true
-                        timeoutHandler.removeCallbacks(timeoutRunnable)
-                        val errorMsg = task.exception?.message ?: ""
-                        when {
-                            errorMsg.contains("The email address is already in use") -> {
-                                onError("Ese correo ya está registrado. Inicia sesión o usa otro.")
-                            }
-
-                            errorMsg.contains("network") || errorMsg.contains("internet") -> {
-                                onError("Sin conexión a internet. Verifica tu red.")
-                            }
-
-                            else -> {
-                                onError(errorMsg.ifEmpty { "Error desconocido al registrar" })
-                            }
-                        }
-                    }
+        CoroutineScope(Dispatchers.Main).launch {
+            // Timeout de seguridad de 15 segundos
+            var completed = false
+            val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
+            val timeoutRunnable = Runnable {
+                if (!completed) {
+                    completed = true
+                    onError("La operación tardó demasiado. Verifica tu conexión a internet.")
                 }
             }
+            timeoutHandler.postDelayed(timeoutRunnable, 15000)
+
+            try {
+                // Paso 1: Registrar en Supabase Auth
+                val resultAuth = withContext(Dispatchers.IO) {
+                    SupabaseAuthManager.register(email, password)
+                }
+
+                if (!completed) {
+                    resultAuth.fold(
+                        onSuccess = { uid ->
+                            // Paso 2: Guardar datos adicionales en tabla usuarios
+                            CoroutineScope(Dispatchers.IO).launch {
+                                val resultUsuario = usuarioRepository.guardarUsuario(
+                                    uid = uid,
+                                    email = email,
+                                    rol = rol
+                                )
+
+                                withContext(Dispatchers.Main) {
+                                    if (!completed) {
+                                        completed = true
+                                        timeoutHandler.removeCallbacks(timeoutRunnable)
+
+                                        resultUsuario.fold(
+                                            onSuccess = {
+                                                Log.d(
+                                                    "AuthRepo",
+                                                    "✅ Usuario registrado completamente"
+                                                )
+                                                onSuccess()
+                                            },
+                                            onFailure = { e ->
+                                                Log.e(
+                                                    "AuthRepo",
+                                                    "❌ Error guardando datos usuario",
+                                                    e
+                                                )
+                                                onError("Usuario creado pero error al guardar datos: ${e.message}")
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        onFailure = { e ->
+                            completed = true
+                            timeoutHandler.removeCallbacks(timeoutRunnable)
+                            onError(e.message ?: "Error desconocido al registrar usuario")
+                        }
+                    )
+                }
+            } catch (e: Exception) {
+                if (!completed) {
+                    completed = true
+                    timeoutHandler.removeCallbacks(timeoutRunnable)
+                    onError(e.message ?: "Error desconocido")
+                }
+            }
+        }
     }
 
-    // Logout
+    /**
+     * Obtener rol del usuario actual.
+     */
+    suspend fun obtenerRolUsuario(): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val uid = SupabaseAuthManager.getCurrentUserId()
+                ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
+
+            val result = usuarioRepository.obtenerUsuario(uid)
+            result.fold(
+                onSuccess = { usuario ->
+                    Result.success(usuario.rol)
+                },
+                onFailure = { error ->
+                    Result.failure(error)
+                }
+            )
+        } catch (e: Exception) {
+            Result.failure(Exception("Error obteniendo rol: ${e.message}"))
+        }
+    }
+
+    /**
+     * Cerrar sesión.
+     */
     fun logout() {
-        auth.signOut()
+        CoroutineScope(Dispatchers.IO).launch {
+            SupabaseAuthManager.logout()
+        }
     }
 }

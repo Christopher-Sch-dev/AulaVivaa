@@ -201,17 +201,17 @@ class ListaClasesActivity : AppCompatActivity() {
                 isSaving = true
                 btnGuardar.isEnabled = false
 
-                // 📤 TAREA 3: Subir PDF a Firebase Storage antes de crear clase
+                // 📤 TAREA 3: Subir PDF a Supabase Storage antes de crear clase
                 lifecycleScope.launch {
                     try {
-                        var urlPdfFirebase = ""
+                        var urlPdfSupabase = ""
 
                         // ✅ SI HAY PDF SELECCIONADO, SUBIRLO PRIMERO
                         if (tempPdfUri.isNotEmpty()) {
                             try {
                                 android.util.Log.d(
                                     "ListaClases",
-                                    "📤 Subiendo PDF a Firebase Storage..."
+                                    "📤 Subiendo PDF a Supabase Storage..."
                                 )
 
                                 // Mostrar progreso
@@ -219,17 +219,17 @@ class ListaClasesActivity : AppCompatActivity() {
                                     textPdfSeleccionado.text = "Subiendo PDF..."
                                 }
 
-                                // Subir a Firebase Storage
+                                // Subir a Supabase Storage
                                 val repository =
                                     cl.duocuc.aulaviva.data.repository.ClaseRepository(this@ListaClasesActivity)
-                                urlPdfFirebase = repository.subirPdfAFirebaseStorage(
+                                urlPdfSupabase = repository.subirPdfASupabaseStorage(
                                     Uri.parse(tempPdfUri),
                                     tempPdfName
                                 )
 
                                 android.util.Log.d(
                                     "ListaClases",
-                                    "✅ PDF subido con URL: $urlPdfFirebase"
+                                    "✅ PDF subido con URL: $urlPdfSupabase"
                                 )
 
                                 withContext(Dispatchers.Main) {
@@ -245,19 +245,19 @@ class ListaClasesActivity : AppCompatActivity() {
                             }
                         }
 
-                        // ✅ CREAR CLASE CON URL DEL PDF (ahora pública de Firebase Storage)
+                        // ✅ CREAR CLASE CON URL DEL PDF (ahora pública de Supabase Storage)
                         val nuevaClase = Clase(
                             id = "",
                             nombre = nombre,
                             descripcion = descripcion,
                             fecha = fecha,
-                            archivoPdfUrl = urlPdfFirebase, // URL pública de Storage
+                            archivoPdfUrl = urlPdfSupabase, // URL pública de Storage
                             archivoPdfNombre = tempPdfName,
-                            creador = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                            creador = cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager.getCurrentUserId()
                                 ?: ""
                         )
 
-                        // Guardar en Repository (Room + Firestore)
+                        // Guardar en Repository (Room + Supabase)
                         val repository =
                             cl.duocuc.aulaviva.data.repository.ClaseRepository(this@ListaClasesActivity)
                         repository.crearClaseAsync(
@@ -267,7 +267,7 @@ class ListaClasesActivity : AppCompatActivity() {
                                     android.util.Log.d("ListaClases", "✅ Clase creada exitosamente")
                                     Toast.makeText(
                                         this@ListaClasesActivity,
-                                        if (urlPdfFirebase.isNotEmpty()) "✅ Clase creada con PDF" else "✅ Clase creada",
+                                        if (urlPdfSupabase.isNotEmpty()) "✅ Clase creada con PDF" else "✅ Clase creada",
                                         Toast.LENGTH_SHORT
                                     ).show()
                                     dialog.dismiss()

@@ -13,8 +13,6 @@ import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.data.repository.ClaseRepository
 import cl.duocuc.aulaviva.data.repository.IARepository
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -47,10 +45,8 @@ class DetalleClaseActivity : AppCompatActivity() {
     }
 
     private fun obtenerRolUsuario() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        FirebaseFirestore.getInstance().collection("usuarios").document(uid).get()
-            .addOnSuccessListener { doc -> rolActual = doc.getString("rol") ?: "alumno" }
-            .addOnFailureListener { rolActual = "alumno" }
+        // Por defecto todos los usuarios registrados son docentes
+        rolActual = "docente"
     }
 
     private fun cargarDatosClase(claseId: String) {
@@ -282,10 +278,25 @@ class DetalleClaseActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val prompt = """
-                    Eres un asistente docente. Resume los puntos clave del material de esta clase.
-                    Título: ${clase.nombre}
+                    Eres un asistente educativo experto. Resume el contenido de esta clase en español chileno neutro y profesional.
+                    
+                    Clase: ${clase.nombre}
                     Descripción: ${clase.descripcion}
-                    Si hay PDF: ${clase.archivoPdfNombre}. Resume en 5-7 bullets claros.
+                    Material PDF: ${clase.archivoPdfNombre}
+                    
+                    El resumen debe incluir:
+                    ## Tema Principal
+                    [Descripción en 2-3 líneas]
+                    
+                    ## Conceptos Clave
+                    • [Punto 1]
+                    • [Punto 2]
+                    • [Punto 3-5]
+                    
+                    ## Conclusiones
+                    [Resumen de aprendizajes principales]
+                    
+                    Usa formato Markdown claro y estructurado.
                 """.trimIndent()
                 val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
                 withContext(Dispatchers.Main) {
@@ -309,19 +320,42 @@ class DetalleClaseActivity : AppCompatActivity() {
     private fun reordenarTemasParaClase() {
         val clase = claseActual ?: return
         val loading =
-            mostrarDialogoCarga("🧩 Reordenando temas...", "La IA está trabajando, por favor espera")
+            mostrarDialogoCarga(
+                "🎤 Preparando presentación...",
+                "La IA está trabajando, por favor espera"
+            )
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val prompt = """
-                    Eres experto en didáctica. Reordena los temas del contenido para presentarlos en clase de forma progresiva.
-                    Título: ${clase.nombre}
-                    Descripción: ${clase.descripcion}
-                    Lista los bloques en orden lógico con breve objetivo.
+                    Eres un docente experto en pedagogía. Crea una guía detallada para presentar esta clase de forma efectiva.
+                    
+                    Clase: ${clase.nombre}
+                    Contenido: ${clase.descripcion}
+                    
+                    La guía debe incluir:
+                    
+                    ## 1. Introducción Sugerida (2-3 minutos)
+                    • Gancho inicial para captar atención
+                    • Contextualización del tema
+                    
+                    ## 2. Puntos Clave a Enfatizar
+                    • Conceptos fundamentales
+                    • Por qué son importantes
+                    
+                    ## 3. Ejemplos Prácticos Recomendados
+                    • Casos reales o ejercicios concretos
+                    • Analogías útiles
+                    
+                    ## 4. Preguntas para Generar Participación
+                    • 3-5 preguntas estratégicas
+                    • Preguntas abiertas que fomenten discusión
+                    
+                    Usa Markdown estructurado y lenguaje profesional chileno.
                 """.trimIndent()
                 val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
                 withContext(Dispatchers.Main) {
                     loading.dismiss(); mostrarResultadoIA(
-                    "🧩 Secuencia didáctica (orden sugerido)",
+                    "🎤 Guía de Presentación",
                     resultado
                 )
                 }
@@ -340,18 +374,44 @@ class DetalleClaseActivity : AppCompatActivity() {
     private fun ideasDocenteBasadasEnPdf() {
         val clase = claseActual ?: return
         val loading =
-            mostrarDialogoCarga("🎓 Generando ideas...", "La IA está trabajando, por favor espera")
+            mostrarDialogoCarga(
+                "🎮 Creando actividades...",
+                "La IA está trabajando, por favor espera"
+            )
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val prompt = """
-                    Eres docente con foco en aprendizaje activo. Usando el contenido de la clase y el PDF (${clase.archivoPdfNombre}),
-                    genera ideas de: 1) cómo iniciar la clase, 2) actividades interactivas, 3) cierre/reflexión.
-                    Da 3 ideas por sección, en bullets.
+                    Eres un diseñador instruccional especializado en aprendizaje activo. 
+                    Transforma este contenido en una clase interactiva para estudiantes universitarios.
+                    
+                    Clase: ${clase.nombre}
+                    Descripción: ${clase.descripcion}
+                    Material PDF: ${clase.archivoPdfNombre}
+                    
+                    Crea:
+                    
+                    ## 1. Actividades Prácticas (3-5)
+                    • Ejercicio individual o grupal
+                    • Tiempo estimado
+                    • Recursos necesarios
+                    
+                    ## 2. Preguntas de Reflexión
+                    • 5-7 preguntas que promuevan pensamiento crítico
+                    • Variar entre simples y complejas
+                    
+                    ## 3. Ejercicios Grupales
+                    • 2-3 dinámicas colaborativas
+                    • Instrucciones paso a paso
+                    
+                    ## 4. Recursos Complementarios
+                    • Videos, artículos, herramientas online sugeridos
+                    
+                    Usa Markdown. Sé creativo pero práctico. Lenguaje chileno neutral.
                 """.trimIndent()
                 val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
                 withContext(Dispatchers.Main) {
                     loading.dismiss(); mostrarResultadoIA(
-                    "🎓 Ideas para dictar la clase (con PDF)",
+                    "🎮 Actividades Interactivas",
                     resultado
                 )
                 }
@@ -380,35 +440,11 @@ class DetalleClaseActivity : AppCompatActivity() {
             return
         }
 
-        // 2) Si no hay URL, intentar cargar desde Firestore
-        val loading = mostrarDialogoCarga("📄 Cargando PDF...", "Obteniendo documento...")
-        FirebaseFirestore.getInstance().collection("clases").document(clase.id).get()
-            .addOnSuccessListener { doc ->
-                loading.dismiss()
-                val urlFs = doc.getString("archivoPdfUrl").orEmpty()
-                if (urlFs.isNotEmpty() &&
-                    (urlFs.startsWith("content://") ||
-                            urlFs.startsWith("http://") ||
-                            urlFs.startsWith("https://"))
-                ) {
-                    claseActual = clase.copy(archivoPdfUrl = urlFs)
-                    abrirPdf(urlFs)
-                } else {
-                    // No hay PDF disponible
-                    Toast.makeText(
-                        this@DetalleClaseActivity,
-                        "❌ Esta clase no tiene un PDF asociado",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-            .addOnFailureListener { e ->
-                loading.dismiss()
-                Toast.makeText(
-                    this@DetalleClaseActivity,
-                    "❌ Error al cargar PDF: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
+        // No hay PDF disponible
+        Toast.makeText(
+            this@DetalleClaseActivity,
+            "❌ Esta clase no tiene un PDF asociado",
+            Toast.LENGTH_LONG
+        ).show()
     }
 }

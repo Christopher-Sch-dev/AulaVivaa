@@ -5,8 +5,16 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Permiso para notificaciones en Android 13+ (Recurso Nativo) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Permisos para caché de PDFs (Android < 13) -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
 
     <application
+        android:name=".AulaVivaApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
