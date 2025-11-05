@@ -135,32 +135,23 @@ class DetalleClaseActivity : AppCompatActivity() {
     // ---- IA Docente ----
     private fun generarIdeasParaClase() {
         val clase = claseActual ?: return
-        val pdfHint =
-            if (!clase.archivoPdfUrl.isNullOrEmpty() && clase.archivoPdfUrl.startsWith("http")) "\nEnlace PDF: ${clase.archivoPdfUrl}" else ""
         val loading =
             mostrarDialogoCarga("💡 Generando ideas...", "La IA está trabajando, por favor espera")
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    Eres un asistente educativo para docentes. Analiza esta clase y genera ideas creativas:
-                    Título: ${clase.nombre}
-                    Descripción: ${clase.descripcion}$pdfHint
-                    Genera 5 ideas en lista numerada, máximo 2 líneas cada una.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "💡 Ideas para tu clase",
-                    resultado
+                val resultado = iaRepository.generarIdeasParaClase(
+                    clase.nombre,
+                    clase.descripcion,
+                    clase.archivoPdfUrl
                 )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("💡 Ideas para tu clase", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -174,26 +165,18 @@ class DetalleClaseActivity : AppCompatActivity() {
         )
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    Eres experto en pedagogía. Diseña 4 actividades dinámicas:
-                    Título: ${clase.nombre}
-                    Descripción: ${clase.descripcion}
-                    Para cada actividad: nombre, objetivo, duración, materiales.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "🎯 Actividades sugeridas",
-                    resultado
+                val resultado = iaRepository.sugerirActividades(
+                    clase.nombre,
+                    clase.descripcion
                 )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("🎯 Actividades sugeridas", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -212,26 +195,20 @@ class DetalleClaseActivity : AppCompatActivity() {
                 )
                 lifecycleScope.launch(Dispatchers.IO) {
                     try {
-                        val prompt = """
-                            Estructura esta clase de $duracion:
-                            Título: ${clase.nombre}
-                            Descripción: ${clase.descripcion}
-                            Divide en bloques con minutos exactos y actividades.
-                        """.trimIndent()
-                        val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                        withContext(Dispatchers.Main) {
-                            loading.dismiss(); mostrarResultadoIA(
-                            "⏱️ Estructura de $duracion",
-                            resultado
+                        val resultado = iaRepository.estructurarClasePorTiempo(
+                            clase.nombre,
+                            clase.descripcion,
+                            duracion
                         )
+                        withContext(Dispatchers.Main) {
+                            loading.dismiss()
+                            mostrarResultadoIA("⏱️ Estructura de $duracion", resultado)
                         }
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
-                            loading.dismiss(); Toast.makeText(
-                            this@DetalleClaseActivity,
-                            e.message,
-                            Toast.LENGTH_SHORT
-                        ).show()
+                            loading.dismiss()
+                            Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
                 }
@@ -246,24 +223,15 @@ class DetalleClaseActivity : AppCompatActivity() {
             mostrarDialogoCarga("📄 Analizando PDF...", "La IA está trabajando, por favor espera")
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    El docente tiene un PDF para: ${clase.nombre}
-                    Sugiere 3 formas de aprovechar el material en clase: lectura crítica, debate, práctica.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
+                val resultado = iaRepository.analizarPdfConIA(clase.nombre)
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "📄 Análisis del material PDF",
-                    resultado
-                )
+                    loading.dismiss()
+                    mostrarResultadoIA("📄 Análisis del material PDF", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -277,41 +245,19 @@ class DetalleClaseActivity : AppCompatActivity() {
         )
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    Eres un asistente educativo experto. Resume el contenido de esta clase en español chileno neutro y profesional.
-                    
-                    Clase: ${clase.nombre}
-                    Descripción: ${clase.descripcion}
-                    Material PDF: ${clase.archivoPdfNombre}
-                    
-                    El resumen debe incluir:
-                    ## Tema Principal
-                    [Descripción en 2-3 líneas]
-                    
-                    ## Conceptos Clave
-                    • [Punto 1]
-                    • [Punto 2]
-                    • [Punto 3-5]
-                    
-                    ## Conclusiones
-                    [Resumen de aprendizajes principales]
-                    
-                    Usa formato Markdown claro y estructurado.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "📝 Resumen del contenido",
-                    resultado
+                val resultado = iaRepository.resumirContenidoPdf(
+                    clase.nombre,
+                    clase.descripcion,
+                    clase.archivoPdfNombre ?: "Material educativo"
                 )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("📝 Resumen del contenido", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -326,46 +272,18 @@ class DetalleClaseActivity : AppCompatActivity() {
             )
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    Eres un docente experto en pedagogía. Crea una guía detallada para presentar esta clase de forma efectiva.
-                    
-                    Clase: ${clase.nombre}
-                    Contenido: ${clase.descripcion}
-                    
-                    La guía debe incluir:
-                    
-                    ## 1. Introducción Sugerida (2-3 minutos)
-                    • Gancho inicial para captar atención
-                    • Contextualización del tema
-                    
-                    ## 2. Puntos Clave a Enfatizar
-                    • Conceptos fundamentales
-                    • Por qué son importantes
-                    
-                    ## 3. Ejemplos Prácticos Recomendados
-                    • Casos reales o ejercicios concretos
-                    • Analogías útiles
-                    
-                    ## 4. Preguntas para Generar Participación
-                    • 3-5 preguntas estratégicas
-                    • Preguntas abiertas que fomenten discusión
-                    
-                    Usa Markdown estructurado y lenguaje profesional chileno.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "🎤 Guía de Presentación",
-                    resultado
+                val resultado = iaRepository.generarGuiaPresentacion(
+                    clase.nombre,
+                    clase.descripcion
                 )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("🎤 Guía de Presentación", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -380,48 +298,19 @@ class DetalleClaseActivity : AppCompatActivity() {
             )
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val prompt = """
-                    Eres un diseñador instruccional especializado en aprendizaje activo. 
-                    Transforma este contenido en una clase interactiva para estudiantes universitarios.
-                    
-                    Clase: ${clase.nombre}
-                    Descripción: ${clase.descripcion}
-                    Material PDF: ${clase.archivoPdfNombre}
-                    
-                    Crea:
-                    
-                    ## 1. Actividades Prácticas (3-5)
-                    • Ejercicio individual o grupal
-                    • Tiempo estimado
-                    • Recursos necesarios
-                    
-                    ## 2. Preguntas de Reflexión
-                    • 5-7 preguntas que promuevan pensamiento crítico
-                    • Variar entre simples y complejas
-                    
-                    ## 3. Ejercicios Grupales
-                    • 2-3 dinámicas colaborativas
-                    • Instrucciones paso a paso
-                    
-                    ## 4. Recursos Complementarios
-                    • Videos, artículos, herramientas online sugeridos
-                    
-                    Usa Markdown. Sé creativo pero práctico. Lenguaje chileno neutral.
-                """.trimIndent()
-                val resultado = iaRepository.generarRespuestaPersonalizada(prompt)
-                withContext(Dispatchers.Main) {
-                    loading.dismiss(); mostrarResultadoIA(
-                    "🎮 Actividades Interactivas",
-                    resultado
+                val resultado = iaRepository.generarActividadesInteractivas(
+                    clase.nombre,
+                    clase.descripcion,
+                    clase.archivoPdfNombre
                 )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("🎮 Actividades Interactivas", resultado)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    loading.dismiss(); Toast.makeText(
-                    this@DetalleClaseActivity,
-                    e.message,
-                    Toast.LENGTH_SHORT
-                ).show()
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }

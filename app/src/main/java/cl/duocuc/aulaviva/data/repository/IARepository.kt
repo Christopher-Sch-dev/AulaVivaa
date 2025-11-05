@@ -115,173 +115,593 @@ class IARepository {
         }
     }
 
-    fun markdownToHtml(md: String): String {
-        var html = md
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-        // Encabezados
-        html = html
-            .replace(Regex("""^# (.*)$""", RegexOption.MULTILINE), "<h1>$1</h1>")
-            .replace(Regex("""^## (.*)$""", RegexOption.MULTILINE), "<h2>$1</h2>")
-            .replace(Regex("""^### (.*)$""", RegexOption.MULTILINE), "<h3>$1</h3>")
-        // Bullets y listas numeradas
-        html = html
-            .replace(Regex("""^-\s+(.*)$""", RegexOption.MULTILINE), "<br/>• $1")
-            .replace(Regex("""^\d+\.\s+(.*)$""", RegexOption.MULTILINE), "<br/>$0")
-        // Negrita e itálica
-        html = html
-            .replace(Regex("""\*\*(.*?)\*\*"""), "<b>$1</b>")
-            .replace(Regex("""\*(.*?)\*"""), "<i>$1</i>")
-        // Saltos de línea
-        html = html.replace("\n", "<br/>")
-        return "<html><head><meta charset='utf-8'/></head><body style='font-family:sans-serif;padding:12px'>$html</body></html>"
-    }
 
     /**
-     * 🤖 Genera respuesta personalizada para cualquier prompt
+     * 💡 Genera ideas creativas para la clase
      */
-    suspend fun generarRespuestaPersonalizada(prompt: String): String {
+    suspend fun generarIdeasParaClase(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String?
+    ): String {
         return try {
-            val res = llamarGemini(prompt)
-            if (res.contains("ESTE FUE GEMINI REAL BRO e.e")) res else "$res\n\n— ESTE FUE GEMINI REAL BRO e.e"
+            val contextoPdf =
+                if (!pdfUrl.isNullOrEmpty()) "\n📎 Material de apoyo: PDF adjunto" else ""
+            val prompt = """
+                # CONTEXTO Y ROL
+                Eres un consultor en innovación educativa para docentes de educación superior chilena.
+                
+                # DATOS DE LA CLASE
+                📚 Clase: $nombreClase
+                📝 Descripción: $descripcion$contextoPdf
+                
+                # INSTRUCCIONES
+                1. **Confirma el tema**: Identifica el área disciplinar y nivel
+                2. **Asume rol apropiado**: Actúa como especialista en esa área
+                3. **Genera ideas innovadoras**: Propuestas creativas pero aplicables
+                
+                # FORMATO DE RESPUESTA
+                
+                🎯 **ANÁLISIS RÁPIDO**
+                • Tema central: [tema detectado]
+                • Área: [disciplina]
+                • Público objetivo: [ej: Estudiantes primer año, profesionales]
+                
+                💡 **IDEAS PARA LA CLASE**
+                
+                1. **[Nombre de idea 1]**
+                   Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
+                
+                2. **[Nombre de idea 2]**
+                   Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
+                
+                3. **[Nombre de idea 3]**
+                   Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
+                
+                4. **[Nombre de idea 4]**
+                   Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
+                
+                5. **[Nombre de idea 5]**
+                   Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
+                
+                ⭐ **TIP ADICIONAL**
+                [Una recomendación creativa que potencie la clase]
+                
+                # ESTILO
+                - Español chileno profesional
+                - Ideas concretas y aplicables
+                - Balance entre innovación y practicidad
+                - Máximo 350 palabras
+            """.trimIndent()
+
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
-            "⚠️ Error al conectar con Gemini AI\n\n${e.message?.take(200) ?: "Desconocido"}"
+            "⚠️ Error al conectar con Gemini AI\n\n💡 IDEAS GENERALES para $nombreClase\n\nPara ideas personalizadas, verifica tu conexión.\n\nError: ${
+                e.message?.take(
+                    100
+                ) ?: "Desconocido"
+            }"
         }
     }
 
     /**
-     * 🤖 Genera resumen educativo
+     * 🎯 Sugiere actividades dinámicas
      */
-    suspend fun generarResumen(textoClase: String): String {
+    suspend fun sugerirActividades(nombreClase: String, descripcion: String): String {
         return try {
             val prompt = """
-                Eres Gemini AI de Google. Analiza este contenido educativo y genera un resumen breve:
+                # CONTEXTO Y ROL
+                Eres un diseñador instruccional especializado en aprendizaje activo para educación superior chilena.
                 
-                $textoClase
+                # DATOS DE LA CLASE
+                📚 Clase: $nombreClase
+                📝 Descripción: $descripcion
                 
-                Responde con:
-                📝 Tema principal (1 frase)
-                🎯 3 puntos clave (bullets)
-                💡 1 consejo de estudio
+                # INSTRUCCIONES
+                1. **Confirma el contexto**: Identifica tema y nivel
+                2. **Asume rol de pedagogo**: Experto en metodologías activas
+                3. **Diseña 4 actividades**: Variadas y con diferente nivel de complejidad
                 
-                Termina con: "⚡ Generado por Gemini AI Real de Google po LOCO e.e"
+                # FORMATO DE RESPUESTA
                 
-                Máximo 200 palabras, formato claro.
+                🎓 **CONTEXTO DETECTADO**
+                • Tema: [tema identificado]
+                • Enfoque sugerido: [ej: Práctico, Teórico-aplicado, Reflexivo]
+                
+                🎯 **ACTIVIDADES DISEÑADAS**
+                
+                **ACTIVIDAD 1: [Nombre descriptivo]**
+                • **Objetivo**: [Qué se busca lograr]
+                • **Duración**: [X minutos]
+                • **Tipo**: [Individual/Grupal/Plenaria]
+                • **Materiales**: [Recursos necesarios]
+                • **Cómo ejecutarla**: [Pasos breves]
+                
+                **ACTIVIDAD 2: [Nombre descriptivo]**
+                • **Objetivo**: [Qué se busca lograr]
+                • **Duración**: [X minutos]
+                • **Tipo**: [Individual/Grupal/Plenaria]
+                • **Materiales**: [Recursos necesarios]
+                • **Cómo ejecutarla**: [Pasos breves]
+                
+                **ACTIVIDAD 3: [Nombre descriptivo]**
+                • **Objetivo**: [Qué se busca lograr]
+                • **Duración**: [X minutos]
+                • **Tipo**: [Individual/Grupal/Plenaria]
+                • **Materiales**: [Recursos necesarios]
+                • **Cómo ejecutarla**: [Pasos breves]
+                
+                **ACTIVIDAD 4: [Nombre descriptivo]**
+                • **Objetivo**: [Qué se busca lograr]
+                • **Duración**: [X minutos]
+                • **Tipo**: [Individual/Grupal/Plenaria]
+                • **Materiales**: [Recursos necesarios]
+                • **Cómo ejecutarla**: [Pasos breves]
+                
+                ⏱️ **TIEMPO TOTAL**: [Suma de duraciones]
+                
+                💡 **TIP DE IMPLEMENTACIÓN**
+                [Consejo para que las actividades fluyan mejor]
+                
+                # ESTILO
+                - Español chileno profesional
+                - Instrucciones claras y ejecutables
+                - Actividades variadas (no repetitivas)
+                - Máximo 500 palabras
             """.trimIndent()
 
-            llamarGemini(prompt)
-
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
-            """
-            ⚠️ No pude conectar con Gemini ahora
-            
-            📝 RESUMEN LOCAL:
-            
-            📌 Tema: ${textoClase.take(80)}...
-            
-            🎯 Análisis:
-            • ${textoClase.split(" ").size} palabras detectadas
-            • Contenido educativo
-            • Nivel intermedio
-            
-            💡 Verifica tu conexión a internet
-            
-            Error: ${e.message?.take(100) ?: "Desconocido"}
-            """.trimIndent()
+            "⚠️ Error al conectar con Gemini AI\n\n🎯 ACTIVIDADES GENERALES para $nombreClase\n\nPara actividades detalladas, verifica tu conexión.\n\nError: ${
+                e.message?.take(
+                    100
+                ) ?: "Desconocido"
+            }"
         }
     }
 
     /**
-     * 🤖 Genera glosario de términos
+     * ⏱️ Estructura clase por tiempo
      */
-    suspend fun generarGlosario(textoClase: String): String {
+    suspend fun estructurarClasePorTiempo(
+        nombreClase: String,
+        descripcion: String,
+        duracionMinutos: String
+    ): String {
         return try {
             val prompt = """
-                Analiza este texto educativo y extrae 5 términos clave con definiciones:
+                # CONTEXTO Y ROL
+                Eres un planificador educativo experto en gestión del tiempo para clases universitarias chilenas.
                 
-                $textoClase
+                # DATOS DE LA CLASE
+                📚 Clase: $nombreClase
+                📝 Descripción: $descripcion
+                ⏱️ Duración total: $duracionMinutos
                 
-                Formato:
-                📚 GLOSARIO
+                # INSTRUCCIONES
+                1. **Confirma el tema**: Identifica área y complejidad
+                2. **Asume rol de planificador**: Experto en timing educativo
+                3. **Estructura la clase**: Divide el tiempo de forma óptima
                 
-                📖 TÉRMINO 1
-                   → Definición breve (1 línea)
+                # FORMATO DE RESPUESTA
                 
-                📖 TÉRMINO 2
-                   → Definición breve
+                🎓 **ANÁLISIS INICIAL**
+                • Tema: [tema identificado]
+                • Complejidad: [Baja/Media/Alta]
+                • Enfoque recomendado: [Teórico/Práctico/Mixto]
                 
-                (continúa con 5 términos)
+                ⏱️ **ESTRUCTURA TEMPORAL ($duracionMinutos)**
                 
-                ⚡ Generado por Gemini AI de Google
+                **🟢 INICIO (__ min | 0:00 - __:__)**
+                • **Saludo y contextualización** (__ min)
+                  → [Qué hacer específicamente]
+                • **Objetivos de la clase** (__ min)
+                  → [Presentar metas claras]
+                • **Activación de conocimientos previos** (__ min)
+                  → [Pregunta o actividad breve]
                 
-                Máximo 250 palabras.
+                **🔵 DESARROLLO (__ min | __:__ - __:__)**
+                • **Presentación del contenido principal** (__ min)
+                  → [Explicación o demostración]
+                • **Actividad práctica / Ejercicio** (__ min)
+                  → [Trabajo individual o grupal]
+                • **Retroalimentación grupal** (__ min)
+                  → [Compartir resultados]
+                • **Profundización** (__ min)
+                  → [Ejemplos adicionales o dudas]
+                
+                **🟡 CIERRE (__ min | __:__ - __:__)**
+                • **Síntesis de aprendizajes** (__ min)
+                  → [Resumen colaborativo]
+                • **Evaluación formativa** (__ min)
+                  → [Quiz, pregunta, ticket de salida]
+                • **Asignación de tareas** (__ min)
+                  → [Si aplica, explicar homework]
+                
+                ⚠️ **TIEMPO DE BUFFER**: __ min (para imprevistos)
+                
+                💡 **TIPS DE GESTIÓN DEL TIEMPO**
+                • [Consejo 1 para mantener el ritmo]
+                • [Consejo 2 para no excederse]
+                
+                # ESTILO
+                - Español chileno profesional
+                - Tiempos precisos y realistas
+                - Actividades claras en cada bloque
+                - Máximo 450 palabras
             """.trimIndent()
 
-            llamarGemini(prompt)
-
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
-            """
-            ⚠️ Error con Gemini
-            
-            📚 GLOSARIO LOCAL:
-            
-            📖 ANDROID
-               → Sistema operativo móvil de Google
-            
-            📖 KOTLIN
-               → Lenguaje de programación moderno
-            
-            📖 MVVM
-               → Patrón arquitectónico para separar UI de lógica
-            
-            Error: ${e.message?.take(100) ?: "Desconocido"}
-            """.trimIndent()
+            "⚠️ Error al conectar con Gemini AI\n\n⏱️ ESTRUCTURA BÁSICA ($duracionMinutos) para $nombreClase\n\nPara planificación detallada, verifica tu conexión.\n\nError: ${
+                e.message?.take(
+                    100
+                ) ?: "Desconocido"
+            }"
         }
     }
 
     /**
-     * 🤖 Ideas pedagógicas para profesor
+     * 📊 Analiza PDF con IA
      */
-    suspend fun analizarPDFParaProfesor(nombreArchivo: String, descripcionClase: String): String {
+    suspend fun analizarPdfConIA(nombreClase: String): String {
         return try {
             val prompt = """
-                Soy asistente pedagógico. Dame 3 ideas concretas de actividades para esta clase:
+                # CONTEXTO Y ROL
+                Eres un analista de materiales educativos para docentes universitarios chilenos.
                 
-                Archivo: $nombreArchivo
-                Tema: $descripcionClase
+                # SITUACIÓN
+                Un docente tiene un PDF para la clase: "$nombreClase"
+                Necesita ideas concretas para aprovechar ese material en su clase.
                 
-                Formato:
-                💡 IDEAS PARA LA CLASE:
+                # INSTRUCCIONES
+                1. **Identifica el tipo de clase**: Según el nombre, deduce el área
+                2. **Asume rol apropiado**: Experto en esa disciplina
+                3. **Propón 3 estrategias**: Formas efectivas de usar el PDF
                 
-                1. [Actividad 1] (tiempo)
-                2. [Actividad 2] (tiempo)
-                3. [Actividad 3] (tiempo)
+                # FORMATO DE RESPUESTA
                 
-                ⏱️ Tiempo total: 60 minutos
+                🎓 **CONTEXTO DETECTADO**
+                • Clase: $nombreClase
+                • Área estimada: [disciplina]
+                • Tipo de PDF probable: [ej: Artículo, Manual, Presentación]
                 
-                ⚡ Generado por Gemini AI
+                📊 **ESTRATEGIAS PARA APROVECHAR EL PDF**
                 
-                Máximo 200 palabras, ideas específicas y prácticas.
+                **ESTRATEGIA 1: LECTURA CRÍTICA GUIADA**
+                • **Qué hacer**: Asignar secciones del PDF con preguntas específicas
+                • **Cómo aplicarlo**: [Pasos concretos]
+                • **Tiempo**: [X minutos]
+                • **Beneficio para el aprendizaje**: [Por qué funciona]
+                
+                **ESTRATEGIA 2: DEBATE O DISCUSIÓN**
+                • **Qué hacer**: Usar el PDF como base para debate
+                • **Cómo aplicarlo**: [Pasos concretos]
+                • **Tiempo**: [X minutos]
+                • **Beneficio para el aprendizaje**: [Por qué funciona]
+                
+                **ESTRATEGIA 3: APLICACIÓN PRÁCTICA**
+                • **Qué hacer**: Ejercicios basados en el contenido del PDF
+                • **Cómo aplicarlo**: [Pasos concretos]
+                • **Tiempo**: [X minutos]
+                • **Beneficio para el aprendizaje**: [Por qué funciona]
+                
+                💡 **RECOMENDACIÓN ADICIONAL**
+                [Un tip creativo para maximizar el valor del PDF]
+                
+                # ESTILO
+                - Español chileno profesional
+                - Estrategias concretas y aplicables
+                - Enfoque en el valor pedagógico
+                - Máximo 400 palabras
             """.trimIndent()
 
-            llamarGemini(prompt)
-
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
-            """
-            ⚠️ Error con Gemini
-            
-            💡 IDEAS LOCALES:
-            
-            📄 $nombreArchivo
-            📝 $descripcionClase
-            
-            1. Presentación interactiva (15 min)
-            2. Ejercicios prácticos (30 min)
-            3. Discusión y conclusiones (15 min)
-            
-            Error: ${e.message?.take(100) ?: "Desconocido"}
+            "⚠️ Error al conectar con Gemini AI\n\n📊 ESTRATEGIAS GENERALES PARA PDF de $nombreClase\n\nPara estrategias personalizadas, verifica tu conexión.\n\nError: ${
+                e.message?.take(
+                    100
+                ) ?: "Desconocido"
+            }"
+        }
+    }
+
+    /**
+     * 📝 Resume contenido del PDF
+     */
+    suspend fun resumirContenidoPdf(
+        nombreClase: String,
+        descripcion: String,
+        nombrePdf: String
+    ): String {
+        return try {
+            val prompt = """
+                # CONTEXTO Y ROL
+                Eres un sintetizador de contenido educativo para docentes chilenos.
+                
+                # DATOS DEL MATERIAL
+                📚 Clase: $nombreClase
+                📝 Descripción: $descripcion
+                📄 Material PDF: $nombrePdf
+                
+                # INSTRUCCIONES
+                1. **Confirma el tema**: Identifica el contenido principal
+                2. **Asume rol apropiado**: Experto en esa área
+                3. **Genera resumen estructurado**: Útil para preparar la clase
+                
+                # FORMATO DE RESPUESTA
+                
+                📄 **IDENTIFICACIÓN DEL MATERIAL**
+                • Clase: $nombreClase
+                • Tema central detectado: [tema principal]
+                • Tipo de contenido: [Teórico/Práctico/Mixto]
+                
+                ## TEMA PRINCIPAL
+                [Descripción clara del tema central en 2-3 líneas]
+                
+                ## CONCEPTOS CLAVE
+                • **Concepto 1**: [Explicación breve]
+                • **Concepto 2**: [Explicación breve]
+                • **Concepto 3**: [Explicación breve]
+                • **Concepto 4**: [Explicación breve]
+                • **Concepto 5**: [Si aplica]
+                
+                ## CONCLUSIONES PRINCIPALES
+                [Resumen de los aprendizajes fundamentales que el docente debe transmitir]
+                
+                💡 **SUGERENCIA DIDÁCTICA**
+                [Cómo el docente puede presentar este contenido de forma efectiva]
+                
+                # ESTILO
+                - Español chileno profesional
+                - Formato Markdown estructurado
+                - Enfoque en lo esencial para el docente
+                - Máximo 350 palabras
             """.trimIndent()
+
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+        } catch (e: Exception) {
+            "⚠️ Error al conectar con Gemini AI\n\n📝 RESUMEN BÁSICO de $nombreClase\n\nPara resumen detallado, verifica tu conexión.\n\nError: ${
+                e.message?.take(
+                    100
+                ) ?: "Desconocido"
+            }"
+        }
+    }
+
+    /**
+     * 🌟 Reordena temas para presentar (Guía de presentación)
+     */
+    suspend fun generarGuiaPresentacion(nombreClase: String, descripcion: String): String {
+        return try {
+            val prompt = """
+                # CONTEXTO Y ROL
+                Eres un coach de oratoria y presentación para docentes universitarios chilenos.
+                
+                # DATOS DE LA CLASE
+                📚 Clase: $nombreClase
+                📝 Contenido: $descripcion
+                
+                # INSTRUCCIONES
+                1. **Confirma el tema**: Identifica área y complejidad
+                2. **Asume rol de coach**: Experto en presentación efectiva
+                3. **Crea guía detallada**: Secuencia óptima para presentar el contenido
+                
+                # FORMATO DE RESPUESTA
+                
+                🎓 **ANÁLISIS DEL CONTENIDO**
+                • Tema: $nombreClase
+                • Complejidad: [Baja/Media/Alta]
+                • Tipo de clase: [Magistral/Participativa/Práctica]
+                
+                ## 1. INTRODUCCIÓN SUGERIDA (2-3 minutos)
+                
+                **🎯 Gancho inicial**
+                [Frase, pregunta o dato impactante para captar atención]
+                
+                **📌 Contextualización**
+                [Por qué este tema es relevante para los estudiantes]
+                
+                **🎓 Objetivos de la clase**
+                [Lo que aprenderán hoy, en lenguaje simple]
+                
+                ---
+                
+                ## 2. PUNTOS CLAVE A ENFATIZAR
+                
+                **Punto 1: [Concepto fundamental]**
+                → Por qué es importante: [Relevancia]
+                → Cómo explicarlo: [Estrategia]
+                
+                **Punto 2: [Concepto fundamental]**
+                → Por qué es importante: [Relevancia]
+                → Cómo explicarlo: [Estrategia]
+                
+                **Punto 3: [Concepto fundamental]**
+                → Por qué es importante: [Relevancia]
+                → Cómo explicarlo: [Estrategia]
+                
+                ---
+                
+                ## 3. EJEMPLOS PRÁCTICOS RECOMENDADOS
+                
+                • **Ejemplo 1**: [Caso real o analogía simple]
+                • **Ejemplo 2**: [Ejercicio concreto]
+                • **Ejemplo 3**: [Comparación útil]
+                
+                ---
+                
+                ## 4. PREGUNTAS PARA GENERAR PARTICIPACIÓN
+                
+                **Preguntas de inicio** (despertar interés):
+                • [Pregunta abierta 1]
+                • [Pregunta abierta 2]
+                
+                **Preguntas de desarrollo** (profundizar):
+                • [Pregunta desafiante 1]
+                • [Pregunta desafiante 2]
+                
+                **Pregunta de cierre** (sintetizar):
+                • [Pregunta reflexiva final]
+                
+                ---
+                
+                💡 **TIPS DE PRESENTACIÓN**
+                • [Consejo 1 para mantener la atención]
+                • [Consejo 2 para manejar dudas]
+                • [Consejo 3 para cerrar con impacto]
+                
+                # ESTILO
+                - Español chileno profesional
+                - Formato Markdown estructurado
+                - Consejos prácticos y aplicables
+                - Máximo 600 palabras
+            """.trimIndent()
+
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+        } catch (e: Exception) {
+            "⚠️ Error al conectar con Gemini AI\n\n🎤 GUÍA BÁSICA DE PRESENTACIÓN para $nombreClase\n\nPara guía detallada, verifica tu conexión.\n\nError: ${
+                e.message?.take(
+                    100
+                ) ?: "Desconocido"
+            }"
+        }
+    }
+
+    /**
+     * 💭 Ideas para dictar la clase (Actividades interactivas)
+     */
+    suspend fun generarActividadesInteractivas(
+        nombreClase: String,
+        descripcion: String,
+        nombrePdf: String?
+    ): String {
+        return try {
+            val contextoPdf =
+                if (!nombrePdf.isNullOrEmpty()) "\n📎 Material de apoyo: $nombrePdf" else ""
+            val prompt = """
+                # CONTEXTO Y ROL
+                Eres un diseñador instruccional especializado en transformar contenido en experiencias de aprendizaje activo.
+                
+                # DATOS DE LA CLASE
+                📚 Clase: $nombreClase
+                📝 Descripción: $descripcion$contextoPdf
+                
+                # INSTRUCCIONES
+                1. **Confirma el tema**: Identifica área y nivel
+                2. **Asume rol de diseñador**: Experto en aprendizaje activo
+                3. **Transforma en clase interactiva**: Múltiples actividades variadas
+                
+                # FORMATO DE RESPUESTA
+                
+                🎓 **CONTEXTO PEDAGÓGICO**
+                • Tema: $nombreClase
+                • Enfoque: [Constructivista/Colaborativo/Experiencial]
+                • Nivel de interactividad: [Alto - múltiples dinámicas]
+                
+                ## 1. ACTIVIDADES PRÁCTICAS (3-5 propuestas)
+                
+                **📝 Actividad Individual: [Nombre]**
+                • **Qué hacer**: [Descripción de la actividad]
+                • **Tiempo**: [X minutos]
+                • **Recursos**: [Materiales necesarios]
+                • **Objetivo**: [Qué desarrolla en el estudiante]
+                
+                **👥 Actividad Grupal: [Nombre]**
+                • **Qué hacer**: [Descripción de la actividad]
+                • **Tiempo**: [X minutos]
+                • **Recursos**: [Materiales necesarios]
+                • **Objetivo**: [Qué desarrolla en el estudiante]
+                
+                **💡 Actividad Creativa: [Nombre]**
+                • **Qué hacer**: [Descripción de la actividad]
+                • **Tiempo**: [X minutos]
+                • **Recursos**: [Materiales necesarios]
+                • **Objetivo**: [Qué desarrolla en el estudiante]
+                
+                [Continuar con 2-3 actividades más]
+                
+                ---
+                
+                ## 2. PREGUNTAS DE REFLEXIÓN
+                
+                **Nivel inicial** (accesibles):
+                1. [Pregunta simple sobre conceptos básicos]
+                2. [Pregunta de experiencia personal]
+                
+                **Nivel intermedio** (analíticas):
+                3. [Pregunta que requiere análisis]
+                4. [Pregunta de relación entre conceptos]
+                
+                **Nivel avanzado** (críticas):
+                5. [Pregunta que desafía suposiciones]
+                6. [Pregunta de aplicación creativa]
+                7. [Pregunta de evaluación]
+                
+                ---
+                
+                ## 3. EJERCICIOS GRUPALES
+                
+                **Dinámica 1: [Nombre]**
+                • **Instrucciones paso a paso**:
+                  1. [Paso 1]
+                  2. [Paso 2]
+                  3. [Paso 3]
+                • **Tiempo**: [X minutos]
+                • **Resultado esperado**: [Qué producen los grupos]
+                
+                **Dinámica 2: [Nombre]**
+                • **Instrucciones paso a paso**:
+                  1. [Paso 1]
+                  2. [Paso 2]
+                  3. [Paso 3]
+                • **Tiempo**: [X minutos]
+                • **Resultado esperado**: [Qué producen los grupos]
+                
+                ---
+                
+                ## 4. RECURSOS COMPLEMENTARIOS
+                
+                **Videos sugeridos**:
+                • [Tema relacionado 1 - buscar en YouTube]
+                • [Tema relacionado 2 - buscar en YouTube]
+                
+                **Artículos/Lecturas**:
+                • [Tema para profundizar 1]
+                • [Tema para profundizar 2]
+                
+                **Herramientas online**:
+                • [Herramienta digital 1 - para qué sirve]
+                • [Herramienta digital 2 - para qué sirve]
+                
+                ---
+                
+                💡 **CONSEJOS DE IMPLEMENTACIÓN**
+                • [Tip 1 para que las actividades fluyan]
+                • [Tip 2 para mantener la energía]
+                • [Tip 3 para evaluar el aprendizaje]
+                
+                # ESTILO
+                - Español chileno neutral y profesional
+                - Formato Markdown estructurado
+                - Actividades creativas pero prácticas
+                - Máximo 700 palabras
+            """.trimIndent()
+
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+        } catch (e: Exception) {
+            "⚠️ Error al conectar con Gemini AI\n\n🎮 ACTIVIDADES BÁSICAS para $nombreClase\n\nPara actividades detalladas, verifica tu conexión.\n\nError: ${
+                e.message?.take(
+                    100
+                ) ?: "Desconocido"
+            }"
         }
     }
 }

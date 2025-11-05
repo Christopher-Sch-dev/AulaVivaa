@@ -84,7 +84,7 @@ class PdfViewerActivity : AppCompatActivity() {
         val pdfUrl = intent.getStringExtra("PDF_URL") ?: ""
 
         if (pdfUrl.isEmpty()) {
-            Toast.makeText(this, getString(R.string.pdf_url_empty_error), Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "URL del PDF no encontrada", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -93,27 +93,50 @@ class PdfViewerActivity : AppCompatActivity() {
 
         // Mostrar progreso
         progressDialog = ProgressDialog(this).apply {
-            setTitle(getString(R.string.pdf_loading_title))
-            setMessage(getString(R.string.pdf_loading_message))
+            setTitle("Cargando PDF")
+            setMessage("Espera un momento...")
             setCancelable(false)
             show()
         }
 
-        // Cargar PDF directamente en WebView
-        try {
-            webView.loadUrl(pdfUrl)
-
-            // Ocultar progress después de 3 segundos
-            webView.postDelayed({
+        // WebViewClient personalizado para detectar cuando termina de cargar
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
                 progressDialog?.dismiss()
-            }, PDF_LOADING_DELAY_MS)
+                Log.d("PdfViewer", "✅ PDF cargado correctamente")
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                super.onReceivedError(view, errorCode, description, failingUrl)
+                progressDialog?.dismiss()
+                Log.e("PdfViewer", "❌ Error cargando PDF: $description")
+                Toast.makeText(
+                    this@PdfViewerActivity,
+                    "Error al cargar el PDF. Verifica tu conexión a internet.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+
+        // Cargar PDF usando Google Docs Viewer
+        // WebView no puede mostrar PDFs directamente, usamos Google Docs
+        try {
+            val googleDocsUrl = "https://docs.google.com/gview?embedded=true&url=$pdfUrl"
+            Log.d("PdfViewer", "🔗 URL Google Docs: $googleDocsUrl")
+            webView.loadUrl(googleDocsUrl)
 
         } catch (e: Exception) {
             progressDialog?.dismiss()
-            Log.e("PdfViewer", "❌ Error cargando PDF", e)
+            Log.e("PdfViewer", "❌ Error al intentar cargar PDF", e)
             Toast.makeText(
                 this,
-                getString(R.string.pdf_unexpected_error, e.message),
+                "Error inesperado: ${e.message}",
                 Toast.LENGTH_LONG
             ).show()
         }

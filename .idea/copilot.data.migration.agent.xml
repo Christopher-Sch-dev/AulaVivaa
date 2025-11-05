@@ -168,6 +168,14 @@
               <option value="d220463a-fd55-47bc-b3be-dc3d68fddfe8" />
               <option value="94add446-1257-474e-b08d-af46cc68f378" />
               <option value="450105b2-1434-41f4-8727-ca98094ab10d" />
+              <option value="2c3469e7-84d5-4206-a50c-f551b6d67f6c" />
+              <option value="a1fd29ff-1676-449d-8ada-9a6b726530b5" />
+              <option value="71d2063d-4ad8-4049-86cb-edae0c2a6fe6" />
+              <option value="0d1c32b5-be26-4a28-b457-e8e8b31b776d" />
+              <option value="33b6df15-4d7b-4c1a-ad36-3f3ccc66506f" />
+              <option value="2e037f22-073c-4ce4-b459-562498ad8176" />
+              <option value="7a1abf72-a277-456f-b334-6e76559dbb1e" />
+              <option value="7740be38-f196-4e44-9bd4-458ce1f62bcd" />
             </set>
           </value>
         </entry>
@@ -283,6 +291,17 @@
           <option value="file://$PROJECT_DIR$/CREAR_USUARIO_PRUEBA.sql" />
           <option value="file://$PROJECT_DIR$/AUTO_CONFIRMAR_USUARIOS.sql" />
           <option value="file://$PROJECT_DIR$/REGISTRO_CORREGIDO.md" />
+          <option value="file://$PROJECT_DIR$/README.md" />
+          <option value="file://$PROJECT_DIR$/local.properties.template" />
+          <option value="file://$PROJECT_DIR$/GUIA_DUOC.md" />
+          <option value="file://$PROJECT_DIR$/CHECKLIST.md" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/IARepository.kt" />
+          <option value="file://$PROJECT_DIR$/CORRECCIONES_PDF_GEMINI.md" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/DetalleClaseActivity.kt" />
+          <option value="file://$PROJECT_DIR$/TODAS_LAS_IA_MEJORADAS.md" />
+          <option value="file://$PROJECT_DIR$/SCRIPTS_SUPABASE.sql" />
+          <option value="file://$PROJECT_DIR$/AUDITORIA_COMPLETA.md" />
+          <option value="file://$PROJECT_DIR$/LIMPIEZA_FINAL.md" />
         </set>
       </entry>
       <entry key="c62c1a13-009a-463b-93c1-fa95042c9182">
