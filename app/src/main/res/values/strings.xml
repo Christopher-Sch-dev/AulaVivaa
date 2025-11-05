@@ -48,4 +48,11 @@
     <string name="pdf_loading_message">Preparando visualización...</string>
     <string name="pdf_loading_error">❌ Error cargando PDF</string>
     <string name="pdf_unexpected_error">Error: %1$s</string>
+
+    <!-- IA en DetalleClase -->
+    <string name="ia_herramientas">🧠 Herramientas de IA</string>
+    <string name="ia_generar_ideas">💡 Generar ideas para la clase</string>
+    <string name="ia_sugerir_act_btn">🎯 Sugerir actividades</string>
+    <string name="ia_estructurar">⏱️ Estructurar clase por tiempo</string>
+    <string name="ia_analizar_pdf">🤖 Analizar PDF con IA</string>
 </resources>

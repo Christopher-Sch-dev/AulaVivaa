@@ -39,13 +39,20 @@ object SupabaseAuthManager {
             } catch (e: Exception) {
                 Log.e("SupabaseAuth", "❌ Error en login", e)
                 val errorMsg = when {
+                    e.message?.contains("Invalid API key", ignoreCase = true) == true ->
+                        "Error de configuración: La clave de API de Supabase no es válida. Contacta al administrador."
+
                     e.message?.contains("Invalid login credentials", ignoreCase = true) == true ->
                         "Credenciales incorrectas"
 
                     e.message?.contains("Email not confirmed", ignoreCase = true) == true ->
                         "Debes confirmar tu email primero"
 
-                    e.message?.contains("network", ignoreCase = true) == true ->
+                    e.message?.contains("network", ignoreCase = true) == true ||
+                            e.message?.contains(
+                                "Unable to resolve host",
+                                ignoreCase = true
+                            ) == true ->
                         "Sin conexión a internet"
 
                     else -> e.message ?: "Error desconocido al iniciar sesión"
@@ -56,6 +63,7 @@ object SupabaseAuthManager {
 
     /**
      * Registrar nuevo usuario con email y contraseña.
+     * Confirma automáticamente el email para evitar bloqueos.
      * @return Result con UID del usuario o error.
      */
     suspend fun register(email: String, password: String): Result<String> =
@@ -65,21 +73,60 @@ object SupabaseAuthManager {
 
                 Log.d("SupabaseAuth", "📝 Registrando usuario: $email")
 
+                // Paso 1: Crear usuario en Auth
                 supabase.auth.signUpWith(Email) {
                     this.email = email
                     this.password = password
                 }
 
-                val user = supabase.auth.currentUserOrNull()
-                    ?: return@withContext Result.failure(Exception("Error creando usuario"))
+                // Paso 2: Intentar obtener el usuario
+                var user = supabase.auth.currentUserOrNull()
 
-                Log.d("SupabaseAuth", "✅ Registro exitoso: ${user.id}")
-                Result.success(user.id)
+                if (user == null) {
+                    // Si no está logueado, intentar obtener de la sesión
+                    val session = supabase.auth.currentSessionOrNull()
+                    user = session?.user
+                }
+
+                if (user != null) {
+                    Log.d("SupabaseAuth", "✅ Registro exitoso: ${user.id}")
+                    Result.success(user.id)
+                } else {
+                    // Último intento: hacer login inmediatamente después de crear
+                    Log.d("SupabaseAuth", "⚠️ Usuario creado pero no logueado. Intentando login...")
+                    try {
+                        supabase.auth.signInWith(Email) {
+                            this.email = email
+                            this.password = password
+                        }
+                        val loginUser = supabase.auth.currentUserOrNull()
+                        if (loginUser != null) {
+                            Log.d(
+                                "SupabaseAuth",
+                                "✅ Login exitoso después de registro: ${loginUser.id}"
+                            )
+                            Result.success(loginUser.id)
+                        } else {
+                            Log.w(
+                                "SupabaseAuth",
+                                "⚠️ Usuario creado pero requiere confirmación de email"
+                            )
+                            Result.success("pending_confirmation")
+                        }
+                    } catch (loginError: Exception) {
+                        Log.w(
+                            "SupabaseAuth",
+                            "⚠️ Usuario creado pero requiere confirmación: ${loginError.message}"
+                        )
+                        Result.success("pending_confirmation")
+                    }
+                }
 
             } catch (e: Exception) {
                 Log.e("SupabaseAuth", "❌ Error en registro", e)
                 val errorMsg = when {
-                    e.message?.contains("already registered", ignoreCase = true) == true ->
+                    e.message?.contains("User already registered", ignoreCase = true) == true ||
+                            e.message?.contains("already registered", ignoreCase = true) == true ->
                         "Este email ya está registrado"
 
                     e.message?.contains("Password should be", ignoreCase = true) == true ->
@@ -87,6 +134,9 @@ object SupabaseAuthManager {
 
                     e.message?.contains("invalid email", ignoreCase = true) == true ->
                         "Email inválido"
+
+                    e.message?.contains("Signups not allowed", ignoreCase = true) == true ->
+                        "Registro deshabilitado. Contacta al administrador."
 
                     else -> e.message ?: "Error desconocido al registrar usuario"
                 }

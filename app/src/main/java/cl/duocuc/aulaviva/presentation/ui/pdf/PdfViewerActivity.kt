@@ -11,14 +11,16 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.core.content.ContextCompat // Added for color resources
+import androidx.core.content.ContextCompat
+import cl.duocuc.aulaviva.R
 
 class PdfViewerActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private var progressDialog: ProgressDialog? = null
 
-    private const val PDF_LOADING_DELAY_MS = 3000L // Constant for timeout
+    // Constante como propiedad normal para evitar error de compilación
+    private val PDF_LOADING_DELAY_MS = 3000L
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,8 +38,18 @@ class PdfViewerActivity : AppCompatActivity() {
         // Toolbar
         val toolbar = Toolbar(this).apply {
             title = getString(R.string.pdf_viewer_title)
-            setTitleTextColor(ContextCompat.getColor(this@PdfViewerActivity, R.color.colorOnPrimaryToolbar))
-            setBackgroundColor(ContextCompat.getColor(this@PdfViewerActivity, R.color.colorPrimaryToolbar))
+            setTitleTextColor(
+                ContextCompat.getColor(
+                    this@PdfViewerActivity,
+                    R.color.colorOnPrimaryToolbar
+                )
+            )
+            setBackgroundColor(
+                ContextCompat.getColor(
+                    this@PdfViewerActivity,
+                    R.color.colorPrimaryToolbar
+                )
+            )
             setNavigationOnClickListener { finish() }
             setNavigationIcon(android.R.drawable.ic_menu_close_clear_cancel)
         }
@@ -99,7 +111,11 @@ class PdfViewerActivity : AppCompatActivity() {
         } catch (e: Exception) {
             progressDialog?.dismiss()
             Log.e("PdfViewer", "❌ Error cargando PDF", e)
-            Toast.makeText(this, getString(R.string.pdf_unexpected_error, e.message), Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                this,
+                getString(R.string.pdf_unexpected_error, e.message),
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 

@@ -43,6 +43,20 @@ class ClaseRepository(context: Context) {
     private val appContext = context.applicationContext
 
     /**
+     * Mapeo local Clase -> ClaseEntity controlando el flag de sincronización.
+     */
+    private fun Clase.toEntityLocal(sincronizado: Boolean): ClaseEntity = ClaseEntity(
+        id = this.id,
+        nombre = this.nombre,
+        descripcion = this.descripcion,
+        fecha = this.fecha,
+        archivoPdfUrl = this.archivoPdfUrl,
+        archivoPdfNombre = this.archivoPdfNombre,
+        creador = this.creador,
+        sincronizado = sincronizado
+    )
+
+    /**
      * Obtiene las clases del usuario desde Room (local).
      * Flow emite automáticamente cuando los datos cambian.
      */
@@ -92,7 +106,10 @@ class ClaseRepository(context: Context) {
         try {
             // PASO 1: Subir clases pendientes desde Room a Supabase
             val clasesNoSincronizadas = claseDao.obtenerNoSincronizadas()
-            Log.d("ClaseRepository", "🔄 Intentando subir ${clasesNoSincronizadas.size} clases pendientes...")
+            Log.d(
+                "ClaseRepository",
+                "🔄 Intentando subir ${clasesNoSincronizadas.size} clases pendientes..."
+            )
             clasesNoSincronizadas.forEach { claseEntity ->
                 try {
                     val clase = Clase(
@@ -117,11 +134,18 @@ class ClaseRepository(context: Context) {
                             Log.d("ClaseRepository", "✅ Clase ${clase.id} sincronizada a Supabase")
                         },
                         onFailure = { error ->
-                            Log.e("ClaseRepository", "❌ Error subiendo clase ${clase.id}: ${error.message}")
+                            Log.e(
+                                "ClaseRepository",
+                                "❌ Error subiendo clase ${clase.id}: ${error.message}"
+                            )
                         }
                     )
                 } catch (e: Exception) {
-                    Log.e("ClaseRepository", "❌ Excepción al procesar clase pendiente ${claseEntity.id}", e)
+                    Log.e(
+                        "ClaseRepository",
+                        "❌ Excepción al procesar clase pendiente ${claseEntity.id}",
+                        e
+                    )
                 }
             }
 
@@ -129,7 +153,10 @@ class ClaseRepository(context: Context) {
             val result = supabaseRepo.obtenerClases()
             result.fold(
                 onSuccess = {
-                    Log.d("ClaseRepository", "✅ Sincronización exitosa: ${it.size} clases descargadas")
+                    Log.d(
+                        "ClaseRepository",
+                        "✅ Sincronización exitosa: ${it.size} clases descargadas"
+                    )
                     // El supabaseRepo.obtenerClases ya actualiza Room.
                 },
                 onFailure = { error ->
@@ -152,7 +179,7 @@ class ClaseRepository(context: Context) {
         try {
             // Generar ID si no existe
             val claseConId = if (clase.id.isEmpty()) {
-                clase.copy(id = "clase_${System.currentTimeMillis()}_${uid.take(8)}")
+                clase.copy(id = "clase_${'$'}{System.currentTimeMillis()}_${'$'}{uid.take(8)}")
             } else {
                 clase
             }
@@ -167,9 +194,11 @@ class ClaseRepository(context: Context) {
                 onFailure = { error ->
                     Log.e("ClaseRepository", "❌ Error creando clase en Supabase: $error")
                     // Guardar localmente con sincronizado = false
-                    val claseLocal = claseConId.copy(sincronizado = false)
-                    claseDao.insertarClase(claseLocal.toEntity())
-                    Log.d("ClaseRepository", "💾 Clase guardada localmente por error en Supabase: ${claseLocal.id}")
+                    claseDao.insertarClase(claseConId.toEntityLocal(false))
+                    Log.d(
+                        "ClaseRepository",
+                        "💾 Clase guardada localmente por error en Supabase: ${'$'}{claseConId.id}"
+                    )
                     onSuccess() // Consideramos éxito local para la UI
                     // No llamamos onError aquí ya que la guardamos localmente
                 }
@@ -177,9 +206,13 @@ class ClaseRepository(context: Context) {
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error general en crearClase: $e")
             // Guardar localmente con sincronizado = false
-            val claseLocal = clase.copy(id = clase.id.ifEmpty { "clase_${System.currentTimeMillis()}_${uid.take(8)}" }, sincronizado = false)
-            claseDao.insertarClase(claseLocal.toEntity())
-            Log.d("ClaseRepository", "💾 Clase guardada localmente por excepción: ${claseLocal.id}")
+            val claseLocal =
+                clase.copy(id = clase.id.ifEmpty { "clase_${'$'}{System.currentTimeMillis()}_${'$'}{uid.take(8)}" })
+            claseDao.insertarClase(claseLocal.toEntityLocal(false))
+            Log.d(
+                "ClaseRepository",
+                "💾 Clase guardada localmente por excepción: ${'$'}{claseLocal.id}"
+            )
             onSuccess() // Consideramos éxito local para la UI
         }
     }
@@ -231,9 +264,11 @@ class ClaseRepository(context: Context) {
                 onFailure = { error ->
                     Log.e("ClaseRepository", "❌ Error actualizando clase en Supabase: $error")
                     // Actualizar localmente con sincronizado = false
-                    val claseLocal = clase.copy(sincronizado = false)
-                    claseDao.actualizarClase(claseLocal.toEntity())
-                    Log.d("ClaseRepository", "💾 Clase actualizada localmente por error en Supabase: ${claseLocal.id}")
+                    claseDao.actualizarClase(clase.toEntityLocal(false))
+                    Log.d(
+                        "ClaseRepository",
+                        "💾 Clase actualizada localmente por error en Supabase: ${'$'}{clase.id}"
+                    )
                     onSuccess() // Consideramos éxito local para la UI
                 }
             )
@@ -247,11 +282,13 @@ class ClaseRepository(context: Context) {
                 fecha = fecha,
                 archivoPdfUrl = archivoPdfUrl,
                 archivoPdfNombre = archivoPdfNombre,
-                creador = uid,
-                sincronizado = false
+                creador = uid
             )
-            claseDao.actualizarClase(claseLocal.toEntity())
-            Log.d("ClaseRepository", "💾 Clase actualizada localmente por excepción: ${claseLocal.id}")
+            claseDao.actualizarClase(claseLocal.toEntityLocal(false))
+            Log.d(
+                "ClaseRepository",
+                "💾 Clase actualizada localmente por excepción: ${'$'}{claseLocal.id}"
+            )
             onSuccess() // Consideramos éxito local para la UI
         }
     }
@@ -268,18 +305,26 @@ class ClaseRepository(context: Context) {
                     // Ya se guarda en Room dentro de supabaseRepo.actualizarClase
                 },
                 onFailure = { error ->
-                    Log.e("ClaseRepository", "❌ Error actualizando clase en Supabase (sobrecarga): $error")
+                    Log.e(
+                        "ClaseRepository",
+                        "❌ Error actualizando clase en Supabase (sobrecarga): $error"
+                    )
                     // Actualizar localmente con sincronizado = false
-                    val claseLocal = clase.copy(sincronizado = false)
-                    claseDao.actualizarClase(claseLocal.toEntity())
-                    Log.d("ClaseRepository", "💾 Clase actualizada localmente por error en Supabase (sobrecarga): ${claseLocal.id}")
+                    claseDao.actualizarClase(clase.toEntityLocal(false))
+                    Log.d(
+                        "ClaseRepository",
+                        "💾 Clase actualizada localmente por error en Supabase (sobrecarga): ${'$'}{clase.id}"
+                    )
                 }
             )
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error general en actualizarClase (sobrecarga): $e")
-            val claseLocal = clase.copy(sincronizado = false)
-            claseDao.actualizarClase(claseLocal.toEntity())
-            Log.d("ClaseRepository", "💾 Clase actualizada localmente por excepción (sobrecarga): ${claseLocal.id}")
+            val claseLocal = clase
+            claseDao.actualizarClase(claseLocal.toEntityLocal(false))
+            Log.d(
+                "ClaseRepository",
+                "💾 Clase actualizada localmente por excepción (sobrecarga): ${'$'}{claseLocal.id}"
+            )
         }
     }
 
@@ -345,7 +390,7 @@ class ClaseRepository(context: Context) {
      */
     suspend fun crearClaseDePrueba(onSuccess: () -> Unit, onError: (String) -> Unit) {
         try {
-            val claseDemoId = "clase_demo_${System.currentTimeMillis()}"
+            val claseDemoId = "clase_demo_${'$'}{System.currentTimeMillis()}"
             val nombreArchivoDemo = "clase_demo.pdf"
             // TODO: Replace with actual Uri from assets, e.g., Uri.parse("android.resource://" + appContext.packageName + "/raw/clase_demo")
             val dummyAssetUri: Uri = Uri.EMPTY // Placeholder for asset Uri
@@ -355,9 +400,16 @@ class ClaseRepository(context: Context) {
             if (dummyAssetUri != Uri.EMPTY) {
                 try {
                     pdfUrl = subirPdfASupabaseStorage(dummyAssetUri, nombreArchivoDemo)
-                    Log.d("ClaseRepository", "✅ PDF de demostración subido a Supabase Storage: $pdfUrl")
+                    Log.d(
+                        "ClaseRepository",
+                        "✅ PDF de demostración subido a Supabase Storage: $pdfUrl"
+                    )
                 } catch (e: Exception) {
-                    Log.e("ClaseRepository", "❌ Error subiendo PDF de demostración desde assets: ${e.message}", e)
+                    Log.e(
+                        "ClaseRepository",
+                        "❌ Error subiendo PDF de demostración desde assets: ${'$'}{e.message}",
+                        e
+                    )
                     // Fallback to external URL if asset upload fails
                     pdfUrl = "https://www.bluebooksoft.com/DISENO_PROGRAMACION_WEB/1366.pdf"
                 }
@@ -425,7 +477,7 @@ class ClaseRepository(context: Context) {
             )
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error en subirPdfASupabaseStorage", e)
-            throw Exception("Error subiendo PDF: ${e.message}")
+            throw Exception("Error subiendo PDF: ${'$'}{e.message}")
         }
     }
 }

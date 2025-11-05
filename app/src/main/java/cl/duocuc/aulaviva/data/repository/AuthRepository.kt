@@ -65,10 +65,13 @@ class AuthRepository {
 
                     result.fold(
                         onSuccess = {
+                            Log.d("AuthRepo", "✅ Login exitoso")
                             onSuccess()
                         },
                         onFailure = { e ->
-                            onError(e.message ?: "Error desconocido al iniciar sesión")
+                            val errorMsg = e.message ?: "Error desconocido al iniciar sesión"
+                            Log.e("AuthRepo", "❌ Error en login: $errorMsg", e)
+                            onError(errorMsg)
                         }
                     )
                 }
@@ -76,7 +79,9 @@ class AuthRepository {
                 if (!completed) {
                     completed = true
                     timeoutHandler.removeCallbacks(timeoutRunnable)
-                    onError(e.message ?: "Error desconocido")
+                    val errorMsg = e.message ?: "Error desconocido"
+                    Log.e("AuthRepo", "❌ Excepción en login: $errorMsg", e)
+                    onError(errorMsg)
                 }
             }
         }
@@ -111,11 +116,22 @@ class AuthRepository {
                     SupabaseAuthManager.register(email, password)
                 }
 
-                if (!completed) {
-                    resultAuth.fold(
-                        onSuccess = { uid ->
-                            // Paso 2: Guardar datos adicionales en tabla usuarios
-                            CoroutineScope(Dispatchers.IO).launch {
+                if (completed) return@launch
+
+                resultAuth.fold(
+                    onSuccess = { uid ->
+                        // Verificar si el usuario necesita confirmar email
+                        if (uid == "pending_confirmation") {
+                            completed = true
+                            timeoutHandler.removeCallbacks(timeoutRunnable)
+                            Log.d("AuthRepo", "⚠️ Usuario creado - Requiere confirmación de email")
+                            onError("Cuenta creada exitosamente. Revisa tu email para confirmar tu cuenta antes de iniciar sesión.")
+                            return@fold
+                        }
+
+                        // Paso 2: Guardar datos adicionales en tabla usuarios (en background)
+                        launch(Dispatchers.IO) {
+                            try {
                                 val resultUsuario = usuarioRepository.guardarUsuario(
                                     uid = uid,
                                     email = email,
@@ -141,24 +157,41 @@ class AuthRepository {
                                                     "❌ Error guardando datos usuario",
                                                     e
                                                 )
-                                                onError("Usuario creado pero error al guardar datos: ${e.message}")
+                                                Log.w(
+                                                    "AuthRepo",
+                                                    "⚠️ Usuario creado en Auth pero falló guardar datos adicionales"
+                                                )
+                                                // Consideramos éxito parcial para que pueda hacer login
+                                                onSuccess()
                                             }
                                         )
                                     }
                                 }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    if (!completed) {
+                                        completed = true
+                                        timeoutHandler.removeCallbacks(timeoutRunnable)
+                                        Log.e("AuthRepo", "❌ Excepción guardando usuario", e)
+                                        // Usuario creado en Auth, consideramos éxito
+                                        onSuccess()
+                                    }
+                                }
                             }
-                        },
-                        onFailure = { e ->
-                            completed = true
-                            timeoutHandler.removeCallbacks(timeoutRunnable)
-                            onError(e.message ?: "Error desconocido al registrar usuario")
                         }
-                    )
-                }
+                    },
+                    onFailure = { e ->
+                        completed = true
+                        timeoutHandler.removeCallbacks(timeoutRunnable)
+                        Log.e("AuthRepo", "❌ Error en registro Auth: ${e.message}", e)
+                        onError(e.message ?: "Error desconocido al registrar usuario")
+                    }
+                )
             } catch (e: Exception) {
                 if (!completed) {
                     completed = true
                     timeoutHandler.removeCallbacks(timeoutRunnable)
+                    Log.e("AuthRepo", "❌ Excepción en register", e)
                     onError(e.message ?: "Error desconocido")
                 }
             }

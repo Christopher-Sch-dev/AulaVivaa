@@ -12,6 +12,7 @@
       <option value="72290f73-d5df-4e02-b353-c976c26771b4" />
       <option value="9bf7bb71-31e5-4ee4-88d9-719eccde22d1" />
       <option value="aa091703-1fcc-4b16-b281-c059c8fe4be0" />
+      <option value="abd6fe1b-e22c-40e4-84ea-2076cc1e77b1" />
       <option value="c62c1a13-009a-463b-93c1-fa95042c9182" />
       <option value="d9d54b89-00b3-410d-aaa0-41061f433c41" />
       <option value="e6ef2816-498a-4498-bfb2-26209da09573" />
@@ -147,6 +148,29 @@
             </set>
           </value>
         </entry>
+        <entry key="abd6fe1b-e22c-40e4-84ea-2076cc1e77b1">
+          <value>
+            <set>
+              <option value="892cca17-7652-4552-8b8c-72c1d536b64d" />
+              <option value="4ef29ba3-4d38-42a8-a39b-d9bbb4be6835" />
+              <option value="51e9575f-03a7-43d0-9b45-ad3e9223ddf5" />
+              <option value="76a4e9cc-fb74-4e7a-aa8c-509f9d0e660d" />
+              <option value="b5e5a5e9-592f-4f20-ba50-6cadc32617e5" />
+              <option value="e22fd9d7-ff9f-449f-98b6-f6554598c39d" />
+              <option value="4e096008-235a-4c50-83d4-769a44cbba83" />
+              <option value="8c626597-1164-46a1-ba40-8e9ad719983e" />
+              <option value="6bb300fe-e30c-4e1d-854c-ab2a1e225f86" />
+              <option value="ee292467-8a23-4295-be99-d8df2c37856d" />
+              <option value="e121bef1-9cd8-4733-ab40-8657e80ab1e0" />
+              <option value="114ec248-a280-421f-bee9-7083dfcd9bad" />
+              <option value="7f02382f-615c-46af-a058-0b35f1d72ad4" />
+              <option value="e7d33f58-77dd-4889-be87-bda0bfce02af" />
+              <option value="d220463a-fd55-47bc-b3be-dc3d68fddfe8" />
+              <option value="94add446-1257-474e-b08d-af46cc68f378" />
+              <option value="450105b2-1434-41f4-8727-ca98094ab10d" />
+            </set>
+          </value>
+        </entry>
         <entry key="c62c1a13-009a-463b-93c1-fa95042c9182">
           <value>
             <set>
@@ -237,6 +261,28 @@
           <option value="file://$PROJECT_DIR$/app/src/main/res/values-night/themes.xml" />
           <option value="file://$PROJECT_DIR$/settings.gradle.kts" />
           <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/pdf/PdfViewerActivity.kt" />
+        </set>
+      </entry>
+      <entry key="abd6fe1b-e22c-40e4-84ea-2076cc1e77b1">
+        <set>
+          <option value="file://$PROJECT_DIR$/app/src/main/res/values/strings.xml" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/ClaseRepository.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/pdf/PdfViewerActivity.kt" />
+          <option value="file://$PROJECT_DIR$/local.properties" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/AuthRepository.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/supabase/SupabaseAuthManager.kt" />
+          <option value="file://$PROJECT_DIR$/SOLUCION_API_KEY.md" />
+          <option value="file://$PROJECT_DIR$/diagnostico_supabase.sh" />
+          <option value="file://$PROJECT_DIR$/diagnostico_supabase.bat" />
+          <option value="file://$PROJECT_DIR$/CONFIGURACION_SUPABASE_OBLIGATORIA.md" />
+          <option value="file://$PROJECT_DIR$/LEER_PRIMERO.txt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/LoginActivity.kt" />
+          <option value="file://$PROJECT_DIR$/RESUMEN_CORRECCIONES.md" />
+          <option value="file://$PROJECT_DIR$/EJECUTAR_EN_SUPABASE.sql" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/UsuarioRepository.kt" />
+          <option value="file://$PROJECT_DIR$/CREAR_USUARIO_PRUEBA.sql" />
+          <option value="file://$PROJECT_DIR$/AUTO_CONFIRMAR_USUARIOS.sql" />
+          <option value="file://$PROJECT_DIR$/REGISTRO_CORREGIDO.md" />
         </set>
       </entry>
       <entry key="c62c1a13-009a-463b-93c1-fa95042c9182">

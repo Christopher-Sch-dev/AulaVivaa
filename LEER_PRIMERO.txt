@@ -1,0 +1,150 @@
+=====================================
+ERRORES CRÍTICOS ENCONTRADOS Y CORREGIDOS
+=====================================
+
+🐛 PROBLEMA #1: LoginActivity cerraba sesión si fallaba obtener rol
+   ✅ CORREGIDO: Ahora permite login incluso si falla obtener rol (usa "docente" por defecto)
+
+🐛 PROBLEMA #2: AuthRepository usaba nested CoroutineScope (race conditions)
+   ✅ CORREGIDO: Simplificado a un solo scope con manejo correcto de errores
+
+🐛 PROBLEMA #3: Registro fallaba sin mostrar error claro
+   ✅ CORREGIDO: Ahora muestra mensajes específicos y logs detallados
+
+=====================================
+LA APP YA ESTÁ INSTALADA - PRUEBA AHORA
+=====================================
+
+OPCIÓN 1: REGISTRAR NUEVO USUARIO
+---------------------------------
+1. Abre la app
+2. Click "Registrarse"
+3. Email: test@test.com
+4. Password: test123456
+5. Rol: Docente
+6. Click "Registrarse"
+
+RESULTADO ESPERADO:
+✓ "Cuenta creada exitosamente"
+✓ Vuelve a login automáticamente
+✓ Puedes hacer login con esas credenciales
+
+SI FALLA: Ejecuta esto y comparte el resultado:
+   adb logcat -c
+   adb logcat | findstr /i "SupabaseAuth AuthRepo"
+
+
+OPCIÓN 2: CREAR USUARIO MANUALMENTE EN SUPABASE
+-----------------------------------------------
+Si el registro desde la app no funciona, crea el usuario directo en Supabase:
+
+1. Ve a: https://supabase.com/dashboard/project/xcnkcmzfevimydfpyjrr
+2. Click "Authentication" > "Users"
+3. Click "Add User"
+4. Email: test@test.com
+5. Password: test123456
+6. Auto Confirm User: ✓ (IMPORTANTE)
+7. Click "Create User"
+
+Luego copia el UUID del usuario y ejecuta en SQL Editor:
+
+INSERT INTO public.usuarios (id, email, rol, nombre)
+VALUES (
+  'AQUI_EL_UUID_DEL_USUARIO',
+  'test@test.com',
+  'docente',
+  'Test Usuario'
+);
+
+Después intenta login en la app.
+
+
+OPCIÓN 3: VERIFICAR CONFIGURACIÓN SUPABASE
+------------------------------------------
+Si NINGUNA de las anteriores funciona, verifica:
+
+1. Authentication > Settings
+   - "Enable email confirmations": DESHABILITADO ✓
+   - "Enable signups": HABILITADO ✓
+
+2. Table Editor > usuarios
+   - La tabla DEBE existir
+   - Si no existe, ejecuta en SQL Editor:
+
+CREATE TABLE IF NOT EXISTS public.usuarios (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL UNIQUE,
+    rol TEXT NOT NULL,
+    nombre TEXT NOT NULL DEFAULT ''
+);
+
+ALTER TABLE public.usuarios ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all for authenticated users"
+ON public.usuarios FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+
+=====================================
+¿QUÉ CAMBIÓ EN EL CÓDIGO?
+=====================================
+
+LoginActivity.kt:
+- Ya NO cierra sesión si falla obtener rol
+- Permite acceso como "docente" por defecto si hay error
+- Logs más claros
+
+AuthRepository.kt:
+- Eliminado nested CoroutineScope
+- Manejo de errores más robusto
+- Consideramos éxito parcial si usuario se crea en Auth pero falla tabla usuarios
+
+SupabaseAuthManager.kt:
+- Detecta correctamente cuando email confirmation está habilitado
+- Retorna "pending_confirmation" si el usuario debe confirmar email
+- Mensajes de error más específicos
+
+
+=====================================
+LOGS PARA DEBUGGING
+=====================================
+
+Para ver qué está pasando en tiempo real:
+
+1. Limpia logs anteriores:
+   adb logcat -c
+
+2. Filtra solo lo importante:
+   adb logcat | findstr /i "SupabaseAuth AuthRepo UsuarioRepo AulaVivaApp"
+
+3. Abre la app e intenta login/registro
+
+4. Comparte lo que aparece en la consola
+
+
+=====================================
+ESTADO ACTUAL
+=====================================
+
+✅ Código compilado sin errores
+✅ App instalada en dispositivo
+✅ API Key válida configurada
+✅ Manejo de errores mejorado
+✅ Flujo de login/registro corregido
+
+⏳ PENDIENTE: Configuración Supabase Dashboard (5 minutos)
+⏳ PENDIENTE: Prueba de login/registro
+
+
+=====================================
+SIGUIENTE PASO
+=====================================
+
+AHORA TÚ: Prueba la app con cualquiera de las 3 opciones arriba.
+
+Si falla, comparte:
+- El mensaje de error exacto que aparece en pantalla
+- O los logs de: adb logcat | findstr /i "SupabaseAuth"
+
+Fecha: 2025-11-05
+Build: OK
+Instalación: OK

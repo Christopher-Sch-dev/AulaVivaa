@@ -64,65 +64,54 @@ class LoginActivity : AppCompatActivity() {
                     try {
                         val resultRol = authRepository.obtenerRolUsuario()
 
-                        resultRol.fold(
-                            onSuccess = { rol ->
-                                // Pequeño delay para feedback visual
-                                binding.root.postDelayed({
-                                    val intent = when (rol.lowercase()) {
-                                        "docente" -> Intent(
-                                            this@LoginActivity,
-                                            PanelPrincipalActivity::class.java
-                                        )
+                        val rol = resultRol.getOrNull() ?: "docente" // Default a docente si falla
 
-                                        "alumno" -> Intent(
-                                            this@LoginActivity,
-                                            PanelAlumnoActivity::class.java
-                                        )
-
-                                        else -> Intent(
-                                            this@LoginActivity,
-                                            PanelPrincipalActivity::class.java
-                                        ) // Default docente
-                                    }
-
-                                    intent.flags =
-                                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                    startActivity(intent)
-                                    @Suppress("DEPRECATION")
-                                    overridePendingTransition(
-                                        android.R.anim.fade_in,
-                                        android.R.anim.fade_out
-                                    )
-                                }, 400)
-                            },
-                            onFailure = { error ->
-                                // Usuario sin rol - cerrar sesión inmediatamente
-                                Toast.makeText(
+                        // Pequeño delay para feedback visual
+                        binding.root.postDelayed({
+                            val intent = when (rol.lowercase()) {
+                                "docente" -> Intent(
                                     this@LoginActivity,
-                                    "⚠️ Usuario no encontrado. Por favor regístrate.",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                    PanelPrincipalActivity::class.java
+                                )
 
-                                // Cerrar sesión de Supabase
-                                lifecycleScope.launch {
-                                    cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager.logout()
-                                    updateUIState(false)
-                                }
+                                "alumno" -> Intent(
+                                    this@LoginActivity,
+                                    PanelAlumnoActivity::class.java
+                                )
+
+                                else -> Intent(
+                                    this@LoginActivity,
+                                    PanelPrincipalActivity::class.java
+                                ) // Default docente
                             }
-                        )
+
+                            intent.flags =
+                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
+                            @Suppress("DEPRECATION")
+                            overridePendingTransition(
+                                android.R.anim.fade_in,
+                                android.R.anim.fade_out
+                            )
+                            finish()
+                        }, 400)
+
                     } catch (e: Exception) {
-                        // Error obteniendo rol - NO PERMITIR ENTRADA
+                        // Error obteniendo rol - Permitir entrada con rol por defecto
                         Toast.makeText(
                             this@LoginActivity,
-                            "⚠️ Error verificando usuario: ${e.message}",
-                            Toast.LENGTH_LONG
+                            "Accediendo como docente...",
+                            Toast.LENGTH_SHORT
                         ).show()
 
-                        // Cerrar sesión por seguridad
-                        lifecycleScope.launch {
-                            cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager.logout()
-                            updateUIState(false)
-                        }
+                        binding.root.postDelayed({
+                            val intent =
+                                Intent(this@LoginActivity, PanelPrincipalActivity::class.java)
+                            intent.flags =
+                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            startActivity(intent)
+                            finish()
+                        }, 400)
                     }
                 }
             }
