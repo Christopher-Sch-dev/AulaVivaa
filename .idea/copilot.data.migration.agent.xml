@@ -176,6 +176,10 @@
               <option value="2e037f22-073c-4ce4-b459-562498ad8176" />
               <option value="7a1abf72-a277-456f-b334-6e76559dbb1e" />
               <option value="7740be38-f196-4e44-9bd4-458ce1f62bcd" />
+              <option value="b2190cd2-7a15-4ff9-a4c8-af41cfa94924" />
+              <option value="030fc9c3-3226-45e4-9e83-ce8e926baee7" />
+              <option value="8f9f2590-aefa-4f57-841f-e85c1caa9321" />
+              <option value="314c9345-f378-4ad6-969d-a16760c73c8c" />
             </set>
           </value>
         </entry>
@@ -302,6 +306,10 @@
           <option value="file://$PROJECT_DIR$/SCRIPTS_SUPABASE.sql" />
           <option value="file://$PROJECT_DIR$/AUDITORIA_COMPLETA.md" />
           <option value="file://$PROJECT_DIR$/LIMPIEZA_FINAL.md" />
+          <option value="file://$PROJECT_DIR$/app/build.gradle.kts" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/pdf/PdfViewerActivityNew.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_pdf_viewer.xml" />
+          <option value="file://$PROJECT_DIR$/PDF_VIEWER_NATIVO.md" />
         </set>
       </entry>
       <entry key="c62c1a13-009a-463b-93c1-fa95042c9182">

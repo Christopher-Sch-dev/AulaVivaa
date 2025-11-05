@@ -119,6 +119,9 @@ dependencies {
     // Markwon para renderizar Markdown
     implementation("io.noties.markwon:core:4.6.2")
 
+    // AndroidPdfViewer (visualización nativa de PDFs)
+    implementation("com.github.barteksc:android-pdf-viewer:3.2.0-beta.1")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
