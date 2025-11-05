@@ -13,6 +13,14 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- Intent queries para buscar visores PDF (Android 11+) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/pdf" />
+        </intent>
+    </queries>
+
     <application
         android:name=".AulaVivaApplication"
         android:allowBackup="true"
@@ -53,9 +61,6 @@
         </activity>
         <activity
             android:name=".presentation.ui.ia.ResultadoIAActivity"
-            android:exported="false" />
-        <activity
-            android:name=".presentation.ui.pdf.PdfViewerActivity"
             android:exported="false" />
     </application>
 

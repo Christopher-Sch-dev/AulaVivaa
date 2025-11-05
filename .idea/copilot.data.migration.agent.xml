@@ -180,6 +180,10 @@
               <option value="030fc9c3-3226-45e4-9e83-ce8e926baee7" />
               <option value="8f9f2590-aefa-4f57-841f-e85c1caa9321" />
               <option value="314c9345-f378-4ad6-969d-a16760c73c8c" />
+              <option value="2fc59cfb-b883-4a0e-b8d7-6530059d9a11" />
+              <option value="50ab60a9-bdf3-4149-891d-a9c3aecfd772" />
+              <option value="1d127c71-fd47-4aa8-96a6-ffed7bd2a67e" />
+              <option value="4c8ecfc0-e06d-43f5-9b52-ac9c8f2eb777" />
             </set>
           </value>
         </entry>
@@ -310,6 +314,10 @@
           <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/pdf/PdfViewerActivityNew.kt" />
           <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_pdf_viewer.xml" />
           <option value="file://$PROJECT_DIR$/PDF_VIEWER_NATIVO.md" />
+          <option value="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
+          <option value="file://$PROJECT_DIR$/SOLUCION_DEFINITIVA_PDF.md" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/utils/PdfUtils.kt" />
+          <option value="file://$PROJECT_DIR$/IMPLEMENTACION_FINAL_PDF.md" />
         </set>
       </entry>
       <entry key="c62c1a13-009a-463b-93c1-fa95042c9182">

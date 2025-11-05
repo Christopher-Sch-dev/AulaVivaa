@@ -108,11 +108,20 @@ class DetalleClaseActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnIdeasDocentePdf)?.setOnClickListener { ideasDocenteBasadasEnPdf() }
     }
 
-    private fun abrirPdf(url: String) {
-        val intent =
-            Intent(this, cl.duocuc.aulaviva.presentation.ui.pdf.PdfViewerActivity::class.java)
-        intent.putExtra("PDF_URL", url)
-        startActivity(intent)
+    /**
+     * Abre PDF con el visor nativo del sistema usando PdfUtils.
+     * Solución centralizada y profesional.
+     */
+    private fun abrirPdf(pdfUrl: String) {
+        cl.duocuc.aulaviva.presentation.utils.PdfUtils.abrirPdfExterno(this, pdfUrl)
+    }
+
+    /**
+     * Fallback: Abre PDF en navegador (DEPRECADO - ahora maneja PdfUtils).
+     * Mantenido por compatibilidad pero ya no se usa directamente.
+     */
+    private fun abrirEnNavegador(pdfUrl: String) {
+        cl.duocuc.aulaviva.presentation.utils.PdfUtils.abrirPdfExterno(this, pdfUrl)
     }
 
     private fun mostrarDialogoCarga(titulo: String, mensaje: String): AlertDialog {
