@@ -1,5 +1,6 @@
 package cl.duocuc.aulaviva.presentation.activity
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -17,7 +18,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 /**
  * Activity para gestionar las asignaturas del docente.
- * Permite crear, visualizar códigos de acceso y eliminar asignaturas.
+ * Permite crear, ver clases, visualizar códigos de acceso y eliminar asignaturas.
+ */
  */
 class DocenteAsignaturasActivity : AppCompatActivity() {
 
@@ -46,8 +48,8 @@ class DocenteAsignaturasActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         adapter = AsignaturaAdapter(
-            onVerCodigoClick = { asignatura ->
-                mostrarCodigoAcceso(asignatura)
+            onVerClasesClick = { asignatura ->
+                abrirClasesAsignatura(asignatura)
             },
             onEliminarClick = { asignatura ->
                 confirmarEliminar(asignatura)
@@ -113,6 +115,16 @@ class DocenteAsignaturasActivity : AppCompatActivity() {
             viewModel.crearAsignatura(nombre, descripcion)
         }
         dialog.show(supportFragmentManager, "CrearAsignaturaDialog")
+    }
+
+    /**
+     * Abre la pantalla de clases de la asignatura.
+     */
+    private fun abrirClasesAsignatura(asignatura: Asignatura) {
+        val intent = Intent(this, DocenteClasesActivity::class.java)
+        intent.putExtra("ASIGNATURA_ID", asignatura.id)
+        intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
+        startActivity(intent)
     }
 
     private fun mostrarCodigoAcceso(asignatura: Asignatura) {
