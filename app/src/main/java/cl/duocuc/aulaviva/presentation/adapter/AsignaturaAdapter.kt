@@ -12,10 +12,12 @@ import java.util.Locale
 
 /**
  * Adapter para mostrar las asignaturas del docente.
- * Permite ver clases de la asignatura y eliminar asignaturas.
+ * Permite ver clases, inscritos, copiar código y eliminar asignaturas.
  */
 class AsignaturaAdapter(
     private val onVerClasesClick: (Asignatura) -> Unit,
+    private val onVerInscritosClick: (Asignatura) -> Unit,
+    private val onCopiarCodigoClick: (Asignatura) -> Unit,
     private val onEliminarClick: (Asignatura) -> Unit
 ) : ListAdapter<Asignatura, AsignaturaAdapter.AsignaturaViewHolder>(AsignaturaDiffCallback()) {
 
@@ -62,8 +64,16 @@ class AsignaturaAdapter(
                 textViewFecha.text = fechaFormateada
 
                 // Botones
-                buttonVerCodigo.setOnClickListener {
+                buttonVerClases.setOnClickListener {
                     onVerClasesClick(asignatura)
+                }
+
+                buttonVerInscritos.setOnClickListener {
+                    onVerInscritosClick(asignatura)
+                }
+
+                buttonCopiarCodigo.setOnClickListener {
+                    onCopiarCodigoClick(asignatura)
                 }
 
                 buttonEliminar.setOnClickListener {

@@ -66,7 +66,7 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
         fecha: String,
         archivoPdfUrl: String = "",
         archivoPdfNombre: String = "",
-        asignaturaId: String? = null
+        asignaturaId: String = ""  // No nullable, vacío por defecto para compatibilidad
     ) {
         // Validación completa
         if (nombre.trim().isEmpty()) {

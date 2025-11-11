@@ -60,31 +60,70 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:gravity="end"
-            android:orientation="horizontal">
+            android:orientation="vertical">
 
-            <Button
-                android:id="@+id/buttonVerCodigo"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:layout_marginEnd="8dp"
-                android:text="Ver Clases"
-                android:textAllCaps="false"
-                android:textColor="#4F3BB8"
-                android:textSize="12sp"
-                app:strokeColor="#4F3BB8" />
+            <!-- Primera fila: Ver Clases y Ver Inscritos -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/buttonEliminar"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="Eliminar"
-                android:textAllCaps="false"
-                android:textColor="#D32F2F"
-                android:textSize="12sp"
-                app:strokeColor="#D32F2F" />
+                <Button
+                    android:id="@+id/buttonVerClases"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="Ver Clases"
+                    android:textAllCaps="false"
+                    android:textColor="#4F3BB8"
+                    android:textSize="12sp"
+                    app:strokeColor="#4F3BB8" />
+
+                <Button
+                    android:id="@+id/buttonVerInscritos"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="Inscritos"
+                    android:textAllCaps="false"
+                    android:textColor="#FF6F00"
+                    android:textSize="12sp"
+                    app:strokeColor="#FF6F00" />
+            </LinearLayout>
+
+            <!-- Segunda fila: Copiar Código y Eliminar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/buttonCopiarCodigo"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="📋 Copiar Código"
+                    android:textAllCaps="false"
+                    android:textColor="#2E7D32"
+                    android:textSize="12sp"
+                    app:strokeColor="#2E7D32" />
+
+                <Button
+                    android:id="@+id/buttonEliminar"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="Eliminar"
+                    android:textAllCaps="false"
+                    android:textColor="#D32F2F"
+                    android:textSize="12sp"
+                    app:strokeColor="#D32F2F" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

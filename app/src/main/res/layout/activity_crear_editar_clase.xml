@@ -77,7 +77,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:hint="Fecha (dd/MM/yyyy)"
+                android:hint="Fecha y Hora (dd/MM/yyyy HH:mm)"
                 app:boxStrokeColor="#4F3BB8"
                 app:startIconDrawable="@android:drawable/ic_menu_my_calendar"
                 app:startIconTint="#4F3BB8">

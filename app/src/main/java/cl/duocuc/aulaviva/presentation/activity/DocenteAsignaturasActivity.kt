@@ -1,5 +1,8 @@
 package cl.duocuc.aulaviva.presentation.activity
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -19,7 +22,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 /**
  * Activity para gestionar las asignaturas del docente.
  * Permite crear, ver clases, visualizar códigos de acceso y eliminar asignaturas.
- */
  */
 class DocenteAsignaturasActivity : AppCompatActivity() {
 
@@ -50,6 +52,12 @@ class DocenteAsignaturasActivity : AppCompatActivity() {
         adapter = AsignaturaAdapter(
             onVerClasesClick = { asignatura ->
                 abrirClasesAsignatura(asignatura)
+            },
+            onVerInscritosClick = { asignatura ->
+                abrirInscritosAsignatura(asignatura)
+            },
+            onCopiarCodigoClick = { asignatura ->
+                copiarCodigoAlPortapapeles(asignatura)
             },
             onEliminarClick = { asignatura ->
                 confirmarEliminar(asignatura)
@@ -125,6 +133,36 @@ class DocenteAsignaturasActivity : AppCompatActivity() {
         intent.putExtra("ASIGNATURA_ID", asignatura.id)
         intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
         startActivity(intent)
+    }
+
+    /**
+     * Abre la pantalla de alumnos inscritos en la asignatura.
+     */
+    private fun abrirInscritosAsignatura(asignatura: Asignatura) {
+        val intent = Intent(this, InscritosActivity::class.java)
+        intent.putExtra("ASIGNATURA_ID", asignatura.id)
+        intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
+        startActivity(intent)
+    }
+
+    /**
+     * Copia el código de acceso al portapapeles.
+     */
+    private fun copiarCodigoAlPortapapeles(asignatura: Asignatura) {
+        if (asignatura.codigoAcceso.isNullOrEmpty()) {
+            Toast.makeText(this, "⚠️ Esta asignatura no tiene código generado", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("Código Asignatura", asignatura.codigoAcceso)
+        clipboard.setPrimaryClip(clip)
+
+        Toast.makeText(
+            this,
+            "✅ Código copiado: ${asignatura.codigoAcceso}\n\nCompártelo con tus alumnos",
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     private fun mostrarCodigoAcceso(asignatura: Asignatura) {

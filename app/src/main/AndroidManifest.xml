@@ -72,6 +72,11 @@
             android:exported="false"
             android:parentActivityName=".presentation.activity.DocenteAsignaturasActivity" />
         <activity
+            android:name=".presentation.activity.InscritosActivity"
+            android:exported="false"
+            android:label="Alumnos Inscritos"
+            android:parentActivityName=".presentation.activity.DocenteAsignaturasActivity" />
+        <activity
             android:name=".presentation.ui.clases.CrearEditarClaseActivity"
             android:exported="false"
             android:parentActivityName=".presentation.activity.DocenteClasesActivity" />

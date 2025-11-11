@@ -137,15 +137,7 @@ class DocenteClasesActivity : AppCompatActivity() {
             .setTitle("Eliminar Clase")
             .setMessage("¿Estás seguro de eliminar '${clase.nombre}'?\n\nEsta acción no se puede deshacer.")
             .setPositiveButton("Eliminar") { _, _ ->
-                viewModel.eliminarClase(
-                    claseId = clase.id,
-                    onSuccess = {
-                        Toast.makeText(this, "✅ Clase eliminada", Toast.LENGTH_SHORT).show()
-                    },
-                    onError = { error ->
-                        Toast.makeText(this, "❌ Error: $error", Toast.LENGTH_LONG).show()
-                    }
-                )
+                viewModel.eliminarClase(clase.id)
             }
             .setNegativeButton("Cancelar", null)
             .show()

@@ -63,22 +63,48 @@ class CrearEditarClaseActivity : AppCompatActivity() {
         binding.inputFechaClase.isFocusable = false
         binding.inputFechaClase.isClickable = true
 
+        binding.inputFechaClase.setOnClickListener {
+            // Mostrar selector de fecha y hora
+            mostrarSelectorFechaHora()
+        }
+    }
+
+    /**
+     * Muestra selector de fecha y luego de hora (formato chileno).
+     */
+    private fun mostrarSelectorFechaHora() {
         val datePicker = MaterialDatePicker.Builder.datePicker()
             .setTitleText("Selecciona la fecha")
             .build()
 
-        binding.inputFechaClase.setOnClickListener {
-            datePicker.show(supportFragmentManager, "DATE_PICKER")
-        }
+        datePicker.show(supportFragmentManager, "DATE_PICKER")
 
         datePicker.addOnPositiveButtonClickListener { selection ->
             try {
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                val cal = Calendar.getInstance(TimeZone.getTimeZone("America/Santiago"))
                 cal.timeInMillis = selection
-                binding.inputFechaClase.setText(sdf.format(cal.time))
-            } catch (_: Exception) {
-                Toast.makeText(this, "Error al seleccionar fecha", Toast.LENGTH_SHORT).show()
+
+                // Ahora pedir hora
+                val horaActual = Calendar.getInstance(TimeZone.getTimeZone("America/Santiago"))
+                val hora = horaActual.get(Calendar.HOUR_OF_DAY)
+                val minuto = horaActual.get(Calendar.MINUTE)
+
+                // TimePickerDialog simple
+                android.app.TimePickerDialog(
+                    this,
+                    { _, hourOfDay, minute ->
+                        val fechaFormateada = sdf.format(cal.time)
+                        val horaFormateada = String.format("%02d:%02d", hourOfDay, minute)
+                        binding.inputFechaClase.setText("$fechaFormateada $horaFormateada")
+                    },
+                    hora,
+                    minuto,
+                    true  // Formato 24 horas
+                ).show()
+
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error al seleccionar fecha/hora", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -123,29 +149,29 @@ class CrearEditarClaseActivity : AppCompatActivity() {
         binding.layoutDescripcionClase.error = null
         binding.layoutFechaClase.error = null
 
-        // Crear objeto Clase
-        val clase = Clase(
-            id = claseId ?: "",  // Vacío si es nueva, se genera en el repository
+        // Llamar al ViewModel con parámetros individuales
+        viewModel.crearClase(
             nombre = nombre,
             descripcion = descripcion,
             fecha = fecha,
-            archivoPdfUrl = "",  // Por ahora sin PDF (se puede agregar después)
+            archivoPdfUrl = "",
             archivoPdfNombre = "",
-            creador = SupabaseAuthManager.getCurrentUserId() ?: "",
-            asignaturaId = asignaturaId  // OBLIGATORIO
+            asignaturaId = asignaturaId
         )
 
-        // Guardar en ViewModel
-        viewModel.crearClase(
-            clase = clase,
-            onSuccess = {
-                Toast.makeText(this, "✅ Clase guardada", Toast.LENGTH_SHORT).show()
+        // Observar resultado
+        viewModel.operationSuccess.observe(this) { mensaje ->
+            mensaje?.let {
+                Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
                 finish()
-            },
-            onError = { error ->
-                Toast.makeText(this, "❌ Error: $error", Toast.LENGTH_LONG).show()
             }
-        )
+        }
+
+        viewModel.error.observe(this) { error ->
+            error?.let {
+                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {

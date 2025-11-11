@@ -22,7 +22,7 @@ class DetalleClaseActivity : AppCompatActivity() {
     private lateinit var iaRepository: IARepository
     private lateinit var claseRepository: ClaseRepository
     private var claseActual: Clase? = null
-    private var rolActual: String = ""
+    private var esAlumno: Boolean = false  // Flag para determinar si es alumno
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +31,8 @@ class DetalleClaseActivity : AppCompatActivity() {
         iaRepository = IARepository()
         claseRepository = ClaseRepository(this)
 
-        obtenerRolUsuario()
+        // Obtener flag ES_ALUMNO del intent
+        esAlumno = intent.getBooleanExtra("ES_ALUMNO", false)
 
         val claseId = intent.getStringExtra("CLASE_ID")
         if (claseId.isNullOrEmpty()) {
@@ -42,11 +43,6 @@ class DetalleClaseActivity : AppCompatActivity() {
 
         cargarDatosClase(claseId)
         setupListeners()
-    }
-
-    private fun obtenerRolUsuario() {
-        // Por defecto todos los usuarios registrados son docentes
-        rolActual = "docente"
     }
 
     private fun cargarDatosClase(claseId: String) {
@@ -80,18 +76,18 @@ class DetalleClaseActivity : AppCompatActivity() {
         if (clase.archivoPdfNombre.isNotEmpty()) {
             cardPdf?.visibility = View.VISIBLE
             textNombrePdf?.text = clase.archivoPdfNombre
-            btnAnalizarPdf?.visibility = if (rolActual == "docente") View.VISIBLE else View.GONE
+            // Ocultar botón "Analizar PDF" si es alumno
+            btnAnalizarPdf?.visibility = if (esAlumno) View.GONE else View.VISIBLE
         } else {
             cardPdf?.visibility = View.GONE
             btnAnalizarPdf?.visibility = View.GONE
         }
 
-        // Ocultar botones IA si es alumno
-        val botonesIa = listOf(
-            R.id.btnGenerarIdeas, R.id.btnSugerirActividades, R.id.btnEstructurarClase
-        )
-        if (rolActual != "docente") {
-            botonesIa.forEach { id -> findViewById<View>(id)?.visibility = View.GONE }
+        // Ocultar botones de IA exclusivos del docente si es alumno
+        if (esAlumno) {
+            findViewById<View>(R.id.btnGenerarIdeas)?.visibility = View.GONE
+            findViewById<View>(R.id.btnSugerirActividades)?.visibility = View.GONE
+            findViewById<View>(R.id.btnEstructurarClase)?.visibility = View.GONE
         }
     }
 

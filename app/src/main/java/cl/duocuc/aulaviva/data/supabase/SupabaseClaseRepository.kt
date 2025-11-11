@@ -292,7 +292,7 @@ fun ClaseDTO.toClase(): Clase {
         archivoPdfUrl = this.archivo_pdf_url,
         archivoPdfNombre = this.archivo_pdf_nombre,
         creador = this.creador,
-        asignaturaId = this.asignatura_id
+        asignaturaId = this.asignatura_id ?: ""  // Convertir null a vacío
     )
 }
 
