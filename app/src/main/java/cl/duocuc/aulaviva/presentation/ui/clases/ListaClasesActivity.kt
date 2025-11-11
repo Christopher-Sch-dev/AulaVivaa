@@ -79,6 +79,8 @@ class ListaClasesActivity : AppCompatActivity() {
             onClaseClick = { clase ->
                 val intent = Intent(this, DetalleClaseActivity::class.java)
                 intent.putExtra("CLASE_ID", clase.id)
+                // ✅ CORREGIDO: Añadir flag ES_ALUMNO=false para que docente vea botones IA
+                intent.putExtra("ES_ALUMNO", false)
                 startActivity(intent)
             },
             onEditarClick = { clase ->

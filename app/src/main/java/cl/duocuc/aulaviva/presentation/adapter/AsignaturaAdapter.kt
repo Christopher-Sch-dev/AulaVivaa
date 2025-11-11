@@ -57,7 +57,8 @@ class AsignaturaAdapter(
                     val formato = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
                     val fecha = formato.parse(asignatura.createdAt)
                     val formatoSalida = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-                    "Creada: ${formatoSalida.format(fecha!!)}"
+                    // ✅ CORREGIDO: Uso seguro con ?.let en lugar de !!
+                    fecha?.let { "Creada: ${formatoSalida.format(it)}" } ?: "Creada: ${asignatura.createdAt}"
                 } catch (e: Exception) {
                     "Creada: ${asignatura.createdAt}"
                 }

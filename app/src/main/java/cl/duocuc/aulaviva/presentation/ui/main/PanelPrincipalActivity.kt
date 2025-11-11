@@ -131,14 +131,21 @@ class PanelPrincipalActivity : AppCompatActivity() {
                 Log.d("PanelPrincipal", "✅ Navegando con rol: $rolActual")
 
                 if (rolActual == "docente") {
+                    // ✅ CORREGIDO: Usar DocenteAsignaturasActivity en lugar de ListaClasesActivity obsoleta
                     startActivity(
                         Intent(
                             this,
-                            cl.duocuc.aulaviva.presentation.ui.clases.ListaClasesActivity::class.java
+                            cl.duocuc.aulaviva.presentation.activity.DocenteAsignaturasActivity::class.java
                         )
                     )
                 } else {
-                    startActivity(Intent(this, PanelAlumnoActivity::class.java))
+                    // ✅ CORREGIDO: Alumno va directo a sus asignaturas (sin PanelAlumnoActivity vacío)
+                    startActivity(
+                        Intent(
+                            this,
+                            cl.duocuc.aulaviva.presentation.activity.AlumnoAsignaturasActivity::class.java
+                        )
+                    )
                 }
             } catch (ex: Exception) {
                 Log.e("PanelPrincipal", "❌ Error abriendo módulo: ${ex.message}", ex)
