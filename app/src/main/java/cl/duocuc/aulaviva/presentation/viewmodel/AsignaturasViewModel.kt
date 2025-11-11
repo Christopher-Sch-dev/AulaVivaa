@@ -82,9 +82,20 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
             repository.crearAsignatura(nombre, descripcion)
                 .onSuccess { asignatura ->
                     android.util.Log.d("AsignaturasVM", "✅ Asignatura creada: ${asignatura.id}")
-                    _operationSuccess.value = "Asignatura creada exitosamente"
-                    // Generar código automáticamente
-                    generarCodigo(asignatura.id)
+
+                    // Generar código automáticamente SIN llamar a sincronizarAsignaturas después
+                    repository.generarCodigo(asignatura.id)
+                        .onSuccess { codigo ->
+                            android.util.Log.d("AsignaturasVM", "✅ Código generado: $codigo")
+                            _codigoGenerado.value = codigo
+                            _operationSuccess.value = "Asignatura creada exitosamente"
+                            _isLoading.value = false
+                        }
+                        .onFailure { exception ->
+                            android.util.Log.e("AsignaturasVM", "⚠️ Error generando código", exception)
+                            _operationSuccess.value = "Asignatura creada (sin código)"
+                            _isLoading.value = false
+                        }
                 }
                 .onFailure { exception ->
                     _error.value = exception.message
@@ -95,7 +106,7 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     /**
-     * Genera código único para una asignatura.
+     * Genera código único para una asignatura (solo para botón manual).
      */
     fun generarCodigo(asignaturaId: String) {
         viewModelScope.launch {
@@ -106,7 +117,7 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
                 .onSuccess { codigo ->
                     _codigoGenerado.value = codigo
                     android.util.Log.d("AsignaturasVM", "✅ Código generado: $codigo")
-                    sincronizarAsignaturas() // Actualizar lista
+                    // NO llamar a sincronizarAsignaturas() aquí para evitar loops
                 }
                 .onFailure { exception ->
                     _error.value = exception.message

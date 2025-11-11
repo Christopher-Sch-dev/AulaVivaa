@@ -76,12 +76,17 @@ class AsignaturasRepository(
         // Generar código temporal (se actualizará después)
         val codigoTemporal = "TEMP-${System.currentTimeMillis().toString().takeLast(4)}"
 
+        // Crear timestamp actual
+        val now = java.time.Instant.now().toString()
+
         val asignatura = Asignatura(
             id = java.util.UUID.randomUUID().toString(),
             nombre = nombre,
             codigoAcceso = codigoTemporal,
             docenteId = docenteId,
-            descripcion = descripcion
+            descripcion = descripcion,
+            createdAt = now,
+            updatedAt = now
         )
 
         return supabaseRepository.crearAsignatura(asignatura)
