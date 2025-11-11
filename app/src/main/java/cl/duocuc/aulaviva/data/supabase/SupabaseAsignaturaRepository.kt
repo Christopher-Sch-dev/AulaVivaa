@@ -169,7 +169,8 @@ class SupabaseAsignaturaRepository(private val asignaturaDao: AsignaturaDao) {
     }
 
     /**
-     * Generar código único para asignatura usando RPC.
+     * Generar código único para asignatura.
+     * Genera localmente y actualiza en Supabase.
      */
     suspend fun generarCodigo(asignaturaId: String): Result<String> = withContext(Dispatchers.IO) {
         try {
@@ -177,12 +178,24 @@ class SupabaseAsignaturaRepository(private val asignaturaDao: AsignaturaDao) {
 
             Log.d("SupabaseAsignatura", "🔑 Generando código para asignatura: $asignaturaId")
 
-            val codigo = supabase.postgrest["rpc"].rpc("rpc_generar_codigo_asignatura", GenerarCodigoRequest(asignaturaId))
-                .decodeAs<String>()            // Actualizar código en Room
-            val entity = asignaturaDao.obtenerAsignaturaPorId(asignaturaId)
-            entity?.let {
-                asignaturaDao.actualizarAsignatura(it.copy(codigoAcceso = codigo))
-            }
+            // Obtener asignatura
+            val asignatura = asignaturaDao.obtenerAsignaturaPorId(asignaturaId)
+                ?: return@withContext Result.failure(Exception("Asignatura no encontrada"))
+
+            // Generar código único
+            val codigo = generarCodigoUnico(asignatura.nombre)
+
+            // Actualizar en Supabase
+            val dto = mapOf("codigo_acceso" to codigo)
+            supabase.from("asignaturas")
+                .update(dto) {
+                    filter {
+                        eq("id", asignaturaId)
+                    }
+                }
+
+            // Actualizar en Room
+            asignaturaDao.actualizarAsignatura(asignatura.copy(codigoAcceso = codigo))
 
             Log.d("SupabaseAsignatura", "✅ Código generado: $codigo")
             Result.success(codigo)
@@ -218,6 +231,24 @@ class SupabaseAsignaturaRepository(private val asignaturaDao: AsignaturaDao) {
             Result.failure(e)
         }
     }
+}
+
+/**
+ * Genera código único alfanumérico.
+ * Formato: PREFIJO-XXXX (ej: POO2025-A1B2)
+ */
+private fun generarCodigoUnico(nombreAsignatura: String): String {
+    val caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // Sin I, O, 0, 1
+    val prefijo = nombreAsignatura
+        .replace(Regex("[^a-zA-Z]"), "")
+        .take(3)
+        .uppercase()
+        .ifEmpty { "ASG" }
+
+    val año = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+    val random = (0..3).map { caracteres.random() }.joinToString("")
+
+    return "$prefijo$año-$random"
 }
 
 /**

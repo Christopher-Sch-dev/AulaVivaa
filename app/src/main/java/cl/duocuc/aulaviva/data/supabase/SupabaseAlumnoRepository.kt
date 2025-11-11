@@ -20,29 +20,52 @@ class SupabaseAlumnoRepository(
 ) {
 
     /**
-     * Inscribirse en asignatura con código usando RPC.
+     * Inscribirse en asignatura con código.
+     * Busca la asignatura por código y crea la inscripción.
      */
     suspend fun inscribirConCodigo(codigo: String): Result<Asignatura> = withContext(Dispatchers.IO) {
         try {
             val supabase = SupabaseClientProvider.getClient()
+            val alumnoId = SupabaseAuthManager.getCurrentUserId()
+                ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
 
             Log.d("SupabaseAlumno", "🎓 Inscribiendo con código: $codigo")
 
-            val response = supabase.postgrest["rpc"].rpc(
-                "rpc_inscribir_con_codigo",
-                InscribirConCodigoRequest(codigo.uppercase().trim())
-            ).decodeAs<InscripcionResponse>()
+            // 1. Buscar asignatura por código
+            val asignaturas = supabase.from("asignaturas")
+                .select {
+                    filter {
+                        eq("codigo_acceso", codigo.uppercase().trim())
+                    }
+                }
+                .decodeList<AsignaturaSupabaseDto>()
 
-            if (!response.success) {
-                Log.e("SupabaseAlumno", "❌ Error: ${response.error}")
-                return@withContext Result.failure(Exception(response.error ?: "Error desconocido"))
+            if (asignaturas.isEmpty()) {
+                return@withContext Result.failure(Exception("Código inválido"))
             }
 
-            val asignaturaDto = response.asignatura ?: run {
-                return@withContext Result.failure(Exception("Asignatura no encontrada"))
+            val asignaturaDto = asignaturas.first()
+
+            // 2. Verificar si ya está inscrito
+            val yaInscrito = alumnoAsignaturaDao.obtenerInscripcion(alumnoId, asignaturaDto.id)
+            if (yaInscrito != null) {
+                return@withContext Result.failure(Exception("Ya estás inscrito en esta asignatura"))
             }
 
-            // Crear modelo de asignatura
+            // 3. Crear inscripción en Supabase
+            val inscripcionDto = AlumnoAsignaturaSupabaseDto(
+                id = java.util.UUID.randomUUID().toString(),
+                alumnoId = alumnoId,
+                asignaturaId = asignaturaDto.id,
+                estado = "activo"
+            )
+
+            supabase.from("alumno_asignaturas").insert(inscripcionDto)
+
+            // 4. Guardar inscripción en Room
+            alumnoAsignaturaDao.insertarInscripcion(inscripcionDto.toEntity(sincronizado = true))
+
+            // 5. Crear modelo de asignatura
             val asignatura = Asignatura(
                 id = asignaturaDto.id,
                 nombre = asignaturaDto.nombre,
