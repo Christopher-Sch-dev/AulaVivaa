@@ -65,6 +65,15 @@
         <activity
             android:name=".presentation.activity.DocenteAsignaturasActivity"
             android:exported="false" />
+        <activity
+            android:name=".presentation.activity.AlumnoAsignaturasActivity"
+            android:exported="false"
+            android:label="Mis Asignaturas"
+            android:parentActivityName=".presentation.ui.main.PanelPrincipalActivity" />
+        <activity
+            android:name=".presentation.activity.AlumnoClasesActivity"
+            android:exported="false"
+            android:parentActivityName=".presentation.activity.AlumnoAsignaturasActivity" />
     </application>
 
 </manifest>

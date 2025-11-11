@@ -151,7 +151,7 @@ class PanelPrincipalActivity : AppCompatActivity() {
             crearClaseDemostracion()
         }
 
-        // 🎓 Botón NUEVO: Mis Asignaturas
+        // 🎓 Botón NUEVO: Mis Asignaturas (Docente)
         binding.misAsignaturasButton.setOnClickListener {
             try {
                 if (rolActual.isEmpty()) {
@@ -164,7 +164,7 @@ class PanelPrincipalActivity : AppCompatActivity() {
                     return@setOnClickListener
                 }
 
-                Log.d("PanelPrincipal", "✅ Abriendo Mis Asignaturas")
+                Log.d("PanelPrincipal", "✅ Abriendo Mis Asignaturas (Docente)")
                 startActivity(
                     Intent(
                         this,
@@ -173,6 +173,32 @@ class PanelPrincipalActivity : AppCompatActivity() {
                 )
             } catch (ex: Exception) {
                 Log.e("PanelPrincipal", "❌ Error abriendo asignaturas: ${ex.message}", ex)
+                Toast.makeText(this, "No se pudo abrir asignaturas", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // 🎒 Botón NUEVO: Mis Asignaturas (Alumno)
+        binding.misAsignaturasAlumnoButton.setOnClickListener {
+            try {
+                if (rolActual.isEmpty()) {
+                    Toast.makeText(
+                        this,
+                        "⏳ Cargando tu perfil... Intenta de nuevo en un momento",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    cargarDatosUsuario()
+                    return@setOnClickListener
+                }
+
+                Log.d("PanelPrincipal", "✅ Abriendo Mis Asignaturas (Alumno)")
+                startActivity(
+                    Intent(
+                        this,
+                        cl.duocuc.aulaviva.presentation.activity.AlumnoAsignaturasActivity::class.java
+                    )
+                )
+            } catch (ex: Exception) {
+                Log.e("PanelPrincipal", "❌ Error abriendo asignaturas alumno: ${ex.message}", ex)
                 Toast.makeText(this, "No se pudo abrir asignaturas", Toast.LENGTH_SHORT).show()
             }
         }
