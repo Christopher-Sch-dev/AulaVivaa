@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import cl.duocuc.aulaviva.databinding.ActivityDocenteAsignaturasBinding
 import cl.duocuc.aulaviva.data.model.Asignatura
@@ -18,6 +19,7 @@ import cl.duocuc.aulaviva.presentation.dialog.CrearAsignaturaDialog
 import cl.duocuc.aulaviva.presentation.dialog.MostrarCodigoDialog
 import cl.duocuc.aulaviva.presentation.viewmodel.AsignaturasViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.launch
 
 /**
  * Activity para gestionar las asignaturas del docente.
@@ -192,14 +194,42 @@ class DocenteAsignaturasActivity : AppCompatActivity() {
     }
 
     private fun confirmarEliminar(asignatura: Asignatura) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Eliminar Asignatura")
-            .setMessage("¿Estás seguro de eliminar '${asignatura.nombre}'?\n\nEsta acción no se puede deshacer y eliminará todas las clases asociadas.")
-            .setPositiveButton("Eliminar") { _, _ ->
-                viewModel.eliminarAsignatura(asignatura.id)
+        // ✅ NUEVO: Verificar que la asignatura esté vacía antes de eliminar
+        lifecycleScope.launch {
+            try {
+                val claseRepository = cl.duocuc.aulaviva.data.repository.ClaseRepository(this@DocenteAsignaturasActivity)
+                val clasesDao = cl.duocuc.aulaviva.data.local.AppDatabase.getDatabase(this@DocenteAsignaturasActivity).claseDao()
+
+                // Obtener clases de esta asignatura desde Room (local)
+                val clases = clasesDao.obtenerClasesPorAsignaturaDirecto(asignatura.id)
+
+                if (clases.isNotEmpty()) {
+                    // La asignatura tiene clases, no se puede eliminar
+                    MaterialAlertDialogBuilder(this@DocenteAsignaturasActivity)
+                        .setTitle("⚠️ No se puede eliminar")
+                        .setMessage("La asignatura '${asignatura.nombre}' tiene ${clases.size} clase(s) dentro.\n\n❌ Primero debes eliminar todas las clases para poder eliminar la asignatura.")
+                        .setPositiveButton("Ver Clases") { _, _ ->
+                            // Redirigir a ver las clases de esta asignatura
+                            abrirClasesAsignatura(asignatura)
+                        }
+                        .setNegativeButton("Cancelar", null)
+                        .show()
+                } else {
+                    // La asignatura está vacía, se puede eliminar
+                    MaterialAlertDialogBuilder(this@DocenteAsignaturasActivity)
+                        .setTitle("Eliminar Asignatura")
+                        .setMessage("¿Estás seguro de eliminar '${asignatura.nombre}'?\n\n✅ La asignatura está vacía (sin clases)\n\n⚠️ Esta acción no se puede deshacer.")
+                        .setPositiveButton("Eliminar") { _, _ ->
+                            viewModel.eliminarAsignatura(asignatura.id)
+                        }
+                        .setNegativeButton("Cancelar", null)
+                        .show()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("DocenteAsignaturas", "Error al verificar clases: ${e.message}", e)
+                android.widget.Toast.makeText(this@DocenteAsignaturasActivity, "Error al verificar las clases", android.widget.Toast.LENGTH_SHORT).show()
             }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {

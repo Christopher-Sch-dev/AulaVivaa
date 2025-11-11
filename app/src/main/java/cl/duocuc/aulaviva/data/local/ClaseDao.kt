@@ -47,6 +47,13 @@ interface ClaseDao {
     fun obtenerClasesPorAsignatura(asignaturaId: String): Flow<List<ClaseEntity>>
 
     /**
+     * Obtiene clases de una asignatura de forma directa (sin Flow).
+     * Usado para validaciones inmediatas.
+     */
+    @Query("SELECT * FROM clases WHERE asignaturaId = :asignaturaId")
+    suspend fun obtenerClasesPorAsignaturaDirecto(asignaturaId: String): List<ClaseEntity>
+
+    /**
      * Obtiene clases de múltiples asignaturas (para alumnos inscritos).
      */
     @Query("SELECT * FROM clases WHERE asignaturaId IN (:asignaturasIds) ORDER BY fecha DESC")

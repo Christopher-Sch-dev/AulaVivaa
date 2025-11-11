@@ -75,7 +75,6 @@ class PanelPrincipalActivity : AppCompatActivity() {
         val mensaje = "Bienvenido Profesor $nombreCorto"
 
         binding.bienvenidaTextView.text = "$emoji $mensaje"
-        binding.irAClasesButton.text = "📊 Gestionar clases"
     }
 
     /**
@@ -114,51 +113,7 @@ class PanelPrincipalActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        binding.irAClasesButton.setOnClickListener {
-            try {
-                if (rolActual.isEmpty()) {
-                    Log.w("PanelPrincipal", "⚠️ Rol vacío al hacer clic - Esperando carga...")
-                    Toast.makeText(
-                        this,
-                        "⏳ Cargando tu perfil... Intenta de nuevo en un momento",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    // Intentar recargar datos
-                    cargarDatosUsuario()
-                    return@setOnClickListener
-                }
-
-                Log.d("PanelPrincipal", "✅ Navegando con rol: $rolActual")
-
-                if (rolActual == "docente") {
-                    // ✅ CORREGIDO: Usar DocenteAsignaturasActivity en lugar de ListaClasesActivity obsoleta
-                    startActivity(
-                        Intent(
-                            this,
-                            cl.duocuc.aulaviva.presentation.activity.DocenteAsignaturasActivity::class.java
-                        )
-                    )
-                } else {
-                    // ✅ CORREGIDO: Alumno va directo a sus asignaturas (sin PanelAlumnoActivity vacío)
-                    startActivity(
-                        Intent(
-                            this,
-                            cl.duocuc.aulaviva.presentation.activity.AlumnoAsignaturasActivity::class.java
-                        )
-                    )
-                }
-            } catch (ex: Exception) {
-                Log.e("PanelPrincipal", "❌ Error abriendo módulo: ${ex.message}", ex)
-                Toast.makeText(this, "No se pudo abrir el módulo", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        // 🎓 Botón NUEVO: Crear clase de prueba
-        binding.crearClasePruebaButton.setOnClickListener {
-            crearClaseDemostracion()
-        }
-
-        // 🎓 Botón NUEVO: Mis Asignaturas (Docente)
+        // 📚 Botón: Mis Asignaturas (Docente)
         binding.misAsignaturasButton.setOnClickListener {
             try {
                 if (rolActual.isEmpty()) {
@@ -184,30 +139,9 @@ class PanelPrincipalActivity : AppCompatActivity() {
             }
         }
 
-        // 🎒 Botón NUEVO: Mis Asignaturas (Alumno)
-        binding.misAsignaturasAlumnoButton.setOnClickListener {
-            try {
-                if (rolActual.isEmpty()) {
-                    Toast.makeText(
-                        this,
-                        "⏳ Cargando tu perfil... Intenta de nuevo en un momento",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    cargarDatosUsuario()
-                    return@setOnClickListener
-                }
-
-                Log.d("PanelPrincipal", "✅ Abriendo Mis Asignaturas (Alumno)")
-                startActivity(
-                    Intent(
-                        this,
-                        cl.duocuc.aulaviva.presentation.activity.AlumnoAsignaturasActivity::class.java
-                    )
-                )
-            } catch (ex: Exception) {
-                Log.e("PanelPrincipal", "❌ Error abriendo asignaturas alumno: ${ex.message}", ex)
-                Toast.makeText(this, "No se pudo abrir asignaturas", Toast.LENGTH_SHORT).show()
-            }
+        // 🧪 Botón: Modo Demostración
+        binding.crearClasePruebaButton.setOnClickListener {
+            crearAsignaturaYClaseDemo()
         }
 
         // Botón para cerrar sesión con confirmación
@@ -231,12 +165,12 @@ class PanelPrincipalActivity : AppCompatActivity() {
     }
 
     /**
-     * 🎓 Crea una clase de demostración con contenido rico
-     * Esto sirve para testing y para la defensa EV2
+     * 🎓 Crea una asignatura DEMO y luego una clase de demostración dentro de ella
+     * Flujo: Asignatura → Clase con contenido rico
      *
-     * ✅ Ahora con mejor logging y manejo de errores
+     * ✅ ACTUALIZADO: Ahora crea primero asignatura, luego clase
      */
-    private fun crearClaseDemostracion() {
+    private fun crearAsignaturaYClaseDemo() {
         if (rolActual.isEmpty()) {
             Toast.makeText(
                 this,
@@ -247,22 +181,71 @@ class PanelPrincipalActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("🎓 Clase de Demostración")
-            .setMessage("¿Quieres crear una clase de prueba con contenido educativo completo?\n\nIncluye:\n• Material educativo rico\n• PDF simulado de Kotlin\n• Links a documentación\n• Listo para probar IA")
+            .setTitle("🎓 Modo Demostración")
+            .setMessage("¿Crear asignatura y clase de prueba?\n\n✅ Asignatura: 'Programación Móvil DEMO'\n✅ Código único generado\n✅ Clase: 'Introducción a Kotlin'\n✅ Listo para probar funcionalidades")
             .setPositiveButton("Crear") { _, _ ->
-                Log.d("PanelPrincipal", "🔄 Creando clase demo...")
-                Toast.makeText(this, "⏳ Creando clase demo...", Toast.LENGTH_SHORT).show()
+                Log.d("PanelPrincipal", "🔄 Creando asignatura y clase demo...")
+                Toast.makeText(this, "⏳ Creando demostración...", Toast.LENGTH_SHORT).show()
 
                 lifecycleScope.launch {
                     try {
-                        val repository =
-                            cl.duocuc.aulaviva.data.repository.ClaseRepository(this@PanelPrincipalActivity)
-                        repository.crearClaseDePrueba(
+                        val db = cl.duocuc.aulaviva.data.local.AppDatabase.getDatabase(this@PanelPrincipalActivity)
+                        val asignaturasRepo = cl.duocuc.aulaviva.data.repository.AsignaturasRepository(
+                            db.asignaturaDao(),
+                            cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository(db.asignaturaDao())
+                        )
+                        val clasesRepo = cl.duocuc.aulaviva.data.repository.ClaseRepository(this@PanelPrincipalActivity)
+
+                        // PASO 1: Crear asignatura DEMO usando la firma correcta
+                        val resultAsignatura = asignaturasRepo.crearAsignatura(
+                            nombre = "Programación Móvil DEMO",
+                            descripcion = "Asignatura de demostración con clase de prueba incluida"
+                        )
+
+                        if (resultAsignatura.isFailure) {
+                            throw resultAsignatura.exceptionOrNull() ?: Exception("Error desconocido al crear asignatura")
+                        }
+
+                        val asignaturaCreada = resultAsignatura.getOrNull()!!
+                        Log.d("PanelPrincipal", "✅ Asignatura demo creada con código: ${asignaturaCreada.codigoAcceso}")
+
+                        // PASO 2: Crear clase DEMO dentro de la asignatura
+                        val claseDemo = cl.duocuc.aulaviva.data.model.Clase(
+                            id = java.util.UUID.randomUUID().toString(),
+                            nombre = "Introducción a Kotlin para Android",
+                            descripcion = """
+                                📱 Clase demostrativa sobre Kotlin y desarrollo Android
+
+                                📚 Contenido:
+                                • Sintaxis básica de Kotlin
+                                • Null safety y tipos de datos
+                                • Funciones y lambdas
+                                • Coroutines para programación asíncrona
+                                • Jetpack Compose UI moderna
+
+                                🎯 Objetivos:
+                                1. Comprender conceptos fundamentales
+                                2. Aplicar patrones de diseño MVVM
+                                3. Integrar APIs REST con Retrofit
+
+                                🔗 Recursos:
+                                • Documentación oficial: kotlinlang.org
+                                • Android Developers: developer.android.com
+                            """.trimIndent(),
+                            fecha = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date()),
+                            asignaturaId = asignaturaCreada.id,
+                            archivoPdfUrl = "",
+                            archivoPdfNombre = "",
+                            creador = cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager.getCurrentUserId() ?: ""
+                        )
+
+                        clasesRepo.crearClaseAsync(
+                            clase = claseDemo,
                             onSuccess = {
-                                Log.d("PanelPrincipal", "✅ Clase demo creada exitosamente")
+                                Log.d("PanelPrincipal", "✅ Demo completa: Asignatura + Clase creadas")
                                 Toast.makeText(
                                     this@PanelPrincipalActivity,
-                                    "✅ Clase de prueba creada! Ve a 'Gestionar clases'",
+                                    "✅ ¡Demo creada!\n\nCódigo: ${asignaturaCreada.codigoAcceso}\n\nVe a 'Mis Asignaturas' → ${asignaturaCreada.nombre}",
                                     Toast.LENGTH_LONG
                                 ).show()
                             },
@@ -270,16 +253,17 @@ class PanelPrincipalActivity : AppCompatActivity() {
                                 Log.e("PanelPrincipal", "❌ Error creando clase demo: $error")
                                 Toast.makeText(
                                     this@PanelPrincipalActivity,
-                                    "❌ Error: $error",
+                                    "⚠️ Asignatura creada, pero error en clase: $error",
                                     Toast.LENGTH_LONG
                                 ).show()
                             }
                         )
+
                     } catch (e: Exception) {
-                        Log.e("PanelPrincipal", "❌ Excepción creando clase demo", e)
+                        Log.e("PanelPrincipal", "❌ Error en modo demostración", e)
                         Toast.makeText(
                             this@PanelPrincipalActivity,
-                            "❌ Error inesperado: ${e.message}",
+                            "❌ Error: ${e.message}",
                             Toast.LENGTH_LONG
                         ).show()
                     }
