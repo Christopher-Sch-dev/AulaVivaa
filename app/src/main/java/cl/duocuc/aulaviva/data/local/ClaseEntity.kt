@@ -23,5 +23,6 @@ data class ClaseEntity(
     val archivoPdfUrl: String = "",  // URL del PDF
     val archivoPdfNombre: String = "",  // Nombre del PDF
     val creador: String,         // UID del docente que la creó
+    val asignaturaId: String? = null,  // FK a asignaturas (null para clases antiguas)
     val sincronizado: Boolean = false  // ¿Ya está en Supabase? (para sincronizar después)
 )

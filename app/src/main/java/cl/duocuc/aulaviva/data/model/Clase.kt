@@ -7,5 +7,6 @@ data class Clase(
     val fecha: String = "",
     val archivoPdfUrl: String = "",  // URL del PDF en Supabase Storage (si existe)
     val archivoPdfNombre: String = "",  // Nombre del archivo PDF
-    val creador: String = "" // UID del docente
+    val creador: String = "", // UID del docente
+    val asignaturaId: String? = null // FK a asignaturas (opcional para compatibilidad)
 )

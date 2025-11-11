@@ -41,6 +41,18 @@ interface ClaseDao {
     fun obtenerTodasLasClases(): Flow<List<ClaseEntity>>
 
     /**
+     * Obtiene clases de una asignatura específica.
+     */
+    @Query("SELECT * FROM clases WHERE asignaturaId = :asignaturaId ORDER BY fecha DESC")
+    fun obtenerClasesPorAsignatura(asignaturaId: String): Flow<List<ClaseEntity>>
+
+    /**
+     * Obtiene clases de múltiples asignaturas (para alumnos inscritos).
+     */
+    @Query("SELECT * FROM clases WHERE asignaturaId IN (:asignaturasIds) ORDER BY fecha DESC")
+    fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): Flow<List<ClaseEntity>>
+
+    /**
      * Inserta o reemplaza una clase en la BD local.
      * onConflict = REPLACE significa que si el ID ya existe, lo actualiza.
      */
