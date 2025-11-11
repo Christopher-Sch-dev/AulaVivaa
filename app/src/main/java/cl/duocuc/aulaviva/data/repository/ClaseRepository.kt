@@ -53,6 +53,7 @@ class ClaseRepository(context: Context) {
         archivoPdfUrl = this.archivoPdfUrl,
         archivoPdfNombre = this.archivoPdfNombre,
         creador = this.creador,
+        asignaturaId = this.asignaturaId,
         sincronizado = sincronizado
     )
 
@@ -70,7 +71,52 @@ class ClaseRepository(context: Context) {
                     fecha = entity.fecha,
                     archivoPdfUrl = entity.archivoPdfUrl,
                     archivoPdfNombre = entity.archivoPdfNombre,
-                    creador = entity.creador
+                    creador = entity.creador,
+                    asignaturaId = entity.asignaturaId
+                )
+            }
+        }
+    }
+
+    /**
+     * Obtiene clases de una asignatura específica (Flow para LiveData).
+     */
+    fun obtenerClasesPorAsignatura(asignaturaId: String): Flow<List<Clase>> {
+        return claseDao.obtenerClasesPorAsignatura(asignaturaId).map { entities ->
+            entities.map { entity ->
+                Clase(
+                    id = entity.id,
+                    nombre = entity.nombre,
+                    descripcion = entity.descripcion,
+                    fecha = entity.fecha,
+                    archivoPdfUrl = entity.archivoPdfUrl,
+                    archivoPdfNombre = entity.archivoPdfNombre,
+                    creador = entity.creador,
+                    asignaturaId = entity.asignaturaId
+                )
+            }
+        }
+    }
+
+    /**
+     * Obtiene clases de múltiples asignaturas (para alumnos inscritos).
+     */
+    fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): Flow<List<Clase>> {
+        if (asignaturasIds.isEmpty()) {
+            return kotlinx.coroutines.flow.flowOf(emptyList())
+        }
+
+        return claseDao.obtenerClasesPorAsignaturas(asignaturasIds).map { entities ->
+            entities.map { entity ->
+                Clase(
+                    id = entity.id,
+                    nombre = entity.nombre,
+                    descripcion = entity.descripcion,
+                    fecha = entity.fecha,
+                    archivoPdfUrl = entity.archivoPdfUrl,
+                    archivoPdfNombre = entity.archivoPdfNombre,
+                    creador = entity.creador,
+                    asignaturaId = entity.asignaturaId
                 )
             }
         }
@@ -90,7 +136,8 @@ class ClaseRepository(context: Context) {
                     fecha = entity.fecha,
                     archivoPdfUrl = entity.archivoPdfUrl,
                     archivoPdfNombre = entity.archivoPdfNombre,
-                    creador = entity.creador
+                    creador = entity.creador,
+                    asignaturaId = entity.asignaturaId
                 )
             } else null
         } catch (_: Exception) {

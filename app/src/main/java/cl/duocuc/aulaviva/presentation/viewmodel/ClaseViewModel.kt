@@ -65,7 +65,8 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
         descripcion: String,
         fecha: String,
         archivoPdfUrl: String = "",
-        archivoPdfNombre: String = ""
+        archivoPdfNombre: String = "",
+        asignaturaId: String? = null
     ) {
         // Validación completa
         if (nombre.trim().isEmpty()) {
@@ -90,7 +91,8 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
             fecha = fecha.trim(),
             archivoPdfUrl = archivoPdfUrl,
             archivoPdfNombre = archivoPdfNombre,
-            creador = uid
+            creador = uid,
+            asignaturaId = asignaturaId
         )
 
         viewModelScope.launch {
@@ -195,6 +197,25 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
             _error.value = "Error al obtener la clase: ${e.message}"
             null
         }
+    }
+
+    /**
+     * Obtiene todas las clases de una asignatura específica.
+     * @param asignaturaId ID de la asignatura a filtrar
+     * @return LiveData con la lista de clases de la asignatura
+     */
+    fun obtenerClasesPorAsignatura(asignaturaId: String): LiveData<List<Clase>> {
+        return repository.obtenerClasesPorAsignatura(asignaturaId).asLiveData()
+    }
+
+    /**
+     * Obtiene todas las clases de múltiples asignaturas.
+     * Útil para alumnos que ven clases de todas sus asignaturas inscritas.
+     * @param asignaturasIds Lista de IDs de asignaturas
+     * @return LiveData con la lista de clases de todas las asignaturas
+     */
+    fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): LiveData<List<Clase>> {
+        return repository.obtenerClasesPorAsignaturas(asignaturasIds).asLiveData()
     }
 
     /**

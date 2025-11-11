@@ -151,6 +151,32 @@ class PanelPrincipalActivity : AppCompatActivity() {
             crearClaseDemostracion()
         }
 
+        // 🎓 Botón NUEVO: Mis Asignaturas
+        binding.misAsignaturasButton.setOnClickListener {
+            try {
+                if (rolActual.isEmpty()) {
+                    Toast.makeText(
+                        this,
+                        "⏳ Cargando tu perfil... Intenta de nuevo en un momento",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    cargarDatosUsuario()
+                    return@setOnClickListener
+                }
+
+                Log.d("PanelPrincipal", "✅ Abriendo Mis Asignaturas")
+                startActivity(
+                    Intent(
+                        this,
+                        cl.duocuc.aulaviva.presentation.activity.DocenteAsignaturasActivity::class.java
+                    )
+                )
+            } catch (ex: Exception) {
+                Log.e("PanelPrincipal", "❌ Error abriendo asignaturas: ${ex.message}", ex)
+                Toast.makeText(this, "No se pudo abrir asignaturas", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // Botón para cerrar sesión con confirmación
         binding.logoutButton.setOnClickListener {
             AlertDialog.Builder(this)
