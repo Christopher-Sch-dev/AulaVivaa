@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
  * Maneja CRUD en Postgres + Storage para PDFs.
  * Sincroniza con Room (caché local).
  *
- * REEMPLAZA 100% ClaseRepository con Firebase.
+ * Implementa arquitectura offline-first con Supabase.
  */
 class SupabaseClaseRepository(private val claseDao: ClaseDao) {
 

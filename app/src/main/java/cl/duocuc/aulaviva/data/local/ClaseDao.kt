@@ -48,7 +48,7 @@ interface ClaseDao {
     suspend fun insertarClase(clase: ClaseEntity)
 
     /**
-     * Inserta múltiples clases de una vez (útil para sincronizar desde Firestore)
+     * Inserta múltiples clases de una vez (útil para sincronizar desde Supabase)
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarVarias(clases: List<ClaseEntity>)
@@ -72,7 +72,7 @@ interface ClaseDao {
     suspend fun eliminarTodas()
 
     /**
-     * Obtiene clases que aún no se han sincronizado con Firestore
+     * Obtiene clases que aún no se han sincronizado con Supabase
      * (útil cuando vuelve la conexión a internet)
      */
     @Query("SELECT * FROM clases WHERE sincronizado = 0")

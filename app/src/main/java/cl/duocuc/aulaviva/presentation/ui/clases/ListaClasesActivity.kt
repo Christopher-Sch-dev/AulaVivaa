@@ -70,7 +70,7 @@ class ListaClasesActivity : AppCompatActivity() {
         setupObservers()
         setupListeners()
 
-        viewModel.sincronizarConFirestore()
+        viewModel.sincronizarConSupabase()
     }
 
     private fun setupRecyclerView() {
@@ -275,7 +275,7 @@ class ListaClasesActivity : AppCompatActivity() {
                                     btnGuardar.isEnabled = true
                                     tempPdfUri = ""
                                     tempPdfName = ""
-                                    viewModel.sincronizarConFirestore()
+                                    viewModel.sincronizarConSupabase()
                                 }
                             },
                             onError = { error ->
@@ -421,7 +421,7 @@ class ListaClasesActivity : AppCompatActivity() {
                             dialog.dismiss()
                             isSaving = false
                             btnGuardar.isEnabled = true
-                            viewModel.sincronizarConFirestore()
+                            viewModel.sincronizarConSupabase()
                         }
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
@@ -466,7 +466,7 @@ class ListaClasesActivity : AppCompatActivity() {
                         "✅ Clase eliminada",
                         Toast.LENGTH_SHORT
                     ).show()
-                    viewModel.sincronizarConFirestore()
+                    viewModel.sincronizarConSupabase()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {

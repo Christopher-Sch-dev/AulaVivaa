@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
  * Gestor de autenticación Supabase.
  * Maneja login, registro, logout y estado de sesión.
  *
- * REEMPLAZA 100% FirebaseAuth.
+ * Utiliza Supabase GoTrue para autenticación completa.
  */
 object SupabaseAuthManager {
 

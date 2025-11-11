@@ -45,7 +45,7 @@ class PanelPrincipalActivity : AppCompatActivity() {
 
         setupListeners()
         pedirPermisoNotificaciones()
-        cargarDatosUsuario()  // Cargo info del usuario desde Firestore
+        cargarDatosUsuario()  // Cargo info del usuario desde Supabase
     }
 
     /**

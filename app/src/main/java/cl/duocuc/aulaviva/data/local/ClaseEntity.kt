@@ -16,12 +16,12 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "clases")
 data class ClaseEntity(
     @PrimaryKey
-    val id: String,              // ID único de Firestore
+    val id: String,              // ID único de Supabase
     val nombre: String,          // Nombre de la clase
     val descripcion: String = "",  // Descripción de actividades
     val fecha: String,           // Fecha en formato texto (dd/MM/yyyy)
     val archivoPdfUrl: String = "",  // URL del PDF
     val archivoPdfNombre: String = "",  // Nombre del PDF
     val creador: String,         // UID del docente que la creó
-    val sincronizado: Boolean = false  // ¿Ya está en Firestore? (para sincronizar después)
+    val sincronizado: Boolean = false  // ¿Ya está en Supabase? (para sincronizar después)
 )

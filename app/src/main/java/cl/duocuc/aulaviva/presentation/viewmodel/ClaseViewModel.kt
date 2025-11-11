@@ -43,12 +43,11 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
      * Sincroniza clases desde Supabase a Room.
      * Esto se ejecuta al abrir la pantalla de clases.
      */
-    fun sincronizarConFirestore() {
-        // Mantener nombre para compatibilidad, pero ahora usa Supabase
+    fun sincronizarConSupabase() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                repository.sincronizarDesdeFirestore()  // Internamente usa Supabase
+                repository.sincronizarDesdeSupabase()  // Usa Supabase
                 _isLoading.value = false
             } catch (_: Exception) {
                 _isLoading.value = false
@@ -59,7 +58,7 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Crea una nueva clase.
-     * Se guarda primero en Room (instantáneo) y luego intenta subir a Firestore.
+     * Se guarda primero en Room (instantáneo) y luego intenta subir a Supabase.
      */
     fun crearClase(
         nombre: String,

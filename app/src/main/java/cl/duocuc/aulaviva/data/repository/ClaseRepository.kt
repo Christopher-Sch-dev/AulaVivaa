@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * Repository que maneja toda la lógica de clases.
- * AHORA USA SUPABASE 100% (NO Firebase).
+ * Utiliza arquitectura offline-first con Supabase.
  *
  * Usa DOS fuentes de datos:
  * 1. Room (BD local) - Funciona sin internet
@@ -101,8 +101,7 @@ class ClaseRepository(context: Context) {
     /**
      * Sincroniza clases desde Supabase a Room.
      */
-    suspend fun sincronizarDesdeFirestore() {
-        // Renombrado para mantener compatibilidad, pero ahora usa Supabase
+    suspend fun sincronizarDesdeSupabase() {
         try {
             // PASO 1: Subir clases pendientes desde Room a Supabase
             val clasesNoSincronizadas = claseDao.obtenerNoSincronizadas()
@@ -420,14 +419,14 @@ class ClaseRepository(context: Context) {
                 nombre = "Introducción a Desarrollo Android con Kotlin",
                 descripcion = """
                     En esta clase exploraremos los fundamentos del desarrollo móvil Android utilizando Kotlin.
-                    
+
                     Actividades:
                     • Configuración del entorno de desarrollo
                     • Sintaxis básica de Kotlin
                     • Creación de la primera aplicación
                     • Arquitectura MVVM
                     • Integración con Supabase
-                    
+
                     Material incluido: Guía completa en PDF con ejemplos prácticos.
                 """.trimIndent(),
                 fecha = "Lunes 4 de Noviembre, 14:00hrs",
