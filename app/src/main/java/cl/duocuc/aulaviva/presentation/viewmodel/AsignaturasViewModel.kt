@@ -42,6 +42,7 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
     val codigoGenerado: LiveData<String?> = _codigoGenerado
 
     init {
+        // ✅ Sincronizar UNA SOLA VEZ al inicio
         sincronizarAsignaturas()
     }
 
@@ -139,7 +140,8 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
             repository.actualizarAsignatura(asignatura)
                 .onSuccess {
                     android.util.Log.d("AsignaturasVM", "✅ Asignatura actualizada")
-                    sincronizarAsignaturas()
+                    _operationSuccess.value = "Asignatura actualizada"
+                    // ✅ NO llamar a sincronizarAsignaturas() - Room Flow se actualiza automáticamente
                 }
                 .onFailure { exception ->
                     _error.value = exception.message
@@ -162,7 +164,7 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
                 .onSuccess {
                     android.util.Log.d("AsignaturasVM", "✅ Asignatura eliminada")
                     _operationSuccess.value = "Asignatura eliminada"
-                    sincronizarAsignaturas()
+                    // ✅ NO llamar a sincronizarAsignaturas() - Room Flow se actualiza automáticamente
                 }
                 .onFailure { exception ->
                     _error.value = exception.message
