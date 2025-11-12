@@ -781,7 +781,7 @@ class IARepository {
             """.trimIndent()
 
             val resultado = llamarGemini(prompt)
-            "$resultado\n\n✨ Tu tutor IA - Gemini"
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
             "⚠️ Error al conectar con Gemini AI\n\n📚 CONCEPTOS BÁSICOS de $nombreClase\n\nPara explicación detallada, verifica tu conexión.\n\nError: ${
                 e.message?.take(100) ?: "Desconocido"
@@ -878,7 +878,7 @@ class IARepository {
             """.trimIndent()
 
             val resultado = llamarGemini(prompt)
-            "$resultado\n\n✨ Tu tutor IA - Gemini"
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
             "⚠️ Error al conectar con Gemini AI\n\n✍️ EJERCICIOS BÁSICOS de $nombreClase\n\nPara ejercicios detallados, verifica tu conexión.\n\nError: ${
                 e.message?.take(100) ?: "Desconocido"
@@ -974,7 +974,7 @@ class IARepository {
             """.trimIndent()
 
             val resultado = llamarGemini(prompt)
-            "$resultado\n\n✨ Tu tutor IA - Gemini"
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
             "⚠️ Error al conectar con Gemini AI\n\n📖 RESUMEN BÁSICO de $nombreClase\n\nPara resumen detallado, verifica tu conexión.\n\nError: ${
                 e.message?.take(100) ?: "Desconocido"

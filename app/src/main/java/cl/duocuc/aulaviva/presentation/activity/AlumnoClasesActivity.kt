@@ -48,13 +48,14 @@ class AlumnoClasesActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        // Adapter READ-ONLY (sin callbacks editar/eliminar)
+        // Adapter READ-ONLY para alumno (oculta botones de edición)
         adapter = ClaseAdapter(
             onClaseClick = { clase ->
                 abrirDetalleClase(clase)
             },
             onEditarClick = null, // Alumno no puede editar
-            onEliminarClick = null // Alumno no puede eliminar
+            onEliminarClick = null, // Alumno no puede eliminar
+            esAlumno = true // ✅ FLAG para ocultar botones
         )
 
         binding.recyclerViewClases.apply {
