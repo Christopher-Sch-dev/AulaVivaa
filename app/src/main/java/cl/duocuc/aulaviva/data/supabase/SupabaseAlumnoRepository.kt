@@ -29,26 +29,32 @@ class SupabaseAlumnoRepository(
             val alumnoId = SupabaseAuthManager.getCurrentUserId()
                 ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
 
-            Log.d("SupabaseAlumno", "🎓 Inscribiendo con código: $codigo")
+            val codigoLimpio = codigo.uppercase().trim()
+            Log.d("SupabaseAlumno", "🎓 Inscribiendo con código: '$codigoLimpio'")
 
             // 1. Buscar asignatura por código
             val asignaturas = supabase.from("asignaturas")
                 .select {
                     filter {
-                        eq("codigo_acceso", codigo.uppercase().trim())
+                        eq("codigo_acceso", codigoLimpio)
                     }
                 }
                 .decodeList<AsignaturaSupabaseDto>()
 
+            Log.d("SupabaseAlumno", "🔍 Asignaturas encontradas: ${asignaturas.size}")
+
             if (asignaturas.isEmpty()) {
+                Log.e("SupabaseAlumno", "❌ Código '$codigoLimpio' no encontrado en BD")
                 return@withContext Result.failure(Exception("Código inválido"))
             }
 
             val asignaturaDto = asignaturas.first()
+            Log.d("SupabaseAlumno", "✅ Asignatura encontrada: ${asignaturaDto.nombre}")
 
             // 2. Verificar si ya está inscrito
             val yaInscrito = alumnoAsignaturaDao.obtenerInscripcion(alumnoId, asignaturaDto.id)
             if (yaInscrito != null) {
+                Log.w("SupabaseAlumno", "⚠️ Ya inscrito en: ${asignaturaDto.nombre}")
                 return@withContext Result.failure(Exception("Ya estás inscrito en esta asignatura"))
             }
 
@@ -61,9 +67,11 @@ class SupabaseAlumnoRepository(
             )
 
             supabase.from("alumno_asignaturas").insert(inscripcionDto)
+            Log.d("SupabaseAlumno", "📝 Inscripción creada en Supabase")
 
             // 4. Guardar inscripción en Room
             alumnoAsignaturaDao.insertarInscripcion(inscripcionDto.toEntity(sincronizado = true))
+            Log.d("SupabaseAlumno", "💾 Inscripción guardada en Room")
 
             // 5. Crear modelo de asignatura
             val asignatura = Asignatura(
@@ -71,17 +79,17 @@ class SupabaseAlumnoRepository(
                 nombre = asignaturaDto.nombre,
                 descripcion = asignaturaDto.descripcion,
                 docenteId = asignaturaDto.docenteId,
-                codigoAcceso = codigo
+                codigoAcceso = codigoLimpio
             )
 
             // Guardar asignatura en Room
             asignaturaDao.insertarAsignatura(asignatura.toEntity(sincronizado = true))
 
-            Log.d("SupabaseAlumno", "✅ Inscrito en: ${asignatura.nombre}")
+            Log.d("SupabaseAlumno", "✅ ÉXITO: Inscrito en: ${asignatura.nombre}")
             Result.success(asignatura)
 
         } catch (e: Exception) {
-            Log.e("SupabaseAlumno", "❌ Error en inscripción", e)
+            Log.e("SupabaseAlumno", "❌ Error en inscripción: ${e.message}", e)
             Result.failure(e)
         }
     }

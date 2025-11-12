@@ -108,23 +108,33 @@ class PanelAlumnoActivity : AppCompatActivity() {
         val inputLayout = dialogView.findViewById<TextInputLayout>(cl.duocuc.aulaviva.R.id.layoutCodigoAcceso)
         val inputCodigo = dialogView.findViewById<TextInputEditText>(cl.duocuc.aulaviva.R.id.inputCodigoAcceso)
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("📝 Inscribirse a Asignatura")
-            .setMessage("Ingresa el código de acceso proporcionado por tu docente")
+            .setMessage("Ingresa el código de acceso proporcionado por tu docente\n\nEjemplos:\n• TEMP-7656\n• TG025-PAEK")
             .setView(dialogView)
-            .setPositiveButton("Inscribirse") { _, _ ->
+            .setPositiveButton("Inscribirse", null) // Lo manejamos manualmente
+            .setNegativeButton("Cancelar", null)
+            .create()
+
+        dialog.setOnShowListener {
+            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            positiveButton.setOnClickListener {
                 val codigo = inputCodigo.text.toString().trim()
                 if (codigo.isEmpty()) {
-                    Toast.makeText(this, "Debes ingresar un código", Toast.LENGTH_SHORT).show()
+                    inputLayout.error = "Debes ingresar un código"
                 } else {
+                    inputLayout.error = null
+                    dialog.dismiss()
                     inscribirseConCodigo(codigo)
                 }
             }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        }
+
+        dialog.show()
     }
 
     private fun inscribirseConCodigo(codigo: String) {
+        android.util.Log.d("PanelAlumno", "🎯 Intentando inscribir con código: '$codigo'")
         viewModel.inscribirConCodigo(codigo)
     }
 
