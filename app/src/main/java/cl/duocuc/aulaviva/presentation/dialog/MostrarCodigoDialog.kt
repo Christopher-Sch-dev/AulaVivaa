@@ -39,7 +39,7 @@ class MostrarCodigoDialog : DialogFragment() {
         _binding = DialogMostrarCodigoBinding.inflate(LayoutInflater.from(context))
 
         val nombre = arguments?.getString(ARG_NOMBRE) ?: ""
-        val codigo = arguments?.getString(ARG_CODIGO) ?: ""
+        val codigo = arguments?.getString(ARG_CODIGO)?.uppercase() ?: "" // MAYÚSCULAS
 
         binding.apply {
             textViewNombreAsignatura.text = nombre
@@ -59,12 +59,12 @@ class MostrarCodigoDialog : DialogFragment() {
 
     private fun copiarAlPortapapeles(codigo: String) {
         val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("Código de Acceso", codigo)
+        val clip = ClipData.newPlainText("Código de Acceso", codigo.uppercase()) // MAYÚSCULAS
         clipboard.setPrimaryClip(clip)
 
         Toast.makeText(
             requireContext(),
-            "Código copiado al portapapeles",
+            "✅ Código copiado: ${codigo.uppercase()}",
             Toast.LENGTH_SHORT
         ).show()
     }

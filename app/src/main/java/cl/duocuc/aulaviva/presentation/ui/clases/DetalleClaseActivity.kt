@@ -88,6 +88,14 @@ class DetalleClaseActivity : AppCompatActivity() {
             findViewById<View>(R.id.btnGenerarIdeas)?.visibility = View.GONE
             findViewById<View>(R.id.btnSugerirActividades)?.visibility = View.GONE
             findViewById<View>(R.id.btnEstructurarClase)?.visibility = View.GONE
+            findViewById<View>(R.id.btnResumirPdf)?.visibility = View.GONE
+            findViewById<View>(R.id.btnReordenarTemas)?.visibility = View.GONE
+            findViewById<View>(R.id.btnIdeasDocentePdf)?.visibility = View.GONE
+
+            // Mostrar botones específicos para alumno
+            findViewById<View>(R.id.btnExplicarConceptos)?.visibility = View.VISIBLE
+            findViewById<View>(R.id.btnGenerarEjercicios)?.visibility = View.VISIBLE
+            findViewById<View>(R.id.btnResumenEstudio)?.visibility = View.VISIBLE
         }
     }
 
@@ -95,6 +103,7 @@ class DetalleClaseActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnVolver)?.setOnClickListener { finish() }
         findViewById<Button>(R.id.btnVerPdf)?.setOnClickListener { intentarAbrirPdfFijo() }
 
+        // Botones para DOCENTE
         findViewById<Button>(R.id.btnGenerarIdeas)?.setOnClickListener { generarIdeasParaClase() }
         findViewById<Button>(R.id.btnSugerirActividades)?.setOnClickListener { sugerirActividades() }
         findViewById<Button>(R.id.btnEstructurarClase)?.setOnClickListener { estructurarClasePorTiempo() }
@@ -102,6 +111,11 @@ class DetalleClaseActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnResumirPdf)?.setOnClickListener { resumirContenidoPdf() }
         findViewById<Button>(R.id.btnReordenarTemas)?.setOnClickListener { reordenarTemasParaClase() }
         findViewById<Button>(R.id.btnIdeasDocentePdf)?.setOnClickListener { ideasDocenteBasadasEnPdf() }
+
+        // Botones para ALUMNO
+        findViewById<Button>(R.id.btnExplicarConceptos)?.setOnClickListener { explicarConceptosAlumno() }
+        findViewById<Button>(R.id.btnGenerarEjercicios)?.setOnClickListener { generarEjerciciosAlumno() }
+        findViewById<Button>(R.id.btnResumenEstudio)?.setOnClickListener { crearResumenEstudioAlumno() }
     }
 
     /**
@@ -343,5 +357,87 @@ class DetalleClaseActivity : AppCompatActivity() {
             "❌ Esta clase no tiene un PDF asociado",
             Toast.LENGTH_LONG
         ).show()
+    }
+
+    // ========================================
+    // 🎓 FUNCIONES IA PARA ALUMNO
+    // ========================================
+
+    private fun explicarConceptosAlumno() {
+        val clase = claseActual ?: return
+        val loading = mostrarDialogoCarga(
+            "📚 Explicando conceptos...",
+            "Tu tutor IA está preparando la explicación"
+        )
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val resultado = iaRepository.explicarConceptosParaAlumno(
+                    clase.nombre,
+                    clase.descripcion,
+                    clase.archivoPdfNombre
+                )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("📚 Conceptos explicados para ti", resultado)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun generarEjerciciosAlumno() {
+        val clase = claseActual ?: return
+        val loading = mostrarDialogoCarga(
+            "✍️ Creando ejercicios...",
+            "Tu tutor IA está diseñando ejercicios de práctica"
+        )
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val resultado = iaRepository.generarEjerciciosParaAlumno(
+                    clase.nombre,
+                    clase.descripcion,
+                    clase.archivoPdfUrl
+                )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("✍️ Ejercicios de práctica", resultado)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun crearResumenEstudioAlumno() {
+        val clase = claseActual ?: return
+        val loading = mostrarDialogoCarga(
+            "📖 Creando resumen...",
+            "Tu tutor IA está organizando el contenido para ti"
+        )
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val resultado = iaRepository.crearResumenEstudioParaAlumno(
+                    clase.nombre,
+                    clase.descripcion,
+                    clase.archivoPdfNombre
+                )
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    mostrarResultadoIA("📖 Tu resumen de estudio", resultado)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 }

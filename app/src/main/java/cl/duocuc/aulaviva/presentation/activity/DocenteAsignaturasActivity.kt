@@ -156,13 +156,14 @@ class DocenteAsignaturasActivity : AppCompatActivity() {
             return
         }
 
+        val codigoFinal = asignatura.codigoAcceso.uppercase() // Asegurar MAYÚSCULAS
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("Código Asignatura", asignatura.codigoAcceso)
+        val clip = ClipData.newPlainText("Código Asignatura", codigoFinal)
         clipboard.setPrimaryClip(clip)
 
         Toast.makeText(
             this,
-            "✅ Código copiado: ${asignatura.codigoAcceso}\n\nCompártelo con tus alumnos",
+            "✅ Código copiado: $codigoFinal\n\nCompártelo con tus alumnos",
             Toast.LENGTH_LONG
         ).show()
     }
@@ -190,7 +191,12 @@ class DocenteAsignaturasActivity : AppCompatActivity() {
 
     private fun mostrarCodigoGenerado(codigo: String) {
         // Este método se llama cuando se genera un código nuevo
-        Toast.makeText(this, "Código generado: $codigo", Toast.LENGTH_LONG).show()
+        // Mostrar diálogo bonito con el código
+        val dialog = MostrarCodigoDialog.newInstance(
+            "Código Generado",
+            codigo.uppercase() // Asegurar mayúsculas
+        )
+        dialog.show(supportFragmentManager, "CodigoGenerado")
     }
 
     private fun confirmarEliminar(asignatura: Asignatura) {

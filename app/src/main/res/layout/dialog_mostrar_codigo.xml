@@ -55,13 +55,26 @@
                 android:id="@+id/textViewCodigo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:letterSpacing="0.1"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.15"
                 android:text="POO2025-A1B2"
+                android:textAllCaps="true"
                 android:textColor="@android:color/white"
-                android:textSize="28sp"
+                android:textSize="24sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
+
+    <!-- Nota de formato -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:gravity="center"
+        android:text="✅ Código en MAYÚSCULAS (como aparece en Supabase)"
+        android:textColor="#4F3BB8"
+        android:textSize="11sp"
+        android:textStyle="italic" />
 
     <!-- Botón copiar -->
     <Button

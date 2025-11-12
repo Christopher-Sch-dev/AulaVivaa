@@ -44,9 +44,9 @@ class AsignaturaAdapter(
                 textViewNombre.text = asignatura.nombre
                 textViewDescripcion.text = asignatura.descripcion.ifEmpty { "Sin descripción" }
 
-                // Código de acceso
+                // Código de acceso (siempre en MAYÚSCULAS)
                 val textoCodigo = if (!asignatura.codigoAcceso.isNullOrEmpty()) {
-                    "Código: ${asignatura.codigoAcceso}"
+                    "Código: ${asignatura.codigoAcceso.uppercase()}"
                 } else {
                     "Sin código generado"
                 }

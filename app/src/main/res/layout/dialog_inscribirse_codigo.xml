@@ -14,14 +14,15 @@
         android:hint="Código de acceso"
         app:boxStrokeColor="#4F3BB8"
         app:startIconDrawable="@android:drawable/ic_menu_myplaces"
-        app:startIconTint="#4F3BB8">
+        app:startIconTint="#4F3BB8"
+        app:helperText="Todos los códigos están en MAYÚSCULAS">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/inputCodigoAcceso"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textCapCharacters"
-            android:maxLength="10"
+            android:maxLength="50"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 

@@ -232,5 +232,45 @@
             android:textAllCaps="false"
             android:textColor="@android:color/white" />
 
+        <!-- ========================================= -->
+        <!-- 🎓 BOTONES IA PARA ALUMNOS -->
+        <!-- ========================================= -->
+
+        <!-- Botón: Explicar conceptos claves (ALUMNO) -->
+        <Button
+            android:id="@+id/btnExplicarConceptos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:backgroundTint="#1976D2"
+            android:text="📚 Explicar conceptos de esta clase"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:visibility="gone" />
+
+        <!-- Botón: Generar ejercicios de práctica (ALUMNO) -->
+        <Button
+            android:id="@+id/btnGenerarEjercicios"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:backgroundTint="#388E3C"
+            android:text="✍️ Generar ejercicios de práctica"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:visibility="gone" />
+
+        <!-- Botón: Crear resumen de estudio (ALUMNO) -->
+        <Button
+            android:id="@+id/btnResumenEstudio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:backgroundTint="#F57C00"
+            android:text="📖 Crear resumen para estudiar"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:visibility="gone" />
+
     </LinearLayout>
 </ScrollView>

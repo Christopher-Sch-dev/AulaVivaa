@@ -713,4 +713,272 @@ class IARepository {
             }"
         }
     }
+
+    // ========================================
+    // 🎓 FUNCIONES IA PARA ALUMNOS
+    // ========================================
+
+    /**
+     * 📚 Explica conceptos claves para que el alumno APRENDA
+     */
+    suspend fun explicarConceptosParaAlumno(
+        nombreClase: String,
+        descripcion: String,
+        nombrePdf: String?
+    ): String {
+        return try {
+            val contextoPdf = if (!nombrePdf.isNullOrEmpty()) {
+                "\n📄 Material de estudio: $nombrePdf"
+            } else ""
+            val prompt = """
+                # CONTEXTO Y ROL
+                Eres un tutor personal que ayuda a estudiantes a COMPRENDER contenidos.
+
+                # DATOS DE LA CLASE
+                📚 Clase que el alumno está estudiando: $nombreClase
+                📝 Descripción: $descripcion$contextoPdf
+
+                # OBJETIVO
+                Explicar los conceptos de forma simple y clara para que el ESTUDIANTE entienda.
+                NO estás ayudando a un profesor a enseñar, estás ayudando a un ALUMNO a APRENDER.
+
+                # FORMATO DE RESPUESTA
+
+                🎓 **¿QUÉ VAS A APRENDER HOY?**
+                Tema: $nombreClase
+                [Explicación en 2-3 líneas de qué trata esta clase]
+
+                ## 📖 CONCEPTOS PRINCIPALES EXPLICADOS
+
+                **1. [Concepto clave]**
+                → **¿Qué es?**: [Definición simple]
+                → **¿Por qué importa?**: [Aplicación práctica]
+                → **Ejemplo**: [Caso concreto fácil de entender]
+
+                **2. [Concepto clave]**
+                → **¿Qué es?**: [Definición simple]
+                → **¿Por qué importa?**: [Aplicación práctica]
+                → **Ejemplo**: [Caso concreto fácil de entender]
+
+                **3. [Concepto clave]**
+                → **¿Qué es?**: [Definición simple]
+                → **¿Por qué importa?**: [Aplicación práctica]
+                → **Ejemplo**: [Caso concreto fácil de entender]
+
+                ## 💡 RESUMEN EN PALABRAS SIMPLES
+                [Explicación global que conecta todos los conceptos, como si se lo explicaras a un amigo]
+
+                ## 🎯 CÓMO ESTUDIAR ESTO
+                1. [Consejo de estudio 1]
+                2. [Consejo de estudio 2]
+                3. [Consejo de estudio 3]
+
+                # ESTILO
+                - Tutear al estudiante (usa "tú")
+                - Lenguaje amigable y motivador
+                - Ejemplos cercanos a la vida real
+                - Máximo 500 palabras
+            """.trimIndent()
+
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n✨ Tu tutor IA - Gemini"
+        } catch (e: Exception) {
+            "⚠️ Error al conectar con Gemini AI\n\n📚 CONCEPTOS BÁSICOS de $nombreClase\n\nPara explicación detallada, verifica tu conexión.\n\nError: ${
+                e.message?.take(100) ?: "Desconocido"
+            }"
+        }
+    }
+
+    /**
+     * ✍️ Genera ejercicios prácticos para que el alumno PRACTIQUE
+     */
+    suspend fun generarEjerciciosParaAlumno(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String?
+    ): String {
+        return try {
+            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
+                "\n📄 Basado en el material: PDF de la clase"
+            } else ""
+            val prompt = """
+                # CONTEXTO Y ROL
+                Eres un tutor que crea ejercicios prácticos para que los ESTUDIANTES practiquen y refuercen lo aprendido.
+
+                # DATOS DE LA CLASE
+                📚 Clase: $nombreClase
+                📝 Contenido: $descripcion$contextoPdf
+
+                # OBJETIVO
+                Crear ejercicios variados para que el ALUMNO practique activamente.
+                Ejercicios deben ser: claros, progresivos (fácil → difícil), y con orientación.
+
+                # FORMATO DE RESPUESTA
+
+                🎯 **EJERCICIOS PRÁCTICOS**
+                Clase: $nombreClase
+
+                ## 📝 NIVEL BÁSICO (Para empezar)
+
+                **Ejercicio 1: [Título]**
+                🎯 Objetivo: [Qué practicas con esto]
+                📋 Instrucciones:
+                [Paso 1]
+                [Paso 2]
+                [Paso 3]
+                💡 Pista: [Ayuda si se traba]
+
+                **Ejercicio 2: [Título]**
+                🎯 Objetivo: [Qué practicas con esto]
+                📋 Instrucciones:
+                [Paso 1]
+                [Paso 2]
+                [Paso 3]
+                💡 Pista: [Ayuda si se traba]
+
+                ---
+
+                ## 🚀 NIVEL INTERMEDIO (Más desafío)
+
+                **Ejercicio 3: [Título]**
+                🎯 Objetivo: [Qué practicas con esto]
+                📋 Instrucciones:
+                [Descripción del ejercicio]
+                💡 Pista: [Ayuda si se traba]
+
+                **Ejercicio 4: [Título]**
+                🎯 Objetivo: [Qué practicas con esto]
+                📋 Instrucciones:
+                [Descripción del ejercicio]
+                💡 Pista: [Ayuda si se traba]
+
+                ---
+
+                ## ⭐ EJERCICIO DESAFÍO (Opcional)
+
+                **Ejercicio 5: [Título creativo]**
+                🎯 Objetivo: [Integrar todo lo aprendido]
+                📋 Instrucciones:
+                [Descripción del ejercicio más complejo]
+                💡 Pista: [Ayuda estratégica]
+
+                ---
+
+                ## ✅ AUTOEVALUACIÓN
+                Después de hacer los ejercicios, pregúntate:
+                1. [Pregunta de reflexión 1]
+                2. [Pregunta de reflexión 2]
+                3. [Pregunta de reflexión 3]
+
+                # ESTILO
+                - Tutear al estudiante
+                - Instrucciones claras y paso a paso
+                - Motivador y positivo
+                - Máximo 600 palabras
+            """.trimIndent()
+
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n✨ Tu tutor IA - Gemini"
+        } catch (e: Exception) {
+            "⚠️ Error al conectar con Gemini AI\n\n✍️ EJERCICIOS BÁSICOS de $nombreClase\n\nPara ejercicios detallados, verifica tu conexión.\n\nError: ${
+                e.message?.take(100) ?: "Desconocido"
+            }"
+        }
+    }
+
+    /**
+     * 📖 Crea resumen de estudio para el alumno
+     */
+    suspend fun crearResumenEstudioParaAlumno(
+        nombreClase: String,
+        descripcion: String,
+        nombrePdf: String?
+    ): String {
+        return try {
+            val contextoPdf = if (!nombrePdf.isNullOrEmpty()) {
+                "\n📄 Material: $nombrePdf"
+            } else ""
+            val prompt = """
+                # CONTEXTO Y ROL
+                Eres un tutor que ayuda a estudiantes a crear RESÚMENES efectivos para estudiar.
+
+                # DATOS DE LA CLASE
+                📚 Clase: $nombreClase
+                📝 Descripción: $descripcion$contextoPdf
+
+                # OBJETIVO
+                Crear un resumen estructurado que el ALUMNO pueda usar para estudiar y repasar.
+                Debe ser: conciso, visual (emojis/listas), fácil de memorizar.
+
+                # FORMATO DE RESPUESTA
+
+                📖 **RESUMEN DE ESTUDIO**
+                Clase: $nombreClase
+
+                ## 🎯 LO MÁS IMPORTANTE (En 3 puntos)
+                1. [Idea central 1]
+                2. [Idea central 2]
+                3. [Idea central 3]
+
+                ---
+
+                ## 📚 CONCEPTOS CLAVE
+
+                | Concepto | Definición Simple | ¿Para qué sirve? |
+                |----------|-------------------|------------------|
+                | [Término 1] | [Explicación breve] | [Aplicación] |
+                | [Término 2] | [Explicación breve] | [Aplicación] |
+                | [Término 3] | [Explicación breve] | [Aplicación] |
+                | [Término 4] | [Explicación breve] | [Aplicación] |
+
+                ---
+
+                ## 🔗 CONEXIONES IMPORTANTES
+                [Cómo se relacionan los conceptos entre sí, explicado de forma simple]
+
+                ---
+
+                ## 💡 REGLAS/FÓRMULAS A RECORDAR
+                • **[Regla 1]**: [Explicación]
+                • **[Regla 2]**: [Explicación]
+                • **[Regla 3]**: [Explicación]
+
+                ---
+
+                ## ⚠️ ERRORES COMUNES A EVITAR
+                1. ❌ [Error típico 1] → ✅ [Forma correcta]
+                2. ❌ [Error típico 2] → ✅ [Forma correcta]
+                3. ❌ [Error típico 3] → ✅ [Forma correcta]
+
+                ---
+
+                ## 🎓 TIPS PARA MEMORIZAR
+                • [Truco mnemotécnico o consejo 1]
+                • [Truco mnemotécnico o consejo 2]
+                • [Truco mnemotécnico o consejo 3]
+
+                ---
+
+                ## ✅ CHECKLIST DE ESTUDIO
+                Marca lo que ya dominas:
+                - [ ] [Habilidad 1]
+                - [ ] [Habilidad 2]
+                - [ ] [Habilidad 3]
+                - [ ] [Habilidad 4]
+
+                # ESTILO
+                - Tutear al estudiante
+                - Visual y organizado
+                - Fácil de escanear rápidamente
+                - Máximo 500 palabras
+            """.trimIndent()
+
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n✨ Tu tutor IA - Gemini"
+        } catch (e: Exception) {
+            "⚠️ Error al conectar con Gemini AI\n\n📖 RESUMEN BÁSICO de $nombreClase\n\nPara resumen detallado, verifica tu conexión.\n\nError: ${
+                e.message?.take(100) ?: "Desconocido"
+            }"
+        }
+    }
 }

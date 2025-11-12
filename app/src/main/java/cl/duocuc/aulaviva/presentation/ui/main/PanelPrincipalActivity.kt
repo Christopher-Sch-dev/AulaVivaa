@@ -207,7 +207,8 @@ class PanelPrincipalActivity : AppCompatActivity() {
                         }
 
                         val asignaturaCreada = resultAsignatura.getOrNull()!!
-                        Log.d("PanelPrincipal", "✅ Asignatura demo creada con código: ${asignaturaCreada.codigoAcceso}")
+                        val codigoFinal = asignaturaCreada.codigoAcceso.uppercase() // MAYÚSCULAS
+                        Log.d("PanelPrincipal", "✅ Asignatura demo creada con código: $codigoFinal")
 
                         // PASO 2: Crear clase DEMO dentro de la asignatura
                         val claseDemo = cl.duocuc.aulaviva.data.model.Clase(
@@ -246,7 +247,7 @@ class PanelPrincipalActivity : AppCompatActivity() {
                                 runOnUiThread {
                                     Toast.makeText(
                                         this@PanelPrincipalActivity,
-                                        "✅ ¡Demo creada!\n\nCódigo: ${asignaturaCreada.codigoAcceso}\n\nVe a 'Mis Asignaturas' → ${asignaturaCreada.nombre}",
+                                        "✅ ¡Demo creada!\n\nCódigo: $codigoFinal\n\nVe a 'Mis Asignaturas' → ${asignaturaCreada.nombre}",
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }
