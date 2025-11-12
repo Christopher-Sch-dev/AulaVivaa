@@ -223,14 +223,13 @@ class ClaseRepository(context: Context) {
         onError: (String) -> Unit
     ) {
         try {
-            // Generar ID si no existe
-            val claseConId = if (clase.id.isEmpty()) {
-                clase.copy(id = "clase_${'$'}{System.currentTimeMillis()}_${'$'}{uid.take(8)}")
-            } else {
-                clase
+            // El ID ya debe venir generado desde el ViewModel
+            if (clase.id.isEmpty()) {
+                onError("Error: La clase debe tener un ID válido")
+                return
             }
 
-            val result = supabaseRepo.crearClase(claseConId)
+            val result = supabaseRepo.crearClase(clase)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase creada exitosamente en Supabase")
@@ -240,10 +239,10 @@ class ClaseRepository(context: Context) {
                 onFailure = { error ->
                     Log.e("ClaseRepository", "❌ Error creando clase en Supabase: $error")
                     // Guardar localmente con sincronizado = false
-                    claseDao.insertarClase(claseConId.toEntityLocal(false))
+                    claseDao.insertarClase(clase.toEntityLocal(false))
                     Log.d(
                         "ClaseRepository",
-                        "💾 Clase guardada localmente por error en Supabase: ${'$'}{claseConId.id}"
+                        "💾 Clase guardada localmente por error en Supabase: ${clase.id}"
                     )
                     onSuccess() // Consideramos éxito local para la UI
                     // No llamamos onError aquí ya que la guardamos localmente
@@ -251,15 +250,17 @@ class ClaseRepository(context: Context) {
             )
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error general en crearClase: $e")
-            // Guardar localmente con sincronizado = false
-            val claseLocal =
-                clase.copy(id = clase.id.ifEmpty { "clase_${'$'}{System.currentTimeMillis()}_${'$'}{uid.take(8)}" })
-            claseDao.insertarClase(claseLocal.toEntityLocal(false))
-            Log.d(
-                "ClaseRepository",
-                "💾 Clase guardada localmente por excepción: ${'$'}{claseLocal.id}"
-            )
-            onSuccess() // Consideramos éxito local para la UI
+            // Guardar localmente con sincronizado = false si tiene ID válido
+            if (clase.id.isNotEmpty()) {
+                claseDao.insertarClase(clase.toEntityLocal(false))
+                Log.d(
+                    "ClaseRepository",
+                    "💾 Clase guardada localmente por excepción: ${clase.id}"
+                )
+                onSuccess() // Consideramos éxito local para la UI
+            } else {
+                onError("Error: No se pudo crear la clase - ID inválido")
+            }
         }
     }
 

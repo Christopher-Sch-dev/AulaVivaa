@@ -130,43 +130,43 @@ class IARepository {
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un consultor en innovación educativa para docentes de educación superior chilena.
-                
+
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
                 📝 Descripción: $descripcion$contextoPdf
-                
+
                 # INSTRUCCIONES
                 1. **Confirma el tema**: Identifica el área disciplinar y nivel
                 2. **Asume rol apropiado**: Actúa como especialista en esa área
                 3. **Genera ideas innovadoras**: Propuestas creativas pero aplicables
-                
+
                 # FORMATO DE RESPUESTA
-                
+
                 🎯 **ANÁLISIS RÁPIDO**
                 • Tema central: [tema detectado]
                 • Área: [disciplina]
                 • Público objetivo: [ej: Estudiantes primer año, profesionales]
-                
+
                 💡 **IDEAS PARA LA CLASE**
-                
+
                 1. **[Nombre de idea 1]**
                    Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
-                
+
                 2. **[Nombre de idea 2]**
                    Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
-                
+
                 3. **[Nombre de idea 3]**
                    Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
-                
+
                 4. **[Nombre de idea 4]**
                    Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
-                
+
                 5. **[Nombre de idea 5]**
                    Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
-                
+
                 ⭐ **TIP ADICIONAL**
                 [Una recomendación creativa que potencie la clase]
-                
+
                 # ESTILO
                 - Español chileno profesional
                 - Ideas concretas y aplicables
@@ -188,62 +188,65 @@ class IARepository {
     /**
      * 🎯 Sugiere actividades dinámicas
      */
-    suspend fun sugerirActividades(nombreClase: String, descripcion: String): String {
+    suspend fun sugerirActividades(nombreClase: String, descripcion: String, pdfUrl: String? = null): String {
         return try {
+            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
+                "\n📎 **Material disponible**: PDF adjunto con contenido de apoyo"
+            } else ""
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un diseñador instruccional especializado en aprendizaje activo para educación superior chilena.
-                
+
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
-                📝 Descripción: $descripcion
-                
+                📝 Descripción: $descripcion$contextoPdf
+
                 # INSTRUCCIONES
                 1. **Confirma el contexto**: Identifica tema y nivel
                 2. **Asume rol de pedagogo**: Experto en metodologías activas
                 3. **Diseña 4 actividades**: Variadas y con diferente nivel de complejidad
-                
+
                 # FORMATO DE RESPUESTA
-                
+
                 🎓 **CONTEXTO DETECTADO**
                 • Tema: [tema identificado]
                 • Enfoque sugerido: [ej: Práctico, Teórico-aplicado, Reflexivo]
-                
+
                 🎯 **ACTIVIDADES DISEÑADAS**
-                
+
                 **ACTIVIDAD 1: [Nombre descriptivo]**
                 • **Objetivo**: [Qué se busca lograr]
                 • **Duración**: [X minutos]
                 • **Tipo**: [Individual/Grupal/Plenaria]
                 • **Materiales**: [Recursos necesarios]
                 • **Cómo ejecutarla**: [Pasos breves]
-                
+
                 **ACTIVIDAD 2: [Nombre descriptivo]**
                 • **Objetivo**: [Qué se busca lograr]
                 • **Duración**: [X minutos]
                 • **Tipo**: [Individual/Grupal/Plenaria]
                 • **Materiales**: [Recursos necesarios]
                 • **Cómo ejecutarla**: [Pasos breves]
-                
+
                 **ACTIVIDAD 3: [Nombre descriptivo]**
                 • **Objetivo**: [Qué se busca lograr]
                 • **Duración**: [X minutos]
                 • **Tipo**: [Individual/Grupal/Plenaria]
                 • **Materiales**: [Recursos necesarios]
                 • **Cómo ejecutarla**: [Pasos breves]
-                
+
                 **ACTIVIDAD 4: [Nombre descriptivo]**
                 • **Objetivo**: [Qué se busca lograr]
                 • **Duración**: [X minutos]
                 • **Tipo**: [Individual/Grupal/Plenaria]
                 • **Materiales**: [Recursos necesarios]
                 • **Cómo ejecutarla**: [Pasos breves]
-                
+
                 ⏱️ **TIEMPO TOTAL**: [Suma de duraciones]
-                
+
                 💡 **TIP DE IMPLEMENTACIÓN**
                 [Consejo para que las actividades fluyan mejor]
-                
+
                 # ESTILO
                 - Español chileno profesional
                 - Instrucciones claras y ejecutables
@@ -268,32 +271,34 @@ class IARepository {
     suspend fun estructurarClasePorTiempo(
         nombreClase: String,
         descripcion: String,
-        duracionMinutos: String
+        duracionMinutos: String,
+        pdfUrl: String? = null
     ): String {
         return try {
+            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
+                "\n📎 **Material disponible**: PDF de apoyo para complementar la estructura"
+            } else ""
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un planificador educativo experto en gestión del tiempo para clases universitarias chilenas.
-                
+
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
                 📝 Descripción: $descripcion
-                ⏱️ Duración total: $duracionMinutos
-                
-                # INSTRUCCIONES
+                ⏱️ Duración total: $duracionMinutos$contextoPdf                # INSTRUCCIONES
                 1. **Confirma el tema**: Identifica área y complejidad
                 2. **Asume rol de planificador**: Experto en timing educativo
                 3. **Estructura la clase**: Divide el tiempo de forma óptima
-                
+
                 # FORMATO DE RESPUESTA
-                
+
                 🎓 **ANÁLISIS INICIAL**
                 • Tema: [tema identificado]
                 • Complejidad: [Baja/Media/Alta]
                 • Enfoque recomendado: [Teórico/Práctico/Mixto]
-                
+
                 ⏱️ **ESTRUCTURA TEMPORAL ($duracionMinutos)**
-                
+
                 **🟢 INICIO (__ min | 0:00 - __:__)**
                 • **Saludo y contextualización** (__ min)
                   → [Qué hacer específicamente]
@@ -301,7 +306,7 @@ class IARepository {
                   → [Presentar metas claras]
                 • **Activación de conocimientos previos** (__ min)
                   → [Pregunta o actividad breve]
-                
+
                 **🔵 DESARROLLO (__ min | __:__ - __:__)**
                 • **Presentación del contenido principal** (__ min)
                   → [Explicación o demostración]
@@ -311,7 +316,7 @@ class IARepository {
                   → [Compartir resultados]
                 • **Profundización** (__ min)
                   → [Ejemplos adicionales o dudas]
-                
+
                 **🟡 CIERRE (__ min | __:__ - __:__)**
                 • **Síntesis de aprendizajes** (__ min)
                   → [Resumen colaborativo]
@@ -319,13 +324,13 @@ class IARepository {
                   → [Quiz, pregunta, ticket de salida]
                 • **Asignación de tareas** (__ min)
                   → [Si aplica, explicar homework]
-                
+
                 ⚠️ **TIEMPO DE BUFFER**: __ min (para imprevistos)
-                
+
                 💡 **TIPS DE GESTIÓN DEL TIEMPO**
                 • [Consejo 1 para mantener el ritmo]
                 • [Consejo 2 para no excederse]
-                
+
                 # ESTILO
                 - Español chileno profesional
                 - Tiempos precisos y realistas
@@ -347,51 +352,54 @@ class IARepository {
     /**
      * 📊 Analiza PDF con IA
      */
-    suspend fun analizarPdfConIA(nombreClase: String): String {
+    suspend fun analizarPdfConIA(nombreClase: String, pdfUrl: String? = null): String {
         return try {
+            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
+                "\n✅ **PDF confirmado**: $pdfUrl"
+            } else {
+                "\n⚠️ **Sin PDF**: Se generarán estrategias generales"
+            }
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un analista de materiales educativos para docentes universitarios chilenos.
-                
+
                 # SITUACIÓN
-                Un docente tiene un PDF para la clase: "$nombreClase"
-                Necesita ideas concretas para aprovechar ese material en su clase.
-                
-                # INSTRUCCIONES
+                Un docente tiene un PDF para la clase: "$nombreClase"$contextoPdf
+                Necesita ideas concretas para aprovechar ese material en su clase.                # INSTRUCCIONES
                 1. **Identifica el tipo de clase**: Según el nombre, deduce el área
                 2. **Asume rol apropiado**: Experto en esa disciplina
                 3. **Propón 3 estrategias**: Formas efectivas de usar el PDF
-                
+
                 # FORMATO DE RESPUESTA
-                
+
                 🎓 **CONTEXTO DETECTADO**
                 • Clase: $nombreClase
                 • Área estimada: [disciplina]
                 • Tipo de PDF probable: [ej: Artículo, Manual, Presentación]
-                
+
                 📊 **ESTRATEGIAS PARA APROVECHAR EL PDF**
-                
+
                 **ESTRATEGIA 1: LECTURA CRÍTICA GUIADA**
                 • **Qué hacer**: Asignar secciones del PDF con preguntas específicas
                 • **Cómo aplicarlo**: [Pasos concretos]
                 • **Tiempo**: [X minutos]
                 • **Beneficio para el aprendizaje**: [Por qué funciona]
-                
+
                 **ESTRATEGIA 2: DEBATE O DISCUSIÓN**
                 • **Qué hacer**: Usar el PDF como base para debate
                 • **Cómo aplicarlo**: [Pasos concretos]
                 • **Tiempo**: [X minutos]
                 • **Beneficio para el aprendizaje**: [Por qué funciona]
-                
+
                 **ESTRATEGIA 3: APLICACIÓN PRÁCTICA**
                 • **Qué hacer**: Ejercicios basados en el contenido del PDF
                 • **Cómo aplicarlo**: [Pasos concretos]
                 • **Tiempo**: [X minutos]
                 • **Beneficio para el aprendizaje**: [Por qué funciona]
-                
+
                 💡 **RECOMENDACIÓN ADICIONAL**
                 [Un tip creativo para maximizar el valor del PDF]
-                
+
                 # ESTILO
                 - Español chileno profesional
                 - Estrategias concretas y aplicables
@@ -422,40 +430,40 @@ class IARepository {
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un sintetizador de contenido educativo para docentes chilenos.
-                
+
                 # DATOS DEL MATERIAL
                 📚 Clase: $nombreClase
                 📝 Descripción: $descripcion
                 📄 Material PDF: $nombrePdf
-                
+
                 # INSTRUCCIONES
                 1. **Confirma el tema**: Identifica el contenido principal
                 2. **Asume rol apropiado**: Experto en esa área
                 3. **Genera resumen estructurado**: Útil para preparar la clase
-                
+
                 # FORMATO DE RESPUESTA
-                
+
                 📄 **IDENTIFICACIÓN DEL MATERIAL**
                 • Clase: $nombreClase
                 • Tema central detectado: [tema principal]
                 • Tipo de contenido: [Teórico/Práctico/Mixto]
-                
+
                 ## TEMA PRINCIPAL
                 [Descripción clara del tema central en 2-3 líneas]
-                
+
                 ## CONCEPTOS CLAVE
                 • **Concepto 1**: [Explicación breve]
                 • **Concepto 2**: [Explicación breve]
                 • **Concepto 3**: [Explicación breve]
                 • **Concepto 4**: [Explicación breve]
                 • **Concepto 5**: [Si aplica]
-                
+
                 ## CONCLUSIONES PRINCIPALES
                 [Resumen de los aprendizajes fundamentales que el docente debe transmitir]
-                
+
                 💡 **SUGERENCIA DIDÁCTICA**
                 [Cómo el docente puede presentar este contenido de forma efectiva]
-                
+
                 # ESTILO
                 - Español chileno profesional
                 - Formato Markdown estructurado
@@ -477,85 +485,86 @@ class IARepository {
     /**
      * 🌟 Reordena temas para presentar (Guía de presentación)
      */
-    suspend fun generarGuiaPresentacion(nombreClase: String, descripcion: String): String {
+    suspend fun generarGuiaPresentacion(nombreClase: String, descripcion: String, pdfUrl: String? = null): String {
         return try {
+            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
+                "\n📎 **Material de apoyo**: PDF disponible para integrar en la presentación"
+            } else ""
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un coach de oratoria y presentación para docentes universitarios chilenos.
-                
+
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
-                📝 Contenido: $descripcion
-                
-                # INSTRUCCIONES
+                📝 Contenido: $descripcion$contextoPdf                # INSTRUCCIONES
                 1. **Confirma el tema**: Identifica área y complejidad
                 2. **Asume rol de coach**: Experto en presentación efectiva
                 3. **Crea guía detallada**: Secuencia óptima para presentar el contenido
-                
+
                 # FORMATO DE RESPUESTA
-                
+
                 🎓 **ANÁLISIS DEL CONTENIDO**
                 • Tema: $nombreClase
                 • Complejidad: [Baja/Media/Alta]
                 • Tipo de clase: [Magistral/Participativa/Práctica]
-                
+
                 ## 1. INTRODUCCIÓN SUGERIDA (2-3 minutos)
-                
+
                 **🎯 Gancho inicial**
                 [Frase, pregunta o dato impactante para captar atención]
-                
+
                 **📌 Contextualización**
                 [Por qué este tema es relevante para los estudiantes]
-                
+
                 **🎓 Objetivos de la clase**
                 [Lo que aprenderán hoy, en lenguaje simple]
-                
+
                 ---
-                
+
                 ## 2. PUNTOS CLAVE A ENFATIZAR
-                
+
                 **Punto 1: [Concepto fundamental]**
                 → Por qué es importante: [Relevancia]
                 → Cómo explicarlo: [Estrategia]
-                
+
                 **Punto 2: [Concepto fundamental]**
                 → Por qué es importante: [Relevancia]
                 → Cómo explicarlo: [Estrategia]
-                
+
                 **Punto 3: [Concepto fundamental]**
                 → Por qué es importante: [Relevancia]
                 → Cómo explicarlo: [Estrategia]
-                
+
                 ---
-                
+
                 ## 3. EJEMPLOS PRÁCTICOS RECOMENDADOS
-                
+
                 • **Ejemplo 1**: [Caso real o analogía simple]
                 • **Ejemplo 2**: [Ejercicio concreto]
                 • **Ejemplo 3**: [Comparación útil]
-                
+
                 ---
-                
+
                 ## 4. PREGUNTAS PARA GENERAR PARTICIPACIÓN
-                
+
                 **Preguntas de inicio** (despertar interés):
                 • [Pregunta abierta 1]
                 • [Pregunta abierta 2]
-                
+
                 **Preguntas de desarrollo** (profundizar):
                 • [Pregunta desafiante 1]
                 • [Pregunta desafiante 2]
-                
+
                 **Pregunta de cierre** (sintetizar):
                 • [Pregunta reflexiva final]
-                
+
                 ---
-                
+
                 💡 **TIPS DE PRESENTACIÓN**
                 • [Consejo 1 para mantener la atención]
                 • [Consejo 2 para manejar dudas]
                 • [Consejo 3 para cerrar con impacto]
-                
+
                 # ESTILO
                 - Español chileno profesional
                 - Formato Markdown estructurado
@@ -588,66 +597,66 @@ class IARepository {
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un diseñador instruccional especializado en transformar contenido en experiencias de aprendizaje activo.
-                
+
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
                 📝 Descripción: $descripcion$contextoPdf
-                
+
                 # INSTRUCCIONES
                 1. **Confirma el tema**: Identifica área y nivel
                 2. **Asume rol de diseñador**: Experto en aprendizaje activo
                 3. **Transforma en clase interactiva**: Múltiples actividades variadas
-                
+
                 # FORMATO DE RESPUESTA
-                
+
                 🎓 **CONTEXTO PEDAGÓGICO**
                 • Tema: $nombreClase
                 • Enfoque: [Constructivista/Colaborativo/Experiencial]
                 • Nivel de interactividad: [Alto - múltiples dinámicas]
-                
+
                 ## 1. ACTIVIDADES PRÁCTICAS (3-5 propuestas)
-                
+
                 **📝 Actividad Individual: [Nombre]**
                 • **Qué hacer**: [Descripción de la actividad]
                 • **Tiempo**: [X minutos]
                 • **Recursos**: [Materiales necesarios]
                 • **Objetivo**: [Qué desarrolla en el estudiante]
-                
+
                 **👥 Actividad Grupal: [Nombre]**
                 • **Qué hacer**: [Descripción de la actividad]
                 • **Tiempo**: [X minutos]
                 • **Recursos**: [Materiales necesarios]
                 • **Objetivo**: [Qué desarrolla en el estudiante]
-                
+
                 **💡 Actividad Creativa: [Nombre]**
                 • **Qué hacer**: [Descripción de la actividad]
                 • **Tiempo**: [X minutos]
                 • **Recursos**: [Materiales necesarios]
                 • **Objetivo**: [Qué desarrolla en el estudiante]
-                
+
                 [Continuar con 2-3 actividades más]
-                
+
                 ---
-                
+
                 ## 2. PREGUNTAS DE REFLEXIÓN
-                
+
                 **Nivel inicial** (accesibles):
                 1. [Pregunta simple sobre conceptos básicos]
                 2. [Pregunta de experiencia personal]
-                
+
                 **Nivel intermedio** (analíticas):
                 3. [Pregunta que requiere análisis]
                 4. [Pregunta de relación entre conceptos]
-                
+
                 **Nivel avanzado** (críticas):
                 5. [Pregunta que desafía suposiciones]
                 6. [Pregunta de aplicación creativa]
                 7. [Pregunta de evaluación]
-                
+
                 ---
-                
+
                 ## 3. EJERCICIOS GRUPALES
-                
+
                 **Dinámica 1: [Nombre]**
                 • **Instrucciones paso a paso**:
                   1. [Paso 1]
@@ -655,7 +664,7 @@ class IARepository {
                   3. [Paso 3]
                 • **Tiempo**: [X minutos]
                 • **Resultado esperado**: [Qué producen los grupos]
-                
+
                 **Dinámica 2: [Nombre]**
                 • **Instrucciones paso a paso**:
                   1. [Paso 1]
@@ -663,30 +672,30 @@ class IARepository {
                   3. [Paso 3]
                 • **Tiempo**: [X minutos]
                 • **Resultado esperado**: [Qué producen los grupos]
-                
+
                 ---
-                
+
                 ## 4. RECURSOS COMPLEMENTARIOS
-                
+
                 **Videos sugeridos**:
                 • [Tema relacionado 1 - buscar en YouTube]
                 • [Tema relacionado 2 - buscar en YouTube]
-                
+
                 **Artículos/Lecturas**:
                 • [Tema para profundizar 1]
                 • [Tema para profundizar 2]
-                
+
                 **Herramientas online**:
                 • [Herramienta digital 1 - para qué sirve]
                 • [Herramienta digital 2 - para qué sirve]
-                
+
                 ---
-                
+
                 💡 **CONSEJOS DE IMPLEMENTACIÓN**
                 • [Tip 1 para que las actividades fluyan]
                 • [Tip 2 para mantener la energía]
                 • [Tip 3 para evaluar el aprendizaje]
-                
+
                 # ESTILO
                 - Español chileno neutral y profesional
                 - Formato Markdown estructurado

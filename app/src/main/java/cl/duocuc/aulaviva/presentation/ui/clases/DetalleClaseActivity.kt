@@ -172,7 +172,8 @@ class DetalleClaseActivity : AppCompatActivity() {
             try {
                 val resultado = iaRepository.sugerirActividades(
                     clase.nombre,
-                    clase.descripcion
+                    clase.descripcion,
+                    clase.archivoPdfUrl
                 )
                 withContext(Dispatchers.Main) {
                     loading.dismiss()
@@ -203,7 +204,8 @@ class DetalleClaseActivity : AppCompatActivity() {
                         val resultado = iaRepository.estructurarClasePorTiempo(
                             clase.nombre,
                             clase.descripcion,
-                            duracion
+                            duracion,
+                            clase.archivoPdfUrl
                         )
                         withContext(Dispatchers.Main) {
                             loading.dismiss()
@@ -228,7 +230,7 @@ class DetalleClaseActivity : AppCompatActivity() {
             mostrarDialogoCarga("📄 Analizando PDF...", "La IA está trabajando, por favor espera")
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val resultado = iaRepository.analizarPdfConIA(clase.nombre)
+                val resultado = iaRepository.analizarPdfConIA(clase.nombre, clase.archivoPdfUrl)
                 withContext(Dispatchers.Main) {
                     loading.dismiss()
                     mostrarResultadoIA("📄 Análisis del material PDF", resultado)
@@ -279,7 +281,8 @@ class DetalleClaseActivity : AppCompatActivity() {
             try {
                 val resultado = iaRepository.generarGuiaPresentacion(
                     clase.nombre,
-                    clase.descripcion
+                    clase.descripcion,
+                    clase.archivoPdfUrl
                 )
                 withContext(Dispatchers.Main) {
                     loading.dismiss()

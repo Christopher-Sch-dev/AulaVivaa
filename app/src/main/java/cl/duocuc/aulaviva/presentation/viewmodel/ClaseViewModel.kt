@@ -86,6 +86,7 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
 
         _isLoading.value = true
         val nuevaClase = Clase(
+            id = java.util.UUID.randomUUID().toString(), // UUID único para evitar duplicados
             nombre = nombre.trim(),
             descripcion = descripcion.trim(),
             fecha = fecha.trim(),
