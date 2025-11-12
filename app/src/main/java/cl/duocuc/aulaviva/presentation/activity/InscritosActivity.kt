@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import cl.duocuc.aulaviva.databinding.ActivityInscritosBinding
@@ -60,33 +61,24 @@ class InscritosActivity : AppCompatActivity() {
     }
 
     private fun cargarInscritos() {
-        lifecycleScope.launch {
-            try {
-                val database = AppDatabase.getDatabase(this@InscritosActivity)
+        val database = AppDatabase.getDatabase(this@InscritosActivity)
 
-                // Observar Flow de inscritos
-                database.alumnoAsignaturaDao()
-                    .obtenerInscripcionesPorAsignatura(asignaturaId)
-                    .collect { inscritos ->
-                        if (inscritos.isEmpty()) {
-                            binding.textViewEmpty.visibility = View.VISIBLE
-                            binding.recyclerViewInscritos.visibility = View.GONE
-                            binding.textViewTotal.text = "Total: 0 alumnos"
-                        } else {
-                            binding.textViewEmpty.visibility = View.GONE
-                            binding.recyclerViewInscritos.visibility = View.VISIBLE
-                            binding.textViewTotal.text = "Total: ${inscritos.size} alumnos"
-                            adapter.submitList(inscritos)
-                        }
-                    }
-            } catch (e: Exception) {
-                Toast.makeText(
-                    this@InscritosActivity,
-                    "Error al cargar inscritos: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
+        // Observar Flow de inscritos
+        database.alumnoAsignaturaDao()
+            .obtenerInscripcionesPorAsignatura(asignaturaId)
+            .asLiveData()
+            .observe(this) { inscritos: List<AlumnoAsignaturaEntity> ->
+                if (inscritos.isEmpty()) {
+                    binding.textViewEmpty.visibility = View.VISIBLE
+                    binding.recyclerViewInscritos.visibility = View.GONE
+                    binding.textViewTotal.text = "Total: 0 alumnos"
+                } else {
+                    binding.textViewEmpty.visibility = View.GONE
+                    binding.recyclerViewInscritos.visibility = View.VISIBLE
+                    binding.textViewTotal.text = "Total: ${inscritos.size} alumnos"
+                    adapter.submitList(inscritos)
+                }
             }
-        }
     }
 
     override fun onSupportNavigateUp(): Boolean {

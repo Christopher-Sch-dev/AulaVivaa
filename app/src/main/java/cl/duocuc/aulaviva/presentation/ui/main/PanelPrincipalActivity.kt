@@ -181,9 +181,9 @@ class PanelPrincipalActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("🎓 Modo Demostración")
-            .setMessage("¿Crear asignatura y clase de prueba?\n\n✅ Asignatura: 'Programación Móvil DEMO'\n✅ Código único generado\n✅ Clase: 'Introducción a Kotlin'\n✅ Listo para probar funcionalidades")
-            .setPositiveButton("Crear") { _, _ ->
+            .setTitle("🎓 Crear Asignatura y Clase Demo")
+            .setMessage("Crea una asignatura completa con:\n\n✅ Asignatura: 'Programación Móvil DEMO'\n✅ Código de acceso único\n✅ Clase: 'Introducción a Kotlin'\n✅ Contenido educativo completo\n\nPerfecto para probar todas las funcionalidades.")
+            .setPositiveButton("Crear Demo") { _, _ ->
                 Log.d("PanelPrincipal", "🔄 Creando asignatura y clase demo...")
                 Toast.makeText(this, "⏳ Creando demostración...", Toast.LENGTH_SHORT).show()
 
@@ -234,38 +234,44 @@ class PanelPrincipalActivity : AppCompatActivity() {
                             """.trimIndent(),
                             fecha = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date()),
                             asignaturaId = asignaturaCreada.id,
-                            archivoPdfUrl = "",
-                            archivoPdfNombre = "",
+                            archivoPdfUrl = "https://kotlinlang.org/docs/kotlin-reference.pdf",
+                            archivoPdfNombre = "Kotlin_Reference_Demo.pdf",
                             creador = cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager.getCurrentUserId() ?: ""
                         )
 
                         clasesRepo.crearClaseAsync(
                             clase = claseDemo,
                             onSuccess = {
-                                Log.d("PanelPrincipal", "✅ Demo completa: Asignatura + Clase creadas")
-                                Toast.makeText(
-                                    this@PanelPrincipalActivity,
-                                    "✅ ¡Demo creada!\n\nCódigo: ${asignaturaCreada.codigoAcceso}\n\nVe a 'Mis Asignaturas' → ${asignaturaCreada.nombre}",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                Log.d("PanelPrincipal", "✅ Demo completa: Asignatura + Clase con PDF creadas")
+                                runOnUiThread {
+                                    Toast.makeText(
+                                        this@PanelPrincipalActivity,
+                                        "✅ ¡Demo creada!\n\nCódigo: ${asignaturaCreada.codigoAcceso}\n\nVe a 'Mis Asignaturas' → ${asignaturaCreada.nombre}",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             },
                             onError = { error ->
                                 Log.e("PanelPrincipal", "❌ Error creando clase demo: $error")
-                                Toast.makeText(
-                                    this@PanelPrincipalActivity,
-                                    "⚠️ Asignatura creada, pero error en clase: $error",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                                runOnUiThread {
+                                    Toast.makeText(
+                                        this@PanelPrincipalActivity,
+                                        "⚠️ Asignatura creada, pero error en clase: $error",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             }
                         )
 
                     } catch (e: Exception) {
                         Log.e("PanelPrincipal", "❌ Error en modo demostración", e)
-                        Toast.makeText(
-                            this@PanelPrincipalActivity,
-                            "❌ Error: ${e.message}",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        runOnUiThread {
+                            Toast.makeText(
+                                this@PanelPrincipalActivity,
+                                "❌ Error al crear demo: ${e.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
                 }
             }

@@ -1,18 +1,28 @@
 package cl.duocuc.aulaviva.presentation.ui.clases
 
+import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.databinding.ActivityCrearEditarClaseBinding
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
+import cl.duocuc.aulaviva.data.supabase.SupabaseClientProvider
 import com.google.android.material.datepicker.MaterialDatePicker
+import io.github.jan.supabase.storage.storage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
+import java.util.UUID
 
 /**
  * Activity simple para crear o editar una clase.
@@ -25,6 +35,20 @@ class CrearEditarClaseActivity : AppCompatActivity() {
     private var asignaturaId: String = ""
     private var asignaturaNombre: String = ""
     private var claseId: String? = null  // null = crear, valor = editar
+    private var tempPdfUri: Uri? = null
+    private var tempPdfName: String = ""
+
+    private val pickPdfLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            val fileName = getFileName(uri)
+            tempPdfUri = uri
+            tempPdfName = fileName
+            binding.textViewPdfSelected.text = "📄 $fileName"
+            binding.buttonSelectPdf.text = "Cambiar PDF"
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +68,7 @@ class CrearEditarClaseActivity : AppCompatActivity() {
 
         setupToolbar()
         setupDatePicker()
+        setupPdfPicker()
         setupButtons()
 
         // Si es edición, cargar datos
@@ -109,6 +134,12 @@ class CrearEditarClaseActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupPdfPicker() {
+        binding.buttonSelectPdf.setOnClickListener {
+            pickPdfLauncher.launch("application/pdf")
+        }
+    }
+
     private fun setupButtons() {
         binding.buttonGuardar.setOnClickListener {
             guardarClase()
@@ -117,6 +148,19 @@ class CrearEditarClaseActivity : AppCompatActivity() {
         binding.buttonCancelar.setOnClickListener {
             finish()
         }
+    }
+
+    private fun getFileName(uri: Uri): String {
+        var name = "documento.pdf"
+        contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex >= 0) {
+                    name = cursor.getString(nameIndex)
+                }
+            }
+        }
+        return name
     }
 
     private fun cargarDatosClase(id: String) {
@@ -149,7 +193,61 @@ class CrearEditarClaseActivity : AppCompatActivity() {
         binding.layoutDescripcionClase.error = null
         binding.layoutFechaClase.error = null
 
-        // Llamar al ViewModel con parámetros individuales
+        // Si hay PDF, subir primero
+        if (tempPdfUri != null) {
+            subirPdfYCrearClase(nombre, descripcion, fecha)
+        } else {
+            // Crear clase sin PDF
+            crearClaseSinPdf(nombre, descripcion, fecha)
+        }
+    }
+
+    private fun subirPdfYCrearClase(nombre: String, descripcion: String, fecha: String) {
+        lifecycleScope.launch {
+            try {
+                binding.buttonGuardar.isEnabled = false
+                binding.buttonGuardar.text = "Subiendo PDF..."
+
+                val pdfUrl = subirPdfASupabase(tempPdfUri!!, tempPdfName)
+
+                if (pdfUrl.isNotEmpty()) {
+                    // Crear clase con PDF
+                    viewModel.crearClase(
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        fecha = fecha,
+                        archivoPdfUrl = pdfUrl,
+                        archivoPdfNombre = tempPdfName,
+                        asignaturaId = asignaturaId
+                    )
+
+                    observarResultado()
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            this@CrearEditarClaseActivity,
+                            "Error al subir PDF",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        binding.buttonGuardar.isEnabled = true
+                        binding.buttonGuardar.text = "Guardar Clase"
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@CrearEditarClaseActivity,
+                        "Error: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    binding.buttonGuardar.isEnabled = true
+                    binding.buttonGuardar.text = "Guardar Clase"
+                }
+            }
+        }
+    }
+
+    private fun crearClaseSinPdf(nombre: String, descripcion: String, fecha: String) {
         viewModel.crearClase(
             nombre = nombre,
             descripcion = descripcion,
@@ -158,8 +256,10 @@ class CrearEditarClaseActivity : AppCompatActivity() {
             archivoPdfNombre = "",
             asignaturaId = asignaturaId
         )
+        observarResultado()
+    }
 
-        // Observar resultado
+    private fun observarResultado() {
         viewModel.operationSuccess.observe(this) { mensaje ->
             mensaje?.let {
                 Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
@@ -170,6 +270,29 @@ class CrearEditarClaseActivity : AppCompatActivity() {
         viewModel.error.observe(this) { error ->
             error?.let {
                 Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+                binding.buttonGuardar.isEnabled = true
+                binding.buttonGuardar.text = "Guardar Clase"
+            }
+        }
+    }
+
+    private suspend fun subirPdfASupabase(uri: Uri, nombreArchivo: String): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val supabase = SupabaseClientProvider.getClient()
+                val inputStream = contentResolver.openInputStream(uri)
+                val bytes = inputStream?.readBytes() ?: return@withContext ""
+
+                val uniqueName = "${UUID.randomUUID()}_$nombreArchivo"
+                val bucket = supabase.storage["clases"]
+
+                bucket.upload(uniqueName, bytes)
+
+                val publicUrl = bucket.publicUrl(uniqueName)
+                publicUrl
+            } catch (e: Exception) {
+                e.printStackTrace()
+                ""
             }
         }
     }
