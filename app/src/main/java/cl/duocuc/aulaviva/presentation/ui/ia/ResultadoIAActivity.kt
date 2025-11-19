@@ -144,14 +144,8 @@ class ResultadoIAActivity : AppCompatActivity() {
                     append("\n\nPor favor, responde considerando TODO el contexto anterior.")
                 }
 
-                // Usar el mismo método de IA según el tipo de consulta
-                val respuesta = when (tipoConsulta) {
-                    "IDEAS" -> iaRepository.generarIdeasParaClase(nombreClase, descripcionClase, pdfUrl)
-                    "RESUMEN" -> iaRepository.generarResumenClase(nombreClase, pdfUrl)
-                    "QUIZ" -> iaRepository.generarQuizClase(nombreClase, pdfUrl)
-                    "EXPLICACION" -> iaRepository.explicarConceptoClase(nombreClase, pdfUrl)
-                    else -> iaRepository.procesarPromptConContexto(promptCompleto)
-                }
+                // Siempre usar procesarPromptConContexto para mantener la conversación coherente
+                val respuesta = iaRepository.procesarPromptConContexto(promptCompleto)
 
                 // Agregar respuesta al contexto
                 conversacionCompleta.append("IA: $respuesta\n\n")

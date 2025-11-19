@@ -143,11 +143,22 @@ class DetalleClaseActivity : AppCompatActivity() {
             .also { it.show() }
     }
 
-    private fun mostrarResultadoIA(titulo: String, contenido: String) {
+    private fun mostrarResultadoIA(
+        titulo: String,
+        contenido: String,
+        tipoConsulta: String = "",
+        nombreClase: String = "",
+        descripcionClase: String = "",
+        pdfUrl: String = ""
+    ) {
         val intent =
             Intent(this, cl.duocuc.aulaviva.presentation.ui.ia.ResultadoIAActivity::class.java)
         intent.putExtra("TITULO", titulo)
         intent.putExtra("CONTENIDO", contenido)
+        intent.putExtra("TIPO_CONSULTA", tipoConsulta)
+        intent.putExtra("NOMBRE_CLASE", nombreClase)
+        intent.putExtra("DESCRIPCION_CLASE", descripcionClase)
+        intent.putExtra("PDF_URL", pdfUrl)
         startActivity(intent)
     }
 
@@ -165,7 +176,14 @@ class DetalleClaseActivity : AppCompatActivity() {
                 )
                 withContext(Dispatchers.Main) {
                     loading.dismiss()
-                    mostrarResultadoIA("💡 Ideas para tu clase", resultado)
+                    mostrarResultadoIA(
+                        titulo = "💡 Ideas para tu clase",
+                        contenido = resultado,
+                        tipoConsulta = "IDEAS",
+                        nombreClase = clase.nombre,
+                        descripcionClase = clase.descripcion,
+                        pdfUrl = clase.archivoPdfUrl
+                    )
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -191,7 +209,14 @@ class DetalleClaseActivity : AppCompatActivity() {
                 )
                 withContext(Dispatchers.Main) {
                     loading.dismiss()
-                    mostrarResultadoIA("🎯 Actividades sugeridas", resultado)
+                    mostrarResultadoIA(
+                        titulo = "🎯 Actividades sugeridas",
+                        contenido = resultado,
+                        tipoConsulta = "IDEAS",
+                        nombreClase = clase.nombre,
+                        descripcionClase = clase.descripcion,
+                        pdfUrl = clase.archivoPdfUrl
+                    )
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
