@@ -185,14 +185,12 @@ class IARepository(private val context: Context) {
             throw java.io.IOException("PDF muy grande (>20MB)")
         }
 
-        // 3. Codificar Base64 (requerido por Gemini API)
-        val pdfBase64 = Base64.encodeToString(pdfBytes, Base64.NO_WRAP)
-        Log.d(TAG, "🔐 [Firebase AI] PDF codificado en Base64: ${pdfBase64.length} caracteres")
+        Log.d(TAG, "🔐 [Firebase AI] Preparando PDF como ByteArray (${pdfBytes.size} bytes)")
 
-        // 4. Crear contenido multimodal (Kotlin DSL Firebase)
+        // 3. Contenido multimodal (Kotlin DSL Firebase) - Firebase espera ByteArray directamente
         val contenidoMultimodal = content {
             text(prompt)
-            inlineData("application/pdf", pdfBase64)
+            inlineData(pdfBytes, "application/pdf")
         }
 
         Log.d(TAG, "🤖 [Firebase AI] Enviando a Gemini 2.5 Flash (Developer API)...")
