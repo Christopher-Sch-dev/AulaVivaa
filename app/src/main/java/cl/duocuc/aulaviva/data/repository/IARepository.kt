@@ -127,6 +127,8 @@ class IARepository {
     private suspend fun extraerTextoDePdf(pdfUrl: String): String {
         return withContext(Dispatchers.IO) {
             try {
+                println("📄 [PDF] Descargando desde: $pdfUrl")
+
                 // Descargar PDF usando OkHttp
                 val request = okhttp3.Request.Builder()
                     .url(pdfUrl)
@@ -136,31 +138,54 @@ class IARepository {
                 val response = okHttpClient.newCall(request).execute()
 
                 if (!response.isSuccessful) {
-                    return@withContext "[No se pudo descargar el PDF. Código: ${response.code}]"
+                    val error = "[❌ No se pudo descargar el PDF. Código HTTP: ${response.code}]"
+                    println("📄 [PDF] $error")
+                    return@withContext error
                 }
 
                 val pdfBytes = response.body?.bytes()
                 if (pdfBytes == null || pdfBytes.isEmpty()) {
-                    return@withContext "[PDF descargado está vacío]"
+                    val error = "[❌ PDF descargado está vacío]"
+                    println("📄 [PDF] $error")
+                    return@withContext error
                 }
+
+                println("📄 [PDF] Descargado exitosamente: ${pdfBytes.size} bytes")
 
                 // Extraer texto usando PDFBox Android
                 val pdfDocument = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfBytes)
+                val totalPaginas = pdfDocument.numberOfPages
+                println("📄 [PDF] Total páginas: $totalPaginas")
+
                 val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
 
                 // ✅ EXTRAER TODAS LAS PÁGINAS (sin límites)
                 stripper.startPage = 1
-                stripper.endPage = pdfDocument.numberOfPages
+                stripper.endPage = totalPaginas
 
                 val textoCompleto = stripper.getText(pdfDocument)
                 pdfDocument.close()
 
-                // ✅ RETORNAR TODO EL TEXTO (sin límites de caracteres)
-                // Gemini 2.0 Flash puede manejar contextos largos
-                return@withContext textoCompleto.trim()
+                println("📄 [PDF] Texto extraído: ${textoCompleto.length} caracteres")
+                println("📄 [PDF] Primeros 200 chars: ${textoCompleto.take(200)}")
+
+                // ✅ RETORNAR TODO EL TEXTO con metadata
+                val textoConMetadata = """
+                    📊 METADATA DEL PDF:
+                    - Total de páginas: $totalPaginas
+                    - Caracteres extraídos: ${textoCompleto.length}
+
+                    📄 CONTENIDO COMPLETO:
+                    $textoCompleto
+                """.trimIndent()
+
+                return@withContext textoConMetadata.trim()
 
             } catch (e: Exception) {
-                return@withContext "[Error al extraer texto del PDF: ${e.message?.take(100)}]"
+                val error = "[❌ Error al extraer texto del PDF: ${e.message}]"
+                println("📄 [PDF] $error")
+                e.printStackTrace()
+                return@withContext error
             }
         }
     }
@@ -177,9 +202,11 @@ class IARepository {
         return try {
             // ✅ LEER CONTENIDO DEL PDF si existe
             val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
+                println("💡 [IDEAS] PDF detectado, extrayendo contenido...")
                 val textoPdf = extraerTextoDePdf(pdfUrl)
-                "\n\n📎 CONTENIDO DEL PDF ADJUNTO:\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n$textoPdf\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                "\n\n📎 MATERIAL DE LA CLASE (PDF COMPLETO):\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n$textoPdf\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             } else {
+                println("💡 [IDEAS] No hay PDF adjunto")
                 ""
             }
 
@@ -191,15 +218,17 @@ class IARepository {
                 📚 Clase: $nombreClase
                 📝 Descripción: $descripcion$contextoPdf
 
-                # INSTRUCCIONES
-                1. **Confirma el tema**: Identifica el área disciplinar y nivel
-                2. **Asume rol apropiado**: Actúa como especialista en esa área
-                3. **Genera ideas innovadoras**: Propuestas creativas pero aplicables
+                # INSTRUCCIONES CRÍTICAS
+                1. **Si hay PDF adjunto arriba**: LEE TODO su contenido y úsalo como base principal
+                2. **En "CONTEXTO DETECTADO"**: Menciona EXPLÍCITAMENTE detalles del PDF (títulos, temas, conceptos específicos que viste)
+                3. **Genera ideas**: Basadas en el contenido REAL del PDF, no en suposiciones
 
                 # FORMATO DE RESPUESTA
 
-                🎯 **ANÁLISIS RÁPIDO**
-                • Tema central: [tema detectado]
+                🎯 **CONTEXTO DETECTADO**
+                • Clase: $nombreClase
+                • PDF analizado: [SI/NO - si SÍ, menciona título o primeros temas del PDF]
+                • Tema central detectado: [basado en PDF o descripción]
                 • Área: [disciplina]
                 • Público objetivo: [ej: Estudiantes primer año, profesionales]
 
