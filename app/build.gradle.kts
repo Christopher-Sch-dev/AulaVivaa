@@ -158,12 +158,8 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.code.gson:gson:2.13.2")
 
-    // Google Generative AI (Gemini)
+    // Google Generative AI (Gemini) - Compatible con Ktor 2.3.12
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
-
-    // ✅ Firebase AI Logic (sintaxis oficial con BoM)
-    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
-    implementation("com.google.firebase:firebase-ai")
 
     // Markwon para renderizar Markdown
     implementation("io.noties.markwon:core:4.6.2")

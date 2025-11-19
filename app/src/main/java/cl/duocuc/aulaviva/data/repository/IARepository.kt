@@ -9,9 +9,8 @@ import cl.duocuc.aulaviva.data.remote.GeminiApiService
 import cl.duocuc.aulaviva.data.remote.GeminiRequest
 import cl.duocuc.aulaviva.data.remote.GenerationConfig
 import cl.duocuc.aulaviva.data.remote.Part
-import com.google.firebase.Firebase
-import com.google.firebase.ai.ai
-import com.google.firebase.ai.type.content
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -40,15 +39,13 @@ class IARepository(private val context: Context) {
     // ✅ API Key cargada desde local.properties vía BuildConfig
     private val GEMINI_API_KEY = BuildConfig.GEMINI_API_KEY
 
-    // ✅ Firebase AI Logic (Gemini Developer API - lazy para evitar crash al iniciar)
-    // Según docs: Firebase.ai.generativeModel("gemini-2.5-flash")
-    private val firebaseModel by lazy {
-        try {
-            Firebase.ai.generativeModel("gemini-2.5-flash")
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error inicializando Firebase AI: ${e.message}")
-            throw e
-        }
+    // ✅ Google AI SDK (Gemini Developer API - compatible con Supabase Ktor 2.3.12)
+    // Modelo con soporte multimodal (PDF, imágenes, etc.)
+    private val googleAiModel by lazy {
+        GenerativeModel(
+            modelName = "gemini-1.5-flash",
+            apiKey = GEMINI_API_KEY
+        )
     }
 
     // Cliente HTTP configurado con timeouts y logging
@@ -164,7 +161,7 @@ class IARepository(private val context: Context) {
         try {
             // INTENTO 1: Google AI Gemini (RECOMENDADO - OCR integrado)
             Log.d(TAG, "🔥 [Google AI] Intentando método Google AI SDK...")
-            return@withContext analizarConFirebaseGemini(pdfUrl, prompt)
+            return@withContext analizarConGoogleAI(pdfUrl, prompt)
 
         } catch (e: Exception) {
             // INTENTO 2: PDFBox (FALLBACK - offline)
@@ -182,45 +179,46 @@ class IARepository(private val context: Context) {
      * - OCR integrado (lee PDFs escaneados)
      * - Parsea tablas y gráficos
      * - Mayor precisión que extraer texto local
+     * - Compatible con Ktor 2.3.12 (no conflicto con Supabase)
      *
      * @param pdfUrl URL del PDF
      * @param prompt Instrucción para la IA
      * @return Respuesta de Gemini
      */
-    private suspend fun analizarConFirebaseGemini(pdfUrl: String, prompt: String): String {
-        Log.d(TAG, "📦 [Firebase AI] Descargando PDF desde Supabase...")
+    private suspend fun analizarConGoogleAI(pdfUrl: String, prompt: String): String {
+        Log.d(TAG, "📦 [Google AI] Descargando PDF desde Supabase...")
 
         // 1. Descargar PDF
         val pdfBytes = descargarPDF(pdfUrl)
-        Log.d(TAG, "📦 [Firebase AI] PDF descargado: ${pdfBytes.size} bytes (${pdfBytes.size / 1024} KB)")
+        Log.d(TAG, "📦 [Google AI] PDF descargado: ${pdfBytes.size} bytes (${pdfBytes.size / 1024} KB)")
 
         // 2. Verificar límite 20MB (Gemini Developer API)
         if (pdfBytes.size > 20_000_000) {
             throw java.io.IOException("PDF muy grande (>20MB)")
         }
 
-        Log.d(TAG, "🔐 [Firebase AI] Preparando PDF como ByteArray (${pdfBytes.size} bytes)")
-
-        // 3. Contenido multimodal (Kotlin DSL Firebase) - Firebase espera ByteArray directamente
+        // 3. Contenido multimodal (Google AI SDK DSL) - usa blob() para bytes
         val contenidoMultimodal = content {
             text(prompt)
-            inlineData(pdfBytes, "application/pdf")
+            blob("application/pdf", pdfBytes)
         }
 
-        Log.d(TAG, "🤖 [Firebase AI] Enviando a Gemini 2.5 Flash (Developer API)...")
+        Log.d(TAG, "🤖 [Google AI] Enviando a Gemini 1.5 Flash (Developer API)...")
 
         // 5. Generar respuesta con timeout
         val response = withTimeout(90_000) { // 90 segundos
-            firebaseModel.generateContent(contenidoMultimodal)
+            googleAiModel.generateContent(contenidoMultimodal)
         }
 
-        val textoRespuesta = response.text ?: throw Exception("Respuesta vacía de Firebase AI Logic")
+        val textoRespuesta = response.text ?: throw Exception("Respuesta vacía de Google AI SDK")
 
-        Log.d(TAG, "✅ [Firebase AI] Respuesta recibida: ${textoRespuesta.length} caracteres")
-        Log.d(TAG, "✅ [Firebase AI] Primeros 150 chars: ${textoRespuesta.take(150)}...")
+        Log.d(TAG, "✅ [Google AI] Respuesta recibida: ${textoRespuesta.length} caracteres")
+        Log.d(TAG, "✅ [Google AI] Primeros 150 chars: ${textoRespuesta.take(150)}...")
 
         return textoRespuesta
-    }    /**
+    }
+
+    /**
      * 📄 PDFBox: Extrae texto local y envía a Gemini (FALLBACK)
      *
      * Este método se usa cuando Firebase falla (red, timeout, límite API).
