@@ -45,7 +45,7 @@ class IARepository(private val context: Context) {
         GenerativeModel(
             modelName = "gemini-2.5-pro",
             apiKey = GEMINI_API_KEY,
-            generationConfig = generationConfig {
+            generationConfig = com.google.ai.client.generativeai.type.generationConfig {
                 temperature = 0.7f
                 topK = 40
                 topP = 0.95f
