@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * 🤖 GEMINI AI con Firebase AI Logic (Gemini Developer API)
- * Modelo: gemini-2.5-flash-latest (vigente noviembre 2025)
+ * Modelo: gemini-2.5-pro (vigente noviembre 2025)
  *
  * ✅ Firebase AI Logic con Gemini Developer API (15 req/min gratis)
  * ✅ PDFBox como fallback (offline, límite API)
@@ -327,82 +327,6 @@ class IARepository(private val context: Context) {
             bytes
         }
     }
-
-    /**
-     * 📄 Descarga y extrae texto de un PDF desde URL (DEPRECADO - Usar analizarPDFInteligente)
-     *
-     * IMPORTANTE: Esta función descarga el PDF completo y extrae su contenido textual.
-     * Extrae TODAS las páginas disponibles para que la IA tenga el contexto completo.
-     *
-     * @param pdfUrl URL del PDF a descargar
-     * @return Texto extraído del PDF completo
-     */
-    private suspend fun extraerTextoDePdf(pdfUrl: String): String {
-        return withContext(Dispatchers.IO) {
-            try {
-                Log.d(TAG, "📄 [PDF] Descargando desde: $pdfUrl")
-
-                // Descargar PDF usando OkHttp
-                val request = okhttp3.Request.Builder()
-                    .url(pdfUrl)
-                    .get()
-                    .build()
-
-                val response = okHttpClient.newCall(request).execute()
-
-                if (!response.isSuccessful) {
-                    val error = "[❌ No se pudo descargar el PDF. Código HTTP: ${response.code}]"
-                    Log.e(TAG, "📄 [PDF] $error")
-                    return@withContext error
-                }
-
-                val pdfBytes = response.body?.bytes()
-                if (pdfBytes == null || pdfBytes.isEmpty()) {
-                    val error = "[❌ PDF descargado está vacío]"
-                    Log.e(TAG, "📄 [PDF] $error")
-                    return@withContext error
-                }
-
-                Log.d(TAG, "📄 [PDF] Descargado exitosamente: ${pdfBytes.size} bytes")
-
-                // Extraer texto usando PDFBox Android
-                val pdfDocument = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfBytes)
-                val totalPaginas = pdfDocument.numberOfPages
-                Log.d(TAG, "📄 [PDF] Total páginas: $totalPaginas")
-
-                val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
-
-                // ✅ EXTRAER TODAS LAS PÁGINAS (sin límites)
-                stripper.startPage = 1
-                stripper.endPage = totalPaginas
-
-                val textoCompleto = stripper.getText(pdfDocument)
-                pdfDocument.close()
-
-                Log.d(TAG, "📄 [PDF] Texto extraído: ${textoCompleto.length} caracteres")
-                Log.d(
-                    TAG,
-                    "📄 [PDF] Primeros 200 chars: ${textoCompleto.take(200)}"
-                )                // ✅ RETORNAR TODO EL TEXTO con metadata
-                val textoConMetadata = """
-                    📊 METADATA DEL PDF:
-                    - Total de páginas: $totalPaginas
-                    - Caracteres extraídos: ${textoCompleto.length}
-
-                    📄 CONTENIDO COMPLETO:
-                    $textoCompleto
-                """.trimIndent()
-
-                return@withContext textoConMetadata.trim()
-
-            } catch (e: Exception) {
-                val error = "[❌ Error al extraer texto del PDF: ${e.message}]"
-                Log.e(TAG, "📄 [PDF] $error", e)
-                return@withContext error
-            }
-        }
-    }
-
 
     /**
      * 💡 Genera ideas creativas para la clase
@@ -1364,12 +1288,5 @@ class IARepository(private val context: Context) {
                 llamarGemini(mensaje)
             }
         }
-    }
-
-    /**
-     * (DEPRECADO) Mantenido por compatibilidad si es necesario, pero redirige al nuevo chat
-     */
-    suspend fun procesarPromptConContexto(promptCompleto: String, pdfUrl: String? = null): String {
-        return enviarMensajeChat(promptCompleto)
     }
 }
