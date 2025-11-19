@@ -120,10 +120,28 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:postgrest-kt:2.6.1")
     implementation("io.github.jan-tennert.supabase:storage-kt:2.6.1")
     implementation("io.github.jan-tennert.supabase:gotrue-kt:2.6.1")
-    implementation("io.ktor:ktor-client-android:2.3.12")
-    implementation("io.ktor:ktor-client-core:2.3.12")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.12")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
+
+    // Ktor dependencies (forzar versión 2.3.12 compatible con Supabase 2.6.1)
+    implementation("io.ktor:ktor-client-android:2.3.12") {
+        version {
+            strictly("2.3.12")
+        }
+    }
+    implementation("io.ktor:ktor-client-core:2.3.12") {
+        version {
+            strictly("2.3.12")
+        }
+    }
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.12") {
+        version {
+            strictly("2.3.12")
+        }
+    }
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12") {
+        version {
+            strictly("2.3.12")
+        }
+    }
 
     // Room (Base de datos local)
     implementation("androidx.room:room-runtime:2.6.1")
