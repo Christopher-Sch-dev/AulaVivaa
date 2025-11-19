@@ -192,7 +192,11 @@ class PanelPrincipalActivity : AppCompatActivity() {
                         val db = cl.duocuc.aulaviva.data.local.AppDatabase.getDatabase(this@PanelPrincipalActivity)
                         val asignaturasRepo = cl.duocuc.aulaviva.data.repository.AsignaturasRepository(
                             db.asignaturaDao(),
-                            cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository(db.asignaturaDao())
+                            db.alumnoAsignaturaDao(),
+                            cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository(
+                                db.asignaturaDao(),
+                                db.alumnoAsignaturaDao()
+                            )
                         )
                         val clasesRepo = cl.duocuc.aulaviva.data.repository.ClaseRepository(this@PanelPrincipalActivity)
 

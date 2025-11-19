@@ -3,14 +3,14 @@ package cl.duocuc.aulaviva.presentation.activity
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.asLiveData
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import cl.duocuc.aulaviva.databinding.ActivityInscritosBinding
 import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
-import kotlinx.coroutines.launch
+import cl.duocuc.aulaviva.presentation.viewmodel.InscritosViewModel
 
 /**
  * Activity para ver los alumnos inscritos en una asignatura.
@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 class InscritosActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityInscritosBinding
+    private val viewModel: InscritosViewModel by viewModels()
     private lateinit var adapter: InscritosAdapter
     private var asignaturaId: String = ""
     private var asignaturaNombre: String = ""
@@ -40,7 +41,11 @@ class InscritosActivity : AppCompatActivity() {
 
         setupToolbar()
         setupRecyclerView()
+        setupSwipeRefresh()
         cargarInscritos()
+
+        // Sincronizar al abrir
+        viewModel.sincronizarInscritos(asignaturaId)
     }
 
     private fun setupToolbar() {
@@ -57,6 +62,24 @@ class InscritosActivity : AppCompatActivity() {
         binding.recyclerViewInscritos.apply {
             layoutManager = LinearLayoutManager(this@InscritosActivity)
             adapter = this@InscritosActivity.adapter
+        }
+    }
+
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setOnRefreshListener {
+            viewModel.sincronizarInscritos(asignaturaId)
+        }
+
+        // Observar estado de carga
+        viewModel.isLoading.observe(this) { isLoading ->
+            binding.swipeRefresh.isRefreshing = isLoading
+        }
+
+        // Observar errores
+        viewModel.error.observe(this) { error ->
+            error?.let {
+                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+            }
         }
     }
 

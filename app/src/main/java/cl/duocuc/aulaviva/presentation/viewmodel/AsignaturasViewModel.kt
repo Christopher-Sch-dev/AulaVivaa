@@ -22,7 +22,11 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
     private val database = AppDatabase.getDatabase(application)
     private val repository = AsignaturasRepository(
         asignaturaDao = database.asignaturaDao(),
-        supabaseRepository = SupabaseAsignaturaRepository(database.asignaturaDao())
+        alumnoAsignaturaDao = database.alumnoAsignaturaDao(),
+        supabaseRepository = SupabaseAsignaturaRepository(
+            asignaturaDao = database.asignaturaDao(),
+            alumnoAsignaturaDao = database.alumnoAsignaturaDao()
+        )
     )
 
     // LiveData para la lista de asignaturas (automática desde Room)

@@ -1,10 +1,15 @@
 package cl.duocuc.aulaviva.data.supabase
 
 import android.util.Log
+import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaDao
+import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
 import cl.duocuc.aulaviva.data.local.AsignaturaDao
 import cl.duocuc.aulaviva.data.local.AsignaturaEntity
 import cl.duocuc.aulaviva.data.model.Asignatura
+import cl.duocuc.aulaviva.data.supabase.AlumnoAsignaturaSupabaseDto
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,7 +20,10 @@ import kotlinx.coroutines.withContext
  *
  * Implementa arquitectura offline-first.
  */
-class SupabaseAsignaturaRepository(private val asignaturaDao: AsignaturaDao) {
+class SupabaseAsignaturaRepository(
+    private val asignaturaDao: AsignaturaDao,
+    private val alumnoAsignaturaDao: AlumnoAsignaturaDao
+) {
 
     /**
      * Crear asignatura en Supabase.
@@ -104,6 +112,41 @@ class SupabaseAsignaturaRepository(private val asignaturaDao: AsignaturaDao) {
     }
 
     /**
+     * Obtiene los alumnos inscritos en una asignatura desde Supabase.
+     */
+    suspend fun obtenerInscritosPorAsignatura(asignaturaId: String): Result<List<AlumnoAsignaturaEntity>> = withContext(Dispatchers.IO) {
+        try {
+            val supabase = SupabaseClientProvider.getClient()
+
+            Log.d("SupabaseAsignatura", "👥 Obteniendo inscritos para: $asignaturaId")
+
+            val results = supabase.from("alumno_asignaturas")
+                .select {
+                    filter {
+                        eq("asignatura_id", asignaturaId)
+                    }
+                }
+                .decodeList<AlumnoAsignaturaSupabaseDto>()
+
+            val inscripciones = results.map { dto ->
+                dto.toEntity(sincronizado = true)
+            }
+
+            // Guardar en Room
+            if (inscripciones.isNotEmpty()) {
+                alumnoAsignaturaDao.insertarVarias(inscripciones)
+            }
+
+            Log.d("SupabaseAsignatura", "✅ ${inscripciones.size} inscritos obtenidos")
+            Result.success(inscripciones)
+
+        } catch (e: Exception) {
+            Log.e("SupabaseAsignatura", "❌ Error obteniendo inscritos", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Actualizar asignatura en Supabase.
      */
     suspend fun actualizarAsignatura(asignatura: Asignatura): Result<Asignatura> = withContext(Dispatchers.IO) {
@@ -176,26 +219,10 @@ class SupabaseAsignaturaRepository(private val asignaturaDao: AsignaturaDao) {
         try {
             val supabase = SupabaseClientProvider.getClient()
 
-            Log.d("SupabaseAsignatura", "🔑 Generando código para asignatura: $asignaturaId")
+            Log.d("SupabaseAsignatura", "🔑 Generando código para: $asignaturaId")
 
-            // Obtener asignatura
-            val asignatura = asignaturaDao.obtenerAsignaturaPorId(asignaturaId)
-                ?: return@withContext Result.failure(Exception("Asignatura no encontrada"))
-
-            // Generar código único
-            val codigo = generarCodigoUnico(asignatura.nombre)
-
-            // Actualizar en Supabase
-            val dto = mapOf("codigo_acceso" to codigo)
-            supabase.from("asignaturas")
-                .update(dto) {
-                    filter {
-                        eq("id", asignaturaId)
-                    }
-                }
-
-            // Actualizar en Room
-            asignaturaDao.actualizarAsignatura(asignatura.copy(codigoAcceso = codigo))
+            val request = GenerarCodigoRequest(asignaturaId)
+            val codigo = supabase.postgrest.rpc("generar_codigo_asignatura", request).decodeAs<String>()
 
             Log.d("SupabaseAsignatura", "✅ Código generado: $codigo")
             Result.success(codigo)
@@ -205,54 +232,10 @@ class SupabaseAsignaturaRepository(private val asignaturaDao: AsignaturaDao) {
             Result.failure(e)
         }
     }
-
-    /**
-     * Sincronizar asignaturas no sincronizadas desde Room a Supabase.
-     */
-    suspend fun sincronizarNoSincronizadas(): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            val noSincronizadas = asignaturaDao.obtenerNoSincronizadas()
-
-            if (noSincronizadas.isEmpty()) {
-                return@withContext Result.success(Unit)
-            }
-
-            Log.d("SupabaseAsignatura", "🔄 Sincronizando ${noSincronizadas.size} asignaturas")
-
-            noSincronizadas.forEach { entity ->
-                val asignatura = entity.toModel()
-                crearAsignatura(asignatura)
-            }
-
-            Result.success(Unit)
-
-        } catch (e: Exception) {
-            Log.e("SupabaseAsignatura", "❌ Error sincronizando", e)
-            Result.failure(e)
-        }
-    }
 }
 
 /**
- * Genera código único alfanumérico.
- * Formato: PREFIJO-XXXX (ej: POO2025-A1B2)
- */
-private fun generarCodigoUnico(nombreAsignatura: String): String {
-    val caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // Sin I, O, 0, 1
-    val prefijo = nombreAsignatura
-        .replace(Regex("[^a-zA-Z]"), "")
-        .take(3)
-        .uppercase()
-        .ifEmpty { "ASG" }
-
-    val año = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
-    val random = (0..3).map { caracteres.random() }.joinToString("")
-
-    return "$prefijo$año-$random"
-}
-
-/**
- * Extensiones para mapeo entre modelos.
+ * Extensiones para mapeo.
  */
 private fun Asignatura.toEntity(sincronizado: Boolean = false) = AsignaturaEntity(
     id = id,
@@ -265,12 +248,11 @@ private fun Asignatura.toEntity(sincronizado: Boolean = false) = AsignaturaEntit
     sincronizado = sincronizado
 )
 
-private fun AsignaturaEntity.toModel() = Asignatura(
+private fun AlumnoAsignaturaSupabaseDto.toEntity(sincronizado: Boolean = false) = AlumnoAsignaturaEntity(
     id = id,
-    nombre = nombre,
-    codigoAcceso = codigoAcceso,
-    docenteId = docenteId,
-    descripcion = descripcion,
-    createdAt = createdAt,
-    updatedAt = updatedAt
+    alumnoId = alumnoId,
+    asignaturaId = asignaturaId,
+    fechaInscripcion = fechaInscripcion,
+    estado = estado,
+    sincronizado = sincronizado
 )

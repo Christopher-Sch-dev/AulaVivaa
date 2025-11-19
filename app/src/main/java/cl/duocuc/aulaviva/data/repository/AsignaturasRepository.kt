@@ -1,6 +1,7 @@
 package cl.duocuc.aulaviva.data.repository
 
 import android.util.Log
+import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaDao
 import cl.duocuc.aulaviva.data.local.AsignaturaDao
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.map
  */
 class AsignaturasRepository(
     private val asignaturaDao: AsignaturaDao,
+    private val alumnoAsignaturaDao: AlumnoAsignaturaDao,
     private val supabaseRepository: SupabaseAsignaturaRepository
 ) {
 
@@ -57,6 +59,21 @@ class AsignaturasRepository(
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("AsignaturasRepo", "❌ Error sincronizando", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Sincroniza los alumnos inscritos en una asignatura.
+     */
+    suspend fun sincronizarInscritos(asignaturaId: String): Result<Unit> {
+        Log.d("AsignaturasRepo", "🔄 Sincronizando inscritos para: $asignaturaId")
+
+        return try {
+            supabaseRepository.obtenerInscritosPorAsignatura(asignaturaId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("AsignaturasRepo", "❌ Error sincronizando inscritos", e)
             Result.failure(e)
         }
     }
