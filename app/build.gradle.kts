@@ -140,11 +140,13 @@ dependencies {
     // Google Generative AI (Gemini)
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
+    // ✅ Firebase Vertex AI (Gemini oficial con PDF inline - SIN google-services.json)
+    implementation("com.google.firebase:firebase-vertexai:16.0.1")
 
     // Markwon para renderizar Markdown
     implementation("io.noties.markwon:core:4.6.2")
 
-    // PDFBox para Android (extraer texto de PDFs)
+    // PDFBox para Android (fallback si Firebase falla)
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 
 

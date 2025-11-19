@@ -1,11 +1,15 @@
 package cl.duocuc.aulaviva.data.repository
 
+import android.util.Base64
+import android.util.Log
 import cl.duocuc.aulaviva.BuildConfig
 import cl.duocuc.aulaviva.data.remote.Content
 import cl.duocuc.aulaviva.data.remote.GeminiApiService
 import cl.duocuc.aulaviva.data.remote.GeminiRequest
 import cl.duocuc.aulaviva.data.remote.GenerationConfig
 import cl.duocuc.aulaviva.data.remote.Part
+import com.google.firebase.vertexai.GenerativeModel
+import com.google.firebase.vertexai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -17,15 +21,27 @@ import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 
 /**
- * 🤖 GEMINI AI con Retrofit - PROFESIONAL Y RÁPIDO
+ * 🤖 GEMINI AI con Retrofit + Firebase Vertex AI (Método Híbrido)
  * Modelo: gemini-2.5-flash (vigente octubre 2025)
  *
  * ✅ API Key cargada desde BuildConfig (portable entre PCs)
+ * ✅ Firebase Vertex AI para PDFs (Base64 inline - OCR integrado)
+ * ✅ PDFBox como fallback (offline, límite API)
  */
 class IARepository {
 
+    companion object {
+        private const val TAG = "AulaViva_IA"
+    }
+
     // ✅ API Key cargada desde local.properties vía BuildConfig
     private val GEMINI_API_KEY = BuildConfig.GEMINI_API_KEY
+
+    // ✅ Firebase Vertex AI (Gemini oficial) - SIN google-services.json
+    private val firebaseGemini = GenerativeModel(
+        modelName = "gemini-2.0-flash-exp",
+        apiKey = GEMINI_API_KEY
+    )
 
     // Cliente HTTP configurado con timeouts y logging
     private val okHttpClient = OkHttpClient.Builder()
@@ -116,7 +132,177 @@ class IARepository {
     }
 
     /**
-     * 📄 Descarga y extrae texto de un PDF desde URL
+     * 🔍 MÉTODO HÍBRIDO: Firebase Vertex AI primero, PDFBox fallback
+     *
+     * Este método garantiza que la IA SIEMPRE pueda leer el PDF:
+     * 1. INTENTA Firebase Gemini (Base64 inline) - Mejor precisión, OCR integrado
+     * 2. Si falla, usa PDFBox (extracción texto local) - Funciona offline
+     *
+     * @param pdfUrl URL del PDF en Supabase
+     * @param prompt Instrucción para la IA
+     * @return Respuesta de Gemini basada en el PDF real
+     */
+    private suspend fun analizarPDFInteligente(pdfUrl: String, prompt: String): String = withContext(Dispatchers.IO) {
+        Log.d(TAG, "🔍 [HÍBRIDO] Iniciando análisis inteligente de PDF...")
+        Log.d(TAG, "🔍 [HÍBRIDO] PDF URL: $pdfUrl")
+
+        try {
+            // INTENTO 1: Firebase Gemini (RECOMENDADO - OCR integrado)
+            Log.d(TAG, "🔥 [FIREBASE] Intentando método Firebase Vertex AI...")
+            return@withContext analizarConFirebaseGemini(pdfUrl, prompt)
+
+        } catch (e: Exception) {
+            // INTENTO 2: PDFBox (FALLBACK - offline)
+            Log.w(TAG, "⚠️ [HÍBRIDO] Firebase falló: ${e.message}")
+            Log.d(TAG, "📄 [PDFBox] Cambiando a método fallback PDFBox...")
+            return@withContext analizarConPDFBox(pdfUrl, prompt)
+        }
+    }
+
+    /**
+     * 🔥 Firebase Vertex AI: Envía PDF completo (Base64 inline)
+     * Gemini parsea el PDF server-side con OCR + tablas + gráficos.
+     *
+     * Ventajas:
+     * - OCR integrado (lee PDFs escaneados)
+     * - Parsea tablas y gráficos
+     * - Mayor precisión que extraer texto local
+     *
+     * @param pdfUrl URL del PDF
+     * @param prompt Instrucción para la IA
+     * @return Respuesta de Gemini
+     */
+    private suspend fun analizarConFirebaseGemini(pdfUrl: String, prompt: String): String {
+        Log.d(TAG, "📦 [Firebase] Descargando PDF desde Supabase...")
+
+        // 1. Descargar PDF
+        val pdfBytes = descargarPDF(pdfUrl)
+        Log.d(TAG, "📦 [Firebase] PDF descargado: ${pdfBytes.size} bytes (${pdfBytes.size / 1024} KB)")
+
+        // 2. Codificar Base64
+        val pdfBase64 = Base64.encodeToString(pdfBytes, Base64.NO_WRAP)
+        Log.d(TAG, "🔐 [Firebase] PDF codificado en Base64: ${pdfBase64.length} caracteres")
+
+        // 3. Crear contenido multimodal (texto + PDF inline)
+        val contenidoMultimodal = content {
+            text(prompt)
+            inlineData("application/pdf", pdfBase64)
+        }
+
+        Log.d(TAG, "🤖 [Firebase] Enviando a Gemini 2.0 Flash Exp...")
+
+        // 4. Generar respuesta con timeout
+        val response = withTimeout(90_000) { // 90 segundos
+            firebaseGemini.generateContent(contenidoMultimodal)
+        }
+
+        val textoRespuesta = response.text ?: throw Exception("Respuesta vacía de Firebase Gemini")
+
+        Log.d(TAG, "✅ [Firebase] Respuesta recibida: ${textoRespuesta.length} caracteres")
+        Log.d(TAG, "✅ [Firebase] Primeros 150 chars: ${textoRespuesta.take(150)}...")
+
+        return textoRespuesta
+    }
+
+    /**
+     * 📄 PDFBox: Extrae texto local y envía a Gemini (FALLBACK)
+     *
+     * Este método se usa cuando Firebase falla (red, timeout, límite API).
+     * Extrae texto localmente y lo envía a Gemini vía Retrofit.
+     *
+     * Limitaciones:
+     * - No lee PDFs escaneados (requiere texto extraíble)
+     * - No parsea tablas complejas ni gráficos
+     * - Funciona OFFLINE (ventaja para fallback)
+     *
+     * @param pdfUrl URL del PDF
+     * @param prompt Instrucción para la IA
+     * @return Respuesta de Gemini basada en texto extraído
+     */
+    private suspend fun analizarConPDFBox(pdfUrl: String, prompt: String): String {
+        Log.d(TAG, "📄 [PDFBox] Iniciando extracción de texto local...")
+
+        // 1. Descargar PDF
+        val pdfBytes = descargarPDF(pdfUrl)
+        Log.d(TAG, "📄 [PDFBox] PDF descargado: ${pdfBytes.size} bytes")
+
+        // 2. Extraer texto con PDFBox Android
+        val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfBytes)
+        val totalPaginas = document.numberOfPages
+        Log.d(TAG, "📄 [PDFBox] Total páginas: $totalPaginas")
+
+        val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
+        stripper.startPage = 1
+        stripper.endPage = totalPaginas
+
+        val textoPdf = stripper.getText(document)
+        document.close()
+
+        Log.d(TAG, "📄 [PDFBox] Texto extraído: ${textoPdf.length} caracteres")
+        Log.d(TAG, "📄 [PDFBox] Primeros 200 chars: ${textoPdf.take(200)}")
+
+        // 3. Construir prompt completo con metadata
+        val promptCompleto = """
+            $prompt
+
+            📎 CONTENIDO DEL PDF (extraído con PDFBox):
+            ---
+            METADATA:
+            - Total de páginas: $totalPaginas
+            - Caracteres extraídos: ${textoPdf.length}
+
+            CONTENIDO COMPLETO:
+            $textoPdf
+            ---
+
+            IMPORTANTE: Analiza TODO el contenido del PDF proporcionado.
+            Menciona detalles ESPECÍFICOS que aparezcan en el texto.
+        """.trimIndent()
+
+        Log.d(TAG, "🤖 [PDFBox] Enviando texto extraído a Gemini vía Retrofit...")
+
+        // 4. Enviar a Gemini usando el método Retrofit existente
+        val respuesta = llamarGemini(promptCompleto)
+
+        Log.d(TAG, "✅ [PDFBox] Respuesta recibida: ${respuesta.length} caracteres")
+        return respuesta
+    }
+
+    /**
+     * 📥 Helper: Descarga PDF desde URL
+     *
+     * @param url URL del PDF (Supabase Storage)
+     * @return ByteArray con el contenido del PDF
+     */
+    private suspend fun descargarPDF(url: String): ByteArray {
+        return withContext(Dispatchers.IO) {
+            val client = OkHttpClient.Builder()
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .build()
+
+            val request = okhttp3.Request.Builder()
+                .url(url)
+                .get()
+                .build()
+
+            val response = client.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+                throw java.io.IOException("Error HTTP al descargar PDF: ${response.code}")
+            }
+
+            val bytes = response.body?.bytes()
+            if (bytes == null || bytes.isEmpty()) {
+                throw java.io.IOException("PDF descargado está vacío")
+            }
+
+            bytes
+        }
+    }
+
+    /**
+     * 📄 Descarga y extrae texto de un PDF desde URL (DEPRECADO - Usar analizarPDFInteligente)
      *
      * IMPORTANTE: Esta función descarga el PDF completo y extrae su contenido textual.
      * Extrae TODAS las páginas disponibles para que la IA tenga el contexto completo.
@@ -127,7 +313,7 @@ class IARepository {
     private suspend fun extraerTextoDePdf(pdfUrl: String): String {
         return withContext(Dispatchers.IO) {
             try {
-                println("📄 [PDF] Descargando desde: $pdfUrl")
+                Log.d(TAG, "📄 [PDF] Descargando desde: $pdfUrl")
 
                 // Descargar PDF usando OkHttp
                 val request = okhttp3.Request.Builder()
@@ -139,23 +325,23 @@ class IARepository {
 
                 if (!response.isSuccessful) {
                     val error = "[❌ No se pudo descargar el PDF. Código HTTP: ${response.code}]"
-                    println("📄 [PDF] $error")
+                    Log.e(TAG, "📄 [PDF] $error")
                     return@withContext error
                 }
 
                 val pdfBytes = response.body?.bytes()
                 if (pdfBytes == null || pdfBytes.isEmpty()) {
                     val error = "[❌ PDF descargado está vacío]"
-                    println("📄 [PDF] $error")
+                    Log.e(TAG, "📄 [PDF] $error")
                     return@withContext error
                 }
 
-                println("📄 [PDF] Descargado exitosamente: ${pdfBytes.size} bytes")
+                Log.d(TAG, "📄 [PDF] Descargado exitosamente: ${pdfBytes.size} bytes")
 
                 // Extraer texto usando PDFBox Android
                 val pdfDocument = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfBytes)
                 val totalPaginas = pdfDocument.numberOfPages
-                println("📄 [PDF] Total páginas: $totalPaginas")
+                Log.d(TAG, "📄 [PDF] Total páginas: $totalPaginas")
 
                 val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
 
@@ -166,10 +352,8 @@ class IARepository {
                 val textoCompleto = stripper.getText(pdfDocument)
                 pdfDocument.close()
 
-                println("📄 [PDF] Texto extraído: ${textoCompleto.length} caracteres")
-                println("📄 [PDF] Primeros 200 chars: ${textoCompleto.take(200)}")
-
-                // ✅ RETORNAR TODO EL TEXTO con metadata
+                Log.d(TAG, "📄 [PDF] Texto extraído: ${textoCompleto.length} caracteres")
+                Log.d(TAG, "📄 [PDF] Primeros 200 chars: ${textoCompleto.take(200)}")                // ✅ RETORNAR TODO EL TEXTO con metadata
                 val textoConMetadata = """
                     📊 METADATA DEL PDF:
                     - Total de páginas: $totalPaginas
@@ -183,8 +367,7 @@ class IARepository {
 
             } catch (e: Exception) {
                 val error = "[❌ Error al extraer texto del PDF: ${e.message}]"
-                println("📄 [PDF] $error")
-                e.printStackTrace()
+                Log.e(TAG, "📄 [PDF] $error", e)
                 return@withContext error
             }
         }
@@ -200,35 +383,25 @@ class IARepository {
         pdfUrl: String?
     ): String {
         return try {
-            // ✅ LEER CONTENIDO DEL PDF si existe
-            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
-                println("💡 [IDEAS] PDF detectado, extrayendo contenido...")
-                val textoPdf = extraerTextoDePdf(pdfUrl)
-                "\n\n📎 MATERIAL DE LA CLASE (PDF COMPLETO):\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n$textoPdf\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            } else {
-                println("💡 [IDEAS] No hay PDF adjunto")
-                ""
-            }
-
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un consultor en innovación educativa para docentes de educación superior chilena.
 
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
-                📝 Descripción: $descripcion$contextoPdf
+                📝 Descripción: $descripcion
 
                 # INSTRUCCIONES CRÍTICAS
-                1. **Si hay PDF adjunto arriba**: LEE TODO su contenido y úsalo como base principal
-                2. **En "CONTEXTO DETECTADO"**: Menciona EXPLÍCITAMENTE detalles del PDF (títulos, temas, conceptos específicos que viste)
+                1. **Analiza TODO el PDF adjunto**: Lee completamente su contenido
+                2. **En "CONTEXTO DETECTADO"**: Menciona EXPLÍCITAMENTE detalles del PDF (títulos, temas, conceptos específicos)
                 3. **Genera ideas**: Basadas en el contenido REAL del PDF, no en suposiciones
 
                 # FORMATO DE RESPUESTA
 
                 🎯 **CONTEXTO DETECTADO**
                 • Clase: $nombreClase
-                • PDF analizado: [SI/NO - si SÍ, menciona título o primeros temas del PDF]
-                • Tema central detectado: [basado en PDF o descripción]
+                • PDF analizado: [SI - menciona título o primeros temas del PDF]
+                • Tema central detectado: [basado en PDF]
                 • Área: [disciplina]
                 • Público objetivo: [ej: Estudiantes primer año, profesionales]
 
@@ -259,9 +432,18 @@ class IARepository {
                 - Máximo 350 palabras
             """.trimIndent()
 
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+            // ✅ USAR MÉTODO HÍBRIDO si hay PDF
+            val resultado = if (!pdfUrl.isNullOrEmpty()) {
+                Log.d(TAG, "💡 [IDEAS] PDF detectado, usando método híbrido Firebase/PDFBox...")
+                analizarPDFInteligente(pdfUrl, prompt)
+            } else {
+                Log.d(TAG, "💡 [IDEAS] Sin PDF, llamada Gemini estándar")
+                llamarGemini(prompt)
+            }
+
+            "$resultado\n\n🚬😶‍🌫️ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
+            Log.e(TAG, "💡 [IDEAS] Error: ${e.message}", e)
             "⚠️ Error al conectar con Gemini AI\n\n💡 IDEAS GENERALES para $nombreClase\n\nPara ideas personalizadas, verifica tu conexión.\n\nError: ${
                 e.message?.take(
                     100
@@ -275,26 +457,24 @@ class IARepository {
      */
     suspend fun sugerirActividades(nombreClase: String, descripcion: String, pdfUrl: String? = null): String {
         return try {
-            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
-                "\n📎 **Material disponible**: PDF adjunto con contenido de apoyo"
-            } else ""
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un diseñador instruccional especializado en aprendizaje activo para educación superior chilena.
 
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
-                📝 Descripción: $descripcion$contextoPdf
+                📝 Descripción: $descripcion
 
                 # INSTRUCCIONES
-                1. **Confirma el contexto**: Identifica tema y nivel
-                2. **Asume rol de pedagogo**: Experto en metodologías activas
-                3. **Diseña 4 actividades**: Variadas y con diferente nivel de complejidad
+                1. **Si hay PDF adjunto**: Analiza su contenido completo y basa las actividades en él
+                2. **Confirma el contexto**: Identifica tema y nivel
+                3. **Asume rol de pedagogo**: Experto en metodologías activas
+                4. **Diseña 4 actividades**: Variadas y con diferente nivel de complejidad
 
                 # FORMATO DE RESPUESTA
 
                 🎓 **CONTEXTO DETECTADO**
-                • Tema: [tema identificado]
+                • Tema: [tema identificado del PDF o descripción]
                 • Enfoque sugerido: [ej: Práctico, Teórico-aplicado, Reflexivo]
 
                 🎯 **ACTIVIDADES DISEÑADAS**
@@ -339,9 +519,18 @@ class IARepository {
                 - Máximo 500 palabras
             """.trimIndent()
 
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+            // ✅ USAR MÉTODO HÍBRIDO si hay PDF
+            val resultado = if (!pdfUrl.isNullOrEmpty()) {
+                Log.d(TAG, "🎯 [ACTIVIDADES] PDF detectado, usando método híbrido Firebase/PDFBox...")
+                analizarPDFInteligente(pdfUrl, prompt)
+            } else {
+                Log.d(TAG, "🎯 [ACTIVIDADES] Sin PDF, llamada Gemini estándar")
+                llamarGemini(prompt)
+            }
+
+            "$resultado\n\n🚬😶‍🌫️ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
+            Log.e(TAG, "🎯 [ACTIVIDADES] Error: ${e.message}", e)
             "⚠️ Error al conectar con Gemini AI\n\n🎯 ACTIVIDADES GENERALES para $nombreClase\n\nPara actividades detalladas, verifica tu conexión.\n\nError: ${
                 e.message?.take(
                     100
