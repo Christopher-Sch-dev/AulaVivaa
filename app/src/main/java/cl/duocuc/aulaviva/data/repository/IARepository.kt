@@ -10,8 +10,9 @@ import cl.duocuc.aulaviva.data.remote.GeminiRequest
 import cl.duocuc.aulaviva.data.remote.GenerationConfig
 import cl.duocuc.aulaviva.data.remote.Part
 import com.google.firebase.Firebase
-import com.google.firebase.vertexai.vertexAI
-import com.google.firebase.vertexai.type.content
+import com.google.firebase.ai.ai
+import com.google.firebase.ai.type.content
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -39,10 +40,9 @@ class IARepository(private val context: Context) {
     // ✅ API Key cargada desde local.properties vía BuildConfig
     private val GEMINI_API_KEY = BuildConfig.GEMINI_API_KEY
 
-    // ✅ Firebase AI Logic (Gemini Developer API)
-    // Según docs: Firebase.vertexAI.generativeModel("gemini-2.5-flash-latest")
-    private val ai = Firebase.vertexAI
-    private val firebaseModel = ai.generativeModel("gemini-2.5-flash-latest")
+    // ✅ Firebase AI Logic (Gemini Developer API - sintaxis oficial)
+    // Según docs: Firebase.ai.generativeModel("gemini-2.5-flash")
+    private val firebaseModel = Firebase.ai.generativeModel("gemini-2.5-flash")
 
     // Cliente HTTP configurado con timeouts y logging
     private val okHttpClient = OkHttpClient.Builder()
@@ -64,6 +64,13 @@ class IARepository(private val context: Context) {
     private val geminiService = retrofit.create(GeminiApiService::class.java)
 
     init {
+        // Inicializar PDFBox para Android (requerido para GlyphList y recursos)
+        try {
+            PDFBoxResourceLoader.init(context)
+            Log.d(TAG, "✅ PDFBox Android inicializado correctamente")
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ Error inicializando PDFBox: ${e.message}")
+        }
         println("✅ Gemini AI Retrofit activado - Modelo: gemini-2.5-flash")
     }
 

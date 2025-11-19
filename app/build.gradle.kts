@@ -141,8 +141,9 @@ dependencies {
     // Google Generative AI (Gemini)
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
-    // ✅ Firebase Vertex AI (Gemini oficial con PDF inline - SIN google-services.json)
-    implementation("com.google.firebase:firebase-vertexai:16.0.1")
+    // ✅ Firebase AI Logic (sintaxis oficial con BoM)
+    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+    implementation("com.google.firebase:firebase-ai")
 
     // Markwon para renderizar Markdown
     implementation("io.noties.markwon:core:4.6.2")
