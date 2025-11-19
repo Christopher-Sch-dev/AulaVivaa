@@ -403,7 +403,14 @@ class DetalleClaseActivity : AppCompatActivity() {
                 )
                 withContext(Dispatchers.Main) {
                     loading.dismiss()
-                    mostrarResultadoIA("📚 Conceptos explicados para ti", resultado)
+                    mostrarResultadoIA(
+                        titulo = "📚 Conceptos explicados para ti",
+                        contenido = resultado,
+                        tipoConsulta = "ALUMNO_CONCEPTOS",
+                        nombreClase = clase.nombre,
+                        descripcionClase = clase.descripcion,
+                        pdfUrl = clase.archivoPdfUrl
+                    )
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -429,7 +436,14 @@ class DetalleClaseActivity : AppCompatActivity() {
                 )
                 withContext(Dispatchers.Main) {
                     loading.dismiss()
-                    mostrarResultadoIA("✍️ Ejercicios de práctica", resultado)
+                    mostrarResultadoIA(
+                        titulo = "✍️ Ejercicios de práctica",
+                        contenido = resultado,
+                        tipoConsulta = "ALUMNO_EJERCICIOS",
+                        nombreClase = clase.nombre,
+                        descripcionClase = clase.descripcion,
+                        pdfUrl = clase.archivoPdfUrl
+                    )
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -455,7 +469,14 @@ class DetalleClaseActivity : AppCompatActivity() {
                 )
                 withContext(Dispatchers.Main) {
                     loading.dismiss()
-                    mostrarResultadoIA("📖 Tu resumen de estudio", resultado)
+                    mostrarResultadoIA(
+                        titulo = "📖 Tu resumen de estudio",
+                        contenido = resultado,
+                        tipoConsulta = "ALUMNO_RESUMEN",
+                        nombreClase = clase.nombre,
+                        descripcionClase = clase.descripcion,
+                        pdfUrl = clase.archivoPdfUrl
+                    )
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {

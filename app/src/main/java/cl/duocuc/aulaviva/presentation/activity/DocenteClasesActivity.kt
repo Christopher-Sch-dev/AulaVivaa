@@ -44,6 +44,7 @@ class DocenteClasesActivity : AppCompatActivity() {
         setupToolbar()
         setupRecyclerView()
         setupFAB()
+        setupSwipeRefresh()
         observeViewModel()
     }
 
@@ -82,7 +83,19 @@ class DocenteClasesActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setOnRefreshListener {
+            // Recargar clases desde la nube
+            viewModel.sincronizarConSupabase()
+        }
+    }
+
     private fun observeViewModel() {
+        // Observar estado de carga
+        viewModel.isLoading.observe(this) { isLoading ->
+            binding.swipeRefresh.isRefreshing = isLoading
+        }
+
         // Obtener clases de esta asignatura
         viewModel.obtenerClasesPorAsignatura(asignaturaId).observe(this) { clases ->
             adapter.updateList(clases)

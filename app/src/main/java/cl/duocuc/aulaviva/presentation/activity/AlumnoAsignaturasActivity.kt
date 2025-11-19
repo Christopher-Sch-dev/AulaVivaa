@@ -12,6 +12,7 @@ import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.adapter.AlumnoAsignaturaAdapter
 import cl.duocuc.aulaviva.presentation.dialog.IngresarCodigoDialog
 import cl.duocuc.aulaviva.presentation.viewmodel.AlumnoViewModel
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 /**
  * Activity para alumnos: ver asignaturas inscritas y agregar nuevas con código.
@@ -30,6 +31,7 @@ class AlumnoAsignaturasActivity : AppCompatActivity() {
         setupToolbar()
         setupRecyclerView()
         setupFAB()
+        setupSwipeRefresh()
         observeViewModel()
     }
 
@@ -63,6 +65,12 @@ class AlumnoAsignaturasActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setOnRefreshListener {
+            viewModel.sincronizarAsignaturasInscritas()
+        }
+    }
+
     private fun observeViewModel() {
         // Observar asignaturas inscritas
         viewModel.asignaturasInscritas.observe(this) { asignaturas ->
@@ -80,6 +88,7 @@ class AlumnoAsignaturasActivity : AppCompatActivity() {
         // Observar estado de carga
         viewModel.isLoading.observe(this) { isLoading ->
             binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            binding.swipeRefresh.isRefreshing = isLoading
         }
 
         // Observar errores

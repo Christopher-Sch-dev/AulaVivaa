@@ -39,6 +39,7 @@ class DocenteAsignaturasActivity : AppCompatActivity() {
         setupToolbar()
         setupRecyclerView()
         setupFAB()
+        setupSwipeRefresh()
         observeViewModel()
     }
 
@@ -78,7 +79,19 @@ class DocenteAsignaturasActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setOnRefreshListener {
+            viewModel.sincronizarAsignaturas()
+        }
+    }
+
     private fun observeViewModel() {
+        // Observar estado de carga
+        viewModel.isLoading.observe(this) { isLoading ->
+            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            binding.swipeRefresh.isRefreshing = isLoading
+        }
+
         // Observar lista de asignaturas
         viewModel.asignaturas.observe(this) { asignaturas ->
             adapter.submitList(asignaturas)
@@ -91,11 +104,6 @@ class DocenteAsignaturasActivity : AppCompatActivity() {
                 binding.textViewEmpty.visibility = View.GONE
                 binding.recyclerViewAsignaturas.visibility = View.VISIBLE
             }
-        }
-
-        // Observar estado de carga
-        viewModel.isLoading.observe(this) { isLoading ->
-            binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
 
         // Observar errores
