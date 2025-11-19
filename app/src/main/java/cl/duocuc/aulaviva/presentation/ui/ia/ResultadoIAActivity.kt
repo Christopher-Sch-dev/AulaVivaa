@@ -49,7 +49,7 @@ class ResultadoIAActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // Inicializar repositorio IA
-        iaRepository = IARepository()
+        iaRepository = IARepository(this)
 
         // Configurar Markwon para renderizar Markdown
         markwon = Markwon.builder(this)

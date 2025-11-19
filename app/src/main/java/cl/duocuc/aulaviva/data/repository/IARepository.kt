@@ -1,5 +1,6 @@
 package cl.duocuc.aulaviva.data.repository
 
+import android.content.Context
 import android.util.Base64
 import android.util.Log
 import cl.duocuc.aulaviva.BuildConfig
@@ -8,7 +9,8 @@ import cl.duocuc.aulaviva.data.remote.GeminiApiService
 import cl.duocuc.aulaviva.data.remote.GeminiRequest
 import cl.duocuc.aulaviva.data.remote.GenerationConfig
 import cl.duocuc.aulaviva.data.remote.Part
-import com.google.firebase.vertexai.GenerativeModel
+import com.google.firebase.Firebase
+import com.google.firebase.vertexai.vertexAI
 import com.google.firebase.vertexai.type.content
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -21,14 +23,14 @@ import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 
 /**
- * 🤖 GEMINI AI con Retrofit + Firebase Vertex AI (Método Híbrido)
- * Modelo: gemini-2.5-flash (vigente octubre 2025)
+ * 🤖 GEMINI AI con Firebase AI Logic (Gemini Developer API)
+ * Modelo: gemini-2.5-flash-latest (vigente noviembre 2025)
  *
- * ✅ API Key cargada desde BuildConfig (portable entre PCs)
- * ✅ Firebase Vertex AI para PDFs (Base64 inline - OCR integrado)
+ * ✅ Firebase AI Logic con Gemini Developer API (15 req/min gratis)
  * ✅ PDFBox como fallback (offline, límite API)
+ * ✅ Retrofit para funciones sin PDF
  */
-class IARepository {
+class IARepository(private val context: Context) {
 
     companion object {
         private const val TAG = "AulaViva_IA"
@@ -37,11 +39,10 @@ class IARepository {
     // ✅ API Key cargada desde local.properties vía BuildConfig
     private val GEMINI_API_KEY = BuildConfig.GEMINI_API_KEY
 
-    // ✅ Firebase Vertex AI (Gemini oficial) - SIN google-services.json
-    private val firebaseGemini = GenerativeModel(
-        modelName = "gemini-2.0-flash-exp",
-        apiKey = GEMINI_API_KEY
-    )
+    // ✅ Firebase AI Logic (Gemini Developer API)
+    // Según docs: Firebase.vertexAI.generativeModel("gemini-2.5-flash-latest")
+    private val ai = Firebase.vertexAI
+    private val firebaseModel = ai.generativeModel("gemini-2.5-flash-latest")
 
     // Cliente HTTP configurado con timeouts y logging
     private val okHttpClient = OkHttpClient.Builder()
@@ -132,10 +133,10 @@ class IARepository {
     }
 
     /**
-     * 🔍 MÉTODO HÍBRIDO: Firebase Vertex AI primero, PDFBox fallback
+     * 🔍 MÉTODO HÍBRIDO: Firebase AI Logic primero, PDFBox fallback
      *
      * Este método garantiza que la IA SIEMPRE pueda leer el PDF:
-     * 1. INTENTA Firebase Gemini (Base64 inline) - Mejor precisión, OCR integrado
+     * 1. INTENTA Firebase AI Logic (Base64 inline) - Mejor precisión, OCR integrado
      * 2. Si falla, usa PDFBox (extracción texto local) - Funciona offline
      *
      * @param pdfUrl URL del PDF en Supabase
@@ -147,20 +148,20 @@ class IARepository {
         Log.d(TAG, "🔍 [HÍBRIDO] PDF URL: $pdfUrl")
 
         try {
-            // INTENTO 1: Firebase Gemini (RECOMENDADO - OCR integrado)
-            Log.d(TAG, "🔥 [FIREBASE] Intentando método Firebase Vertex AI...")
+            // INTENTO 1: Google AI Gemini (RECOMENDADO - OCR integrado)
+            Log.d(TAG, "🔥 [Google AI] Intentando método Google AI SDK...")
             return@withContext analizarConFirebaseGemini(pdfUrl, prompt)
 
         } catch (e: Exception) {
             // INTENTO 2: PDFBox (FALLBACK - offline)
-            Log.w(TAG, "⚠️ [HÍBRIDO] Firebase falló: ${e.message}")
+            Log.w(TAG, "⚠️ [HÍBRIDO] Google AI falló: ${e.message}")
             Log.d(TAG, "📄 [PDFBox] Cambiando a método fallback PDFBox...")
             return@withContext analizarConPDFBox(pdfUrl, prompt)
         }
     }
 
     /**
-     * 🔥 Firebase Vertex AI: Envía PDF completo (Base64 inline)
+     * 🔥 Google AI SDK: Envía PDF completo (Base64 inline)
      * Gemini parsea el PDF server-side con OCR + tablas + gráficos.
      *
      * Ventajas:
@@ -173,38 +174,41 @@ class IARepository {
      * @return Respuesta de Gemini
      */
     private suspend fun analizarConFirebaseGemini(pdfUrl: String, prompt: String): String {
-        Log.d(TAG, "📦 [Firebase] Descargando PDF desde Supabase...")
+        Log.d(TAG, "📦 [Firebase AI] Descargando PDF desde Supabase...")
 
         // 1. Descargar PDF
         val pdfBytes = descargarPDF(pdfUrl)
-        Log.d(TAG, "📦 [Firebase] PDF descargado: ${pdfBytes.size} bytes (${pdfBytes.size / 1024} KB)")
+        Log.d(TAG, "📦 [Firebase AI] PDF descargado: ${pdfBytes.size} bytes (${pdfBytes.size / 1024} KB)")
 
-        // 2. Codificar Base64
+        // 2. Verificar límite 20MB (Gemini Developer API)
+        if (pdfBytes.size > 20_000_000) {
+            throw java.io.IOException("PDF muy grande (>20MB)")
+        }
+
+        // 3. Codificar Base64 (requerido por Gemini API)
         val pdfBase64 = Base64.encodeToString(pdfBytes, Base64.NO_WRAP)
-        Log.d(TAG, "🔐 [Firebase] PDF codificado en Base64: ${pdfBase64.length} caracteres")
+        Log.d(TAG, "🔐 [Firebase AI] PDF codificado en Base64: ${pdfBase64.length} caracteres")
 
-        // 3. Crear contenido multimodal (texto + PDF inline)
+        // 4. Crear contenido multimodal (Kotlin DSL Firebase)
         val contenidoMultimodal = content {
             text(prompt)
             inlineData("application/pdf", pdfBase64)
         }
 
-        Log.d(TAG, "🤖 [Firebase] Enviando a Gemini 2.0 Flash Exp...")
+        Log.d(TAG, "🤖 [Firebase AI] Enviando a Gemini 2.5 Flash (Developer API)...")
 
-        // 4. Generar respuesta con timeout
+        // 5. Generar respuesta con timeout
         val response = withTimeout(90_000) { // 90 segundos
-            firebaseGemini.generateContent(contenidoMultimodal)
+            firebaseModel.generateContent(contenidoMultimodal)
         }
 
-        val textoRespuesta = response.text ?: throw Exception("Respuesta vacía de Firebase Gemini")
+        val textoRespuesta = response.text ?: throw Exception("Respuesta vacía de Firebase AI Logic")
 
-        Log.d(TAG, "✅ [Firebase] Respuesta recibida: ${textoRespuesta.length} caracteres")
-        Log.d(TAG, "✅ [Firebase] Primeros 150 chars: ${textoRespuesta.take(150)}...")
+        Log.d(TAG, "✅ [Firebase AI] Respuesta recibida: ${textoRespuesta.length} caracteres")
+        Log.d(TAG, "✅ [Firebase AI] Primeros 150 chars: ${textoRespuesta.take(150)}...")
 
         return textoRespuesta
-    }
-
-    /**
+    }    /**
      * 📄 PDFBox: Extrae texto local y envía a Gemini (FALLBACK)
      *
      * Este método se usa cuando Firebase falla (red, timeout, límite API).
@@ -434,7 +438,7 @@ class IARepository {
 
             // ✅ USAR MÉTODO HÍBRIDO si hay PDF
             val resultado = if (!pdfUrl.isNullOrEmpty()) {
-                Log.d(TAG, "💡 [IDEAS] PDF detectado, usando método híbrido Firebase/PDFBox...")
+                Log.d(TAG, "💡 [IDEAS] PDF detectado, usando método híbrido Firebase AI/PDFBox...")
                 analizarPDFInteligente(pdfUrl, prompt)
             } else {
                 Log.d(TAG, "💡 [IDEAS] Sin PDF, llamada Gemini estándar")
@@ -521,7 +525,7 @@ class IARepository {
 
             // ✅ USAR MÉTODO HÍBRIDO si hay PDF
             val resultado = if (!pdfUrl.isNullOrEmpty()) {
-                Log.d(TAG, "🎯 [ACTIVIDADES] PDF detectado, usando método híbrido Firebase/PDFBox...")
+                Log.d(TAG, "🎯 [ACTIVIDADES] PDF detectado, usando método híbrido Firebase AI/PDFBox...")
                 analizarPDFInteligente(pdfUrl, prompt)
             } else {
                 Log.d(TAG, "🎯 [ACTIVIDADES] Sin PDF, llamada Gemini estándar")
@@ -628,67 +632,58 @@ class IARepository {
      */
     suspend fun analizarPdfConIA(nombreClase: String, pdfUrl: String? = null): String {
         return try {
-            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
-                "\n✅ **PDF confirmado**: $pdfUrl"
-            } else {
-                "\n⚠️ **Sin PDF**: Se generarán estrategias generales"
+            if (pdfUrl.isNullOrEmpty()) {
+                return "⚠️ No se proporcionó URL del PDF"
             }
+
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un analista de materiales educativos para docentes universitarios chilenos.
 
                 # SITUACIÓN
-                Un docente tiene un PDF para la clase: "$nombreClase"$contextoPdf
-                Necesita ideas concretas para aprovechar ese material en su clase.                # INSTRUCCIONES
-                1. **Identifica el tipo de clase**: Según el nombre, deduce el área
-                2. **Asume rol apropiado**: Experto en esa disciplina
-                3. **Propón 3 estrategias**: Formas efectivas de usar el PDF
+                Analiza el PDF adjunto para la clase "$nombreClase".
+
+                # INSTRUCCIONES
+                1. **Lee TODO el PDF completo**
+                2. **Identifica**: Tema principal, conceptos clave, estructura
+                3. **Evalúa**: Calidad, profundidad, utilidad pedagógica
+                4. **Sugiere**: Cómo aprovechar mejor este material
 
                 # FORMATO DE RESPUESTA
 
-                🎓 **CONTEXTO DETECTADO**
-                • Clase: $nombreClase
-                • Área estimada: [disciplina]
-                • Tipo de PDF probable: [ej: Artículo, Manual, Presentación]
+                📊 **ANÁLISIS DEL PDF**
 
-                📊 **ESTRATEGIAS PARA APROVECHAR EL PDF**
+                **Tema Principal**: [Tema identificado del PDF]
 
-                **ESTRATEGIA 1: LECTURA CRÍTICA GUIADA**
-                • **Qué hacer**: Asignar secciones del PDF con preguntas específicas
-                • **Cómo aplicarlo**: [Pasos concretos]
-                • **Tiempo**: [X minutos]
-                • **Beneficio para el aprendizaje**: [Por qué funciona]
+                **Conceptos Clave**:
+                • [Concepto 1 del PDF]
+                • [Concepto 2 del PDF]
+                • [Concepto 3 del PDF]
 
-                **ESTRATEGIA 2: DEBATE O DISCUSIÓN**
-                • **Qué hacer**: Usar el PDF como base para debate
-                • **Cómo aplicarlo**: [Pasos concretos]
-                • **Tiempo**: [X minutos]
-                • **Beneficio para el aprendizaje**: [Por qué funciona]
+                **Estructura Detectada**:
+                [Breve descripción de cómo está organizado el PDF]
 
-                **ESTRATEGIA 3: APLICACIÓN PRÁCTICA**
-                • **Qué hacer**: Ejercicios basados en el contenido del PDF
-                • **Cómo aplicarlo**: [Pasos concretos]
-                • **Tiempo**: [X minutos]
-                • **Beneficio para el aprendizaje**: [Por qué funciona]
+                **Evaluación Pedagógica**:
+                [Fortalezas y limitaciones del material]
 
-                💡 **RECOMENDACIÓN ADICIONAL**
-                [Un tip creativo para maximizar el valor del PDF]
+                **Sugerencias de Uso**:
+                1. [Cómo usar este PDF en clase]
+                2. [Actividad sugerida basada en el contenido]
+                3. [Punto importante a enfatizar del PDF]
 
                 # ESTILO
                 - Español chileno profesional
-                - Estrategias concretas y aplicables
-                - Enfoque en el valor pedagógico
+                - Análisis basado en contenido REAL del PDF
                 - Máximo 400 palabras
             """.trimIndent()
 
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+            // ✅ USAR MÉTODO HÍBRIDO
+            Log.d(TAG, "📊 [ANÁLISIS] Analizando PDF con método híbrido...")
+            val resultado = analizarPDFInteligente(pdfUrl, prompt)
+            "$resultado\n\n🚬😶‍🌫️ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
-            "⚠️ Error al conectar con Gemini AI\n\n📊 ESTRATEGIAS GENERALES PARA PDF de $nombreClase\n\nPara estrategias personalizadas, verifica tu conexión.\n\nError: ${
-                e.message?.take(
-                    100
-                ) ?: "Desconocido"
-            }"
+            Log.e(TAG, "📊 [ANÁLISIS] Error: ${e.message}", e)
+            "⚠️ Error al analizar el PDF\n\nError: ${e.message?.take(100) ?: "Desconocido"}"
         }
     }
 
@@ -1235,10 +1230,10 @@ class IARepository {
 
                 ## ✅ CHECKLIST DE ESTUDIO
                 Marca lo que ya dominas:
-                - [ ] [Habilidad 1]
-                - [ ] [Habilidad 2]
-                - [ ] [Habilidad 3]
-                - [ ] [Habilidad 4]
+                - (  ) Habilidad 1
+                - (  ) Habilidad 2
+                - (  ) Habilidad 3
+                - (  ) Habilidad 4
 
                 # ESTILO
                 - Tutear al estudiante
@@ -1267,32 +1262,18 @@ class IARepository {
      */
     suspend fun procesarPromptConContexto(promptCompleto: String, pdfUrl: String? = null): String {
         return try {
-            // ✅ NUEVO: Si hay PDF, EXTRAER SU CONTENIDO REAL
-            val promptConPdf = if (!pdfUrl.isNullOrEmpty()) {
-                // Extraer texto del PDF
-                val textoPdf = extraerTextoDePdf(pdfUrl)
-
-                """
-                $promptCompleto
-
-                📎 CONTENIDO DEL PDF ADJUNTO:
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                $textoPdf
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-                IMPORTANTE: El texto anterior ES EL CONTENIDO REAL del PDF.
-                Cuando el usuario pida "analizar el PDF", "revisar el material", "explicar el documento", etc.,
-                debes usar ESTE CONTENIDO para generar respuestas específicas y precisas.
-
-                No inventes información. Basa tus respuestas en lo que realmente está escrito arriba.
-                """.trimIndent()
+            // ✅ USAR MÉTODO HÍBRIDO si hay PDF
+            val resultado = if (!pdfUrl.isNullOrEmpty()) {
+                Log.d(TAG, "💬 [CHAT] PDF detectado, usando método híbrido Firebase AI/PDFBox...")
+                analizarPDFInteligente(pdfUrl, promptCompleto)
             } else {
-                promptCompleto
+                Log.d(TAG, "💬 [CHAT] Sin PDF, llamada Gemini estándar")
+                llamarGemini(promptCompleto)
             }
 
-            val resultado = llamarGemini(promptConPdf)
             resultado
         } catch (e: Exception) {
+            Log.e(TAG, "💬 [CHAT] Error: ${e.message}", e)
             "⚠️ Error al conectar con Gemini AI\n\nNo pude procesar tu mensaje. Verifica tu conexión.\n\nError: ${
                 e.message?.take(100) ?: "Desconocido"
             }"

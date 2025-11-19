@@ -28,7 +28,7 @@ class DetalleClaseActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detalle_clase)
 
-        iaRepository = IARepository()
+        iaRepository = IARepository(this)
         claseRepository = ClaseRepository(this)
 
         // Obtener flag ES_ALUMNO del intent
