@@ -1,7 +1,6 @@
 package cl.duocuc.aulaviva.data.repository
 
 import android.content.Context
-import android.util.Base64
 import android.util.Log
 import cl.duocuc.aulaviva.BuildConfig
 import cl.duocuc.aulaviva.data.remote.Content
@@ -43,7 +42,7 @@ class IARepository(private val context: Context) {
     // Modelo con soporte multimodal (PDF, imágenes, etc.)
     private val googleAiModel by lazy {
         GenerativeModel(
-            modelName = "gemini-1.5-flash",
+            modelName = "gemini-2.5-flash-latest",
             apiKey = GEMINI_API_KEY
         )
     }
@@ -93,7 +92,7 @@ class IARepository(private val context: Context) {
                         val request = GeminiRequest(
                             contents = listOf(Content(parts = listOf(Part(text = prompt)))),
                             generationConfig = GenerationConfig(
-                                temperature = 0.6f, topK = 40, topP = 0.9f, maxOutputTokens = 4096
+                                temperature = 0.6f, topP = 0.9f, maxOutputTokens = 4096
                             )
                         )
 
@@ -154,22 +153,23 @@ class IARepository(private val context: Context) {
      * @param prompt Instrucción para la IA
      * @return Respuesta de Gemini basada en el PDF real
      */
-    private suspend fun analizarPDFInteligente(pdfUrl: String, prompt: String): String = withContext(Dispatchers.IO) {
-        Log.d(TAG, "🔍 [HÍBRIDO] Iniciando análisis inteligente de PDF...")
-        Log.d(TAG, "🔍 [HÍBRIDO] PDF URL: $pdfUrl")
+    private suspend fun analizarPDFInteligente(pdfUrl: String, prompt: String): String =
+        withContext(Dispatchers.IO) {
+            Log.d(TAG, "🔍 [HÍBRIDO] Iniciando análisis inteligente de PDF...")
+            Log.d(TAG, "🔍 [HÍBRIDO] PDF URL: $pdfUrl")
 
-        try {
-            // INTENTO 1: Google AI Gemini (RECOMENDADO - OCR integrado)
-            Log.d(TAG, "🔥 [Google AI] Intentando método Google AI SDK...")
-            return@withContext analizarConGoogleAI(pdfUrl, prompt)
+            try {
+                // INTENTO 1: Google AI Gemini (RECOMENDADO - OCR integrado)
+                Log.d(TAG, "🔥 [Google AI] Intentando método Google AI SDK...")
+                return@withContext analizarConGoogleAI(pdfUrl, prompt)
 
-        } catch (e: Exception) {
-            // INTENTO 2: PDFBox (FALLBACK - offline)
-            Log.w(TAG, "⚠️ [HÍBRIDO] Google AI falló: ${e.message}")
-            Log.d(TAG, "📄 [PDFBox] Cambiando a método fallback PDFBox...")
-            return@withContext analizarConPDFBox(pdfUrl, prompt)
+            } catch (e: Exception) {
+                // INTENTO 2: PDFBox (FALLBACK - offline)
+                Log.w(TAG, "⚠️ [HÍBRIDO] Google AI falló: ${e.message}")
+                Log.d(TAG, "📄 [PDFBox] Cambiando a método fallback PDFBox...")
+                return@withContext analizarConPDFBox(pdfUrl, prompt)
+            }
         }
-    }
 
     /**
      * 🔥 Google AI SDK: Envía PDF completo (Base64 inline)
@@ -190,7 +190,10 @@ class IARepository(private val context: Context) {
 
         // 1. Descargar PDF
         val pdfBytes = descargarPDF(pdfUrl)
-        Log.d(TAG, "📦 [Google AI] PDF descargado: ${pdfBytes.size} bytes (${pdfBytes.size / 1024} KB)")
+        Log.d(
+            TAG,
+            "📦 [Google AI] PDF descargado: ${pdfBytes.size} bytes (${pdfBytes.size / 1024} KB)"
+        )
 
         // 2. Verificar límite 20MB (Gemini Developer API)
         if (pdfBytes.size > 20_000_000) {
@@ -367,7 +370,10 @@ class IARepository(private val context: Context) {
                 pdfDocument.close()
 
                 Log.d(TAG, "📄 [PDF] Texto extraído: ${textoCompleto.length} caracteres")
-                Log.d(TAG, "📄 [PDF] Primeros 200 chars: ${textoCompleto.take(200)}")                // ✅ RETORNAR TODO EL TEXTO con metadata
+                Log.d(
+                    TAG,
+                    "📄 [PDF] Primeros 200 chars: ${textoCompleto.take(200)}"
+                )                // ✅ RETORNAR TODO EL TEXTO con metadata
                 val textoConMetadata = """
                     📊 METADATA DEL PDF:
                     - Total de páginas: $totalPaginas
@@ -469,7 +475,11 @@ class IARepository(private val context: Context) {
     /**
      * 🎯 Sugiere actividades dinámicas
      */
-    suspend fun sugerirActividades(nombreClase: String, descripcion: String, pdfUrl: String? = null): String {
+    suspend fun sugerirActividades(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String? = null
+    ): String {
         return try {
             val prompt = """
                 # CONTEXTO Y ROL
@@ -535,7 +545,10 @@ class IARepository(private val context: Context) {
 
             // ✅ USAR MÉTODO HÍBRIDO si hay PDF
             val resultado = if (!pdfUrl.isNullOrEmpty()) {
-                Log.d(TAG, "🎯 [ACTIVIDADES] PDF detectado, usando método híbrido Firebase AI/PDFBox...")
+                Log.d(
+                    TAG,
+                    "🎯 [ACTIVIDADES] PDF detectado, usando método híbrido Firebase AI/PDFBox..."
+                )
                 analizarPDFInteligente(pdfUrl, prompt)
             } else {
                 Log.d(TAG, "🎯 [ACTIVIDADES] Sin PDF, llamada Gemini estándar")
@@ -764,7 +777,11 @@ class IARepository(private val context: Context) {
     /**
      * 🌟 Reordena temas para presentar (Guía de presentación)
      */
-    suspend fun generarGuiaPresentacion(nombreClase: String, descripcion: String, pdfUrl: String? = null): String {
+    suspend fun generarGuiaPresentacion(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String? = null
+    ): String {
         return try {
             val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
                 "\n📎 **Material de apoyo**: PDF disponible para integrar en la presentación"
