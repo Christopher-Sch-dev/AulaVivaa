@@ -23,7 +23,9 @@
             android:layout_height="wrap_content"
             android:inputType="textCapCharacters"
             android:maxLength="50"
-            android:maxLines="1" />
+            android:maxLines="1"
+            android:textColor="#212121"
+            android:textColorHint="#757575" />
     </com.google.android.material.textfield.TextInputLayout>
 
 </LinearLayout>

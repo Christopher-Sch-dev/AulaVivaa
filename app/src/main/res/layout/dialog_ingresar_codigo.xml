@@ -60,6 +60,7 @@
             android:maxLines="1"
             android:textAllCaps="true"
             android:textColor="#2C2C2C"
+            android:textColorHint="#757575"
             android:textSize="16sp" />
     </com.google.android.material.textfield.TextInputLayout>
 

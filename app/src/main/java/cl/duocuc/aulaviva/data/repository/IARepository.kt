@@ -981,4 +981,21 @@ class IARepository {
             }"
         }
     }
+
+    /**
+     * ✨ NUEVO: Procesa un prompt con contexto completo para el sistema de chat
+     *
+     * Este método se usa cuando el usuario envía mensajes adicionales
+     * en ResultadoIAActivity para refinar o modificar resultados anteriores.
+     */
+    suspend fun procesarPromptConContexto(promptCompleto: String): String {
+        return try {
+            val resultado = llamarGemini(promptCompleto)
+            resultado
+        } catch (e: Exception) {
+            "⚠️ Error al conectar con Gemini AI\n\nNo pude procesar tu mensaje. Verifica tu conexión.\n\nError: ${
+                e.message?.take(100) ?: "Desconocido"
+            }"
+        }
+    }
 }

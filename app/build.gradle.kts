@@ -20,6 +20,16 @@ if (localPropertiesFile.exists()) {
     }
 }
 
+// ✅ Leer keystore.properties para firma de APK release
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+
+if (keystorePropertiesFile.exists()) {
+    FileInputStream(keystorePropertiesFile).use { stream ->
+        keystoreProperties.load(stream)
+    }
+}
+
 android {
     namespace = "cl.duocuc.aulaviva"
     compileSdk = 36
@@ -43,8 +53,23 @@ android {
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
     }
 
+    // ✅ Configuración de firma para APK release
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                storeFile = file(keystoreProperties.getProperty("KEYSTORE_FILE") ?: "aulaviva-release.jks")
+                storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD")
+                keyAlias = keystoreProperties.getProperty("KEY_ALIAS")
+                keyPassword = keystoreProperties.getProperty("KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // ✅ Usar configuración de firma
+            signingConfig = signingConfigs.getByName("release")
+
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -122,6 +147,22 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+
+    // MockK para mocking
+    testImplementation("io.mockk:mockk:1.13.8")
+    androidTestImplementation("io.mockk:mockk-android:1.13.8")
+
+    // Coroutines Testing
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+
+    // Architecture Components Testing
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+
+    // Room Testing
+    testImplementation("androidx.room:room-testing:2.6.1")
+
+    // Truth para assertions más legibles
+    testImplementation("com.google.truth:truth:1.1.5")
 }
