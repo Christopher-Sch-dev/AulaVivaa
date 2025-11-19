@@ -83,6 +83,9 @@ class ResultadoIAActivity : AppCompatActivity() {
         conversacionCompleta.append("CONTEXTO INICIAL:\n")
         conversacionCompleta.append("Clase: $nombreClase\n")
         conversacionCompleta.append("Descripción: $descripcionClase\n")
+        if (!pdfUrl.isNullOrEmpty()) {
+            conversacionCompleta.append("📎 Material PDF disponible: $pdfUrl\n")
+        }
         conversacionCompleta.append("Respuesta inicial de la IA:\n$contenidoOriginal\n\n")
     }
 
@@ -145,7 +148,8 @@ class ResultadoIAActivity : AppCompatActivity() {
                 }
 
                 // Siempre usar procesarPromptConContexto para mantener la conversación coherente
-                val respuesta = iaRepository.procesarPromptConContexto(promptCompleto)
+                // Si hay PDF, se pasa para que la IA pueda referenciarlo en nuevas instrucciones
+                val respuesta = iaRepository.procesarPromptConContexto(promptCompleto, pdfUrl)
 
                 // Agregar respuesta al contexto
                 conversacionCompleta.append("IA: $respuesta\n\n")

@@ -115,6 +115,56 @@ class IARepository {
         }
     }
 
+    /**
+     * 📄 Descarga y extrae texto de un PDF desde URL
+     *
+     * IMPORTANTE: Esta función descarga el PDF completo y extrae su contenido textual.
+     * Extrae TODAS las páginas disponibles para que la IA tenga el contexto completo.
+     *
+     * @param pdfUrl URL del PDF a descargar
+     * @return Texto extraído del PDF completo
+     */
+    private suspend fun extraerTextoDePdf(pdfUrl: String): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Descargar PDF usando OkHttp
+                val request = okhttp3.Request.Builder()
+                    .url(pdfUrl)
+                    .get()
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+
+                if (!response.isSuccessful) {
+                    return@withContext "[No se pudo descargar el PDF. Código: ${response.code}]"
+                }
+
+                val pdfBytes = response.body?.bytes()
+                if (pdfBytes == null || pdfBytes.isEmpty()) {
+                    return@withContext "[PDF descargado está vacío]"
+                }
+
+                // Extraer texto usando PDFBox Android
+                val pdfDocument = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfBytes)
+                val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
+
+                // ✅ EXTRAER TODAS LAS PÁGINAS (sin límites)
+                stripper.startPage = 1
+                stripper.endPage = pdfDocument.numberOfPages
+
+                val textoCompleto = stripper.getText(pdfDocument)
+                pdfDocument.close()
+
+                // ✅ RETORNAR TODO EL TEXTO (sin límites de caracteres)
+                // Gemini 2.0 Flash puede manejar contextos largos
+                return@withContext textoCompleto.trim()
+
+            } catch (e: Exception) {
+                return@withContext "[Error al extraer texto del PDF: ${e.message?.take(100)}]"
+            }
+        }
+    }
+
 
     /**
      * 💡 Genera ideas creativas para la clase
@@ -125,8 +175,14 @@ class IARepository {
         pdfUrl: String?
     ): String {
         return try {
-            val contextoPdf =
-                if (!pdfUrl.isNullOrEmpty()) "\n📎 Material de apoyo: PDF adjunto" else ""
+            // ✅ LEER CONTENIDO DEL PDF si existe
+            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
+                val textoPdf = extraerTextoDePdf(pdfUrl)
+                "\n\n📎 CONTENIDO DEL PDF ADJUNTO:\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n$textoPdf\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            } else {
+                ""
+            }
+
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un consultor en innovación educativa para docentes de educación superior chilena.
@@ -987,10 +1043,36 @@ class IARepository {
      *
      * Este método se usa cuando el usuario envía mensajes adicionales
      * en ResultadoIAActivity para refinar o modificar resultados anteriores.
+     *
+     * @param promptCompleto El prompt con todo el contexto de la conversación
+     * @param pdfUrl URL del PDF si hay uno disponible (para extraer y leer su contenido REAL)
      */
-    suspend fun procesarPromptConContexto(promptCompleto: String): String {
+    suspend fun procesarPromptConContexto(promptCompleto: String, pdfUrl: String? = null): String {
         return try {
-            val resultado = llamarGemini(promptCompleto)
+            // ✅ NUEVO: Si hay PDF, EXTRAER SU CONTENIDO REAL
+            val promptConPdf = if (!pdfUrl.isNullOrEmpty()) {
+                // Extraer texto del PDF
+                val textoPdf = extraerTextoDePdf(pdfUrl)
+
+                """
+                $promptCompleto
+
+                📎 CONTENIDO DEL PDF ADJUNTO:
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                $textoPdf
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                IMPORTANTE: El texto anterior ES EL CONTENIDO REAL del PDF.
+                Cuando el usuario pida "analizar el PDF", "revisar el material", "explicar el documento", etc.,
+                debes usar ESTE CONTENIDO para generar respuestas específicas y precisas.
+
+                No inventes información. Basa tus respuestas en lo que realmente está escrito arriba.
+                """.trimIndent()
+            } else {
+                promptCompleto
+            }
+
+            val resultado = llamarGemini(promptConPdf)
             resultado
         } catch (e: Exception) {
             "⚠️ Error al conectar con Gemini AI\n\nNo pude procesar tu mensaje. Verifica tu conexión.\n\nError: ${

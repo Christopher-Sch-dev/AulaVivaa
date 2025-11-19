@@ -144,6 +144,9 @@ dependencies {
     // Markwon para renderizar Markdown
     implementation("io.noties.markwon:core:4.6.2")
 
+    // PDFBox para Android (extraer texto de PDFs)
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
 
     // Testing
     testImplementation("junit:junit:4.13.2")
