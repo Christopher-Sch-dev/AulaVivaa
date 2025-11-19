@@ -87,6 +87,17 @@ class ResultadoIAActivity : AppCompatActivity() {
             conversacionCompleta.append("📎 Material PDF disponible: $pdfUrl\n")
         }
         conversacionCompleta.append("Respuesta inicial de la IA:\n$contenidoOriginal\n\n")
+
+        // 🚀 INICIALIZAR SESIÓN DE CHAT STATEFUL
+        // Esto carga el PDF y el historial inicial en la memoria de la IA
+        lifecycleScope.launch(Dispatchers.IO) {
+            iaRepository.iniciarChatConContexto(
+                nombreClase = nombreClase,
+                descripcion = descripcionClase,
+                pdfUrl = pdfUrl,
+                respuestaInicial = contenidoOriginal
+            )
+        }
     }
 
     private fun setupToolbar() {
@@ -140,18 +151,11 @@ class ResultadoIAActivity : AppCompatActivity() {
         // Llamar a la IA con el contexto completo
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val promptCompleto = buildString {
-                    append(conversacionCompleta.toString())
-                    append("NUEVA INSTRUCCIÓN DEL USUARIO:\n")
-                    append(mensaje)
-                    append("\n\nPor favor, responde considerando TODO el contexto anterior.")
-                }
+                // ✅ USAR CHAT STATEFUL: Ya no concatenamos todo el historial manualmente.
+                // La sesión en IARepository mantiene el contexto del PDF y mensajes previos.
+                val respuesta = iaRepository.enviarMensajeChat(mensaje)
 
-                // Siempre usar procesarPromptConContexto para mantener la conversación coherente
-                // Si hay PDF, se pasa para que la IA pueda referenciarlo en nuevas instrucciones
-                val respuesta = iaRepository.procesarPromptConContexto(promptCompleto, pdfUrl)
-
-                // Agregar respuesta al contexto
+                // Agregar respuesta al contexto local (solo para logs/debug)
                 conversacionCompleta.append("IA: $respuesta\n\n")
 
                 withContext(Dispatchers.Main) {

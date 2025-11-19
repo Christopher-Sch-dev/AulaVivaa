@@ -38,14 +38,24 @@ class IARepository(private val context: Context) {
     // ✅ API Key cargada desde local.properties vía BuildConfig
     private val GEMINI_API_KEY = BuildConfig.GEMINI_API_KEY
 
-    // ✅ Google AI SDK (Gemini Developer API - compatible con Supabase Ktor 2.3.12)
-    // Modelo con soporte multimodal (PDF, imágenes, etc.)
+    // ✅ Google AI SDK (Gemini Developer API)
+    // Modelo actualizado a Gemini 2.5 Pro (Nov 2025) - State-of-the-art thinking model
+    // Ideal para razonamiento complejo sobre documentos y memoria de chat
     private val googleAiModel by lazy {
         GenerativeModel(
-            modelName = "gemini-2.5-flash-latest",
-            apiKey = GEMINI_API_KEY
+            modelName = "gemini-2.5-pro",
+            apiKey = GEMINI_API_KEY,
+            generationConfig = generationConfig {
+                temperature = 0.7f
+                topK = 40
+                topP = 0.95f
+                maxOutputTokens = 8192
+            }
         )
     }
+
+    // Sesión de chat persistente
+    private var chatSession: com.google.ai.client.generativeai.Chat? = null
 
     // Cliente HTTP configurado con timeouts y logging
     private val okHttpClient = OkHttpClient.Builder()
@@ -1279,31 +1289,87 @@ class IARepository(private val context: Context) {
     }
 
     /**
-     * ✨ NUEVO: Procesa un prompt con contexto completo para el sistema de chat
+     * 🚀 INICIALIZA EL CHAT CON MEMORIA (Stateful)
      *
-     * Este método se usa cuando el usuario envía mensajes adicionales
-     * en ResultadoIAActivity para refinar o modificar resultados anteriores.
+     * Carga el PDF una sola vez y establece el historial inicial.
+     * Esto permite que la IA "recuerde" el documento en mensajes futuros.
+     */
+    suspend fun iniciarChatConContexto(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String?,
+        respuestaInicial: String
+    ) {
+        withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "💬 [CHAT] Iniciando sesión de chat stateful...")
+                val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
+
+                // 1. Crear mensaje inicial del usuario (Prompt + PDF si existe)
+                val promptInicial = """
+                    CONTEXTO DE LA CLASE:
+                    📚 Clase: $nombreClase
+                    📝 Descripción: $descripcion
+
+                    Analiza el material adjunto y responde a la consulta inicial.
+                """.trimIndent()
+
+                val contenidoUsuario = if (!pdfUrl.isNullOrEmpty()) {
+                    Log.d(TAG, "💬 [CHAT] Descargando PDF para inyectar en memoria...")
+                    val pdfBytes = descargarPDF(pdfUrl)
+                    content("user") {
+                        text(promptInicial)
+                        blob("application/pdf", pdfBytes)
+                    }
+                } else {
+                    content("user") { text(promptInicial) }
+                }
+                historial.add(contenidoUsuario)
+
+                // 2. Crear mensaje inicial del modelo (lo que ya respondió en la pantalla anterior)
+                // Esto le da continuidad a la conversación
+                historial.add(content("model") { text(respuestaInicial) })
+
+                // 3. Iniciar chat con el historial cargado
+                chatSession = googleAiModel.startChat(history = historial)
+                Log.d(TAG, "✅ [CHAT] Sesión iniciada correctamente con historial (${historial.size} mensajes)")
+
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ [CHAT] Error al iniciar sesión: ${e.message}")
+                chatSession = null
+            }
+        }
+    }
+
+    /**
+     * ✨ Envía un mensaje al chat activo
      *
-     * @param promptCompleto El prompt con todo el contexto de la conversación
-     * @param pdfUrl URL del PDF si hay uno disponible (para extraer y leer su contenido REAL)
+     * Usa la sesión persistente para mantener el contexto del PDF y mensajes anteriores.
+     */
+    suspend fun enviarMensajeChat(mensaje: String): String {
+        return withContext(Dispatchers.IO) {
+            if (chatSession != null) {
+                try {
+                    Log.d(TAG, "💬 [CHAT] Enviando mensaje a sesión existente...")
+                    val response = chatSession!!.sendMessage(mensaje)
+                    response.text ?: "Sin respuesta de la IA"
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ [CHAT] Error en sesión: ${e.message}")
+                    throw e
+                }
+            } else {
+                // Fallback: Si no hay sesión (ej: falló la inicialización), intentar llamada simple
+                // Nota: Aquí se pierde el contexto del PDF si no se reinicia, pero evita crash
+                Log.w(TAG, "⚠️ [CHAT] No hay sesión activa, usando fallback stateless...")
+                llamarGemini(mensaje)
+            }
+        }
+    }
+
+    /**
+     * (DEPRECADO) Mantenido por compatibilidad si es necesario, pero redirige al nuevo chat
      */
     suspend fun procesarPromptConContexto(promptCompleto: String, pdfUrl: String? = null): String {
-        return try {
-            // ✅ USAR MÉTODO HÍBRIDO si hay PDF
-            val resultado = if (!pdfUrl.isNullOrEmpty()) {
-                Log.d(TAG, "💬 [CHAT] PDF detectado, usando método híbrido Firebase AI/PDFBox...")
-                analizarPDFInteligente(pdfUrl, promptCompleto)
-            } else {
-                Log.d(TAG, "💬 [CHAT] Sin PDF, llamada Gemini estándar")
-                llamarGemini(promptCompleto)
-            }
-
-            resultado
-        } catch (e: Exception) {
-            Log.e(TAG, "💬 [CHAT] Error: ${e.message}", e)
-            "⚠️ Error al conectar con Gemini AI\n\nNo pude procesar tu mensaje. Verifica tu conexión.\n\nError: ${
-                e.message?.take(100) ?: "Desconocido"
-            }"
-        }
+        return enviarMensajeChat(promptCompleto)
     }
 }
