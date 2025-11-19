@@ -40,9 +40,16 @@ class IARepository(private val context: Context) {
     // ✅ API Key cargada desde local.properties vía BuildConfig
     private val GEMINI_API_KEY = BuildConfig.GEMINI_API_KEY
 
-    // ✅ Firebase AI Logic (Gemini Developer API - sintaxis oficial)
+    // ✅ Firebase AI Logic (Gemini Developer API - lazy para evitar crash al iniciar)
     // Según docs: Firebase.ai.generativeModel("gemini-2.5-flash")
-    private val firebaseModel = Firebase.ai.generativeModel("gemini-2.5-flash")
+    private val firebaseModel by lazy {
+        try {
+            Firebase.ai.generativeModel("gemini-2.5-flash")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error inicializando Firebase AI: ${e.message}")
+            throw e
+        }
+    }
 
     // Cliente HTTP configurado con timeouts y logging
     private val okHttpClient = OkHttpClient.Builder()
