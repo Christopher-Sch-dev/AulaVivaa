@@ -67,6 +67,7 @@
                 android:paddingTop="16dp"
                 android:paddingBottom="16dp"
                 android:textColor="#212121"
+                android:textColorHint="#757575"
                 android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -94,6 +95,7 @@
                 android:paddingTop="16dp"
                 android:paddingBottom="16dp"
                 android:textColor="#212121"
+                android:textColorHint="#757575"
                 android:textSize="16sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -126,6 +128,7 @@
                 android:buttonTint="#1A237E"
                 android:padding="12dp"
                 android:text="👨‍🏫 Docente"
+                android:textColor="#212121"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -140,6 +143,7 @@
                 android:checked="true"
                 android:padding="12dp"
                 android:text="🎓 Alumno"
+                android:textColor="#212121"
                 android:textSize="15sp"
                 android:textStyle="bold" />
         </RadioGroup>

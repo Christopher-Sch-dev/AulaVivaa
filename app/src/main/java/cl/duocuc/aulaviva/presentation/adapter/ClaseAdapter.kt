@@ -15,12 +15,14 @@ import cl.duocuc.aulaviva.data.model.Clase
  * Adaptador para mostrar una lista de clases en un RecyclerView.
  * Ahora incluye descripción, badge de PDF y botón ver detalles.
  * ✅ TAREA 3: Agregados callbacks para editar y eliminar
+ * ✅ ALUMNO: Parámetro esAlumno para ocultar botones de edición
  */
 class ClaseAdapter(
     private var clases: List<Clase> = emptyList(),
     private val onClaseClick: ((Clase) -> Unit)? = null,
     private val onEditarClick: ((Clase) -> Unit)? = null,
-    private val onEliminarClick: ((Clase) -> Unit)? = null
+    private val onEliminarClick: ((Clase) -> Unit)? = null,
+    private val esAlumno: Boolean = false // NUEVO: flag para alumno
 ) : RecyclerView.Adapter<ClaseAdapter.ClaseViewHolder>() {
 
     /**
@@ -82,30 +84,36 @@ class ClaseAdapter(
             onClaseClick?.invoke(clase)
         }
 
-        // ✅ TAREA 3: Botón Editar
-        holder.btnEditar.setOnClickListener {
-            onEditarClick?.invoke(clase)
-        }
+        // ✅ OCULTAR BOTONES SI ES ALUMNO
+        if (esAlumno) {
+            holder.btnEditar.visibility = View.GONE
+            holder.btnEliminar.visibility = View.GONE
+            holder.btnCompartir.visibility = View.GONE
+        } else {
+            // ✅ TAREA 3: Botón Editar (solo docente)
+            holder.btnEditar.setOnClickListener {
+                onEditarClick?.invoke(clase)
+            }
 
-        // ✅ TAREA 3: Botón Eliminar
-        holder.btnEliminar.setOnClickListener {
-            onEliminarClick?.invoke(clase)
-        }
+            // ✅ TAREA 3: Botón Eliminar (solo docente)
+            holder.btnEliminar.setOnClickListener {
+                onEliminarClick?.invoke(clase)
+            }
 
-        // Botón compartir (Recurso Nativo)
-        holder.btnCompartir.setOnClickListener {
-            val compartirIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_SUBJECT, "Clase: ${clase.nombre}")
-                putExtra(
+            // Botón compartir (solo docente)
+            holder.btnCompartir.setOnClickListener {
+                val compartirIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_SUBJECT, "Clase: ${clase.nombre}")
+                    putExtra(
                     Intent.EXTRA_TEXT, """
                     📚 Información de Clase - Aula Viva
-                    
+
                     Nombre: ${clase.nombre}
                     Descripción: ${clase.descripcion}
                     📅 Fecha: ${clase.fecha}
                     ${if (clase.archivoPdfNombre.isNotEmpty()) "📄 Incluye material PDF" else ""}
-                    
+
                     Compartido desde Aula Viva 🎓
                 """.trimIndent()
                 )
@@ -113,6 +121,7 @@ class ClaseAdapter(
 
             val chooser = Intent.createChooser(compartirIntent, "Compartir clase con...")
             holder.itemView.context.startActivity(chooser)
+            }
         }
     }
 

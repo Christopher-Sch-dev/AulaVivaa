@@ -62,6 +62,33 @@
         <activity
             android:name=".presentation.ui.ia.ResultadoIAActivity"
             android:exported="false" />
+        <activity
+            android:name=".presentation.activity.DocenteAsignaturasActivity"
+            android:exported="false"
+            android:label="Mis Asignaturas"
+            android:parentActivityName=".presentation.ui.main.PanelPrincipalActivity" />
+        <activity
+            android:name=".presentation.activity.DocenteClasesActivity"
+            android:exported="false"
+            android:parentActivityName=".presentation.activity.DocenteAsignaturasActivity" />
+        <activity
+            android:name=".presentation.activity.InscritosActivity"
+            android:exported="false"
+            android:label="Alumnos Inscritos"
+            android:parentActivityName=".presentation.activity.DocenteAsignaturasActivity" />
+        <activity
+            android:name=".presentation.ui.clases.CrearEditarClaseActivity"
+            android:exported="false"
+            android:parentActivityName=".presentation.activity.DocenteClasesActivity" />
+        <activity
+            android:name=".presentation.activity.AlumnoAsignaturasActivity"
+            android:exported="false"
+            android:label="Mis Asignaturas"
+            android:parentActivityName=".presentation.ui.main.PanelPrincipalActivity" />
+        <activity
+            android:name=".presentation.activity.AlumnoClasesActivity"
+            android:exported="false"
+            android:parentActivityName=".presentation.activity.AlumnoAsignaturasActivity" />
     </application>
 
 </manifest>

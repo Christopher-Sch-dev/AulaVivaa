@@ -132,8 +132,13 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        // Botón para volver a la pantalla de bienvenida
+        // ✅ FIX: Botón para volver a la pantalla de bienvenida
+        // Abre WelcomeActivity explícitamente en lugar de hacer finish()
+        // Esto evita que la app se cierre si no hay activity en el stack
         binding.goToRegisterButton.setOnClickListener {
+            val intent = Intent(this, WelcomeActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            startActivity(intent)
             finish()
             @Suppress("DEPRECATION")
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)

@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * Repository que maneja toda la lógica de clases.
- * AHORA USA SUPABASE 100% (NO Firebase).
+ * Utiliza arquitectura offline-first con Supabase.
  *
  * Usa DOS fuentes de datos:
  * 1. Room (BD local) - Funciona sin internet
@@ -53,6 +53,7 @@ class ClaseRepository(context: Context) {
         archivoPdfUrl = this.archivoPdfUrl,
         archivoPdfNombre = this.archivoPdfNombre,
         creador = this.creador,
+        asignaturaId = this.asignaturaId,
         sincronizado = sincronizado
     )
 
@@ -70,7 +71,52 @@ class ClaseRepository(context: Context) {
                     fecha = entity.fecha,
                     archivoPdfUrl = entity.archivoPdfUrl,
                     archivoPdfNombre = entity.archivoPdfNombre,
-                    creador = entity.creador
+                    creador = entity.creador,
+                    asignaturaId = entity.asignaturaId
+                )
+            }
+        }
+    }
+
+    /**
+     * Obtiene clases de una asignatura específica (Flow para LiveData).
+     */
+    fun obtenerClasesPorAsignatura(asignaturaId: String): Flow<List<Clase>> {
+        return claseDao.obtenerClasesPorAsignatura(asignaturaId).map { entities ->
+            entities.map { entity ->
+                Clase(
+                    id = entity.id,
+                    nombre = entity.nombre,
+                    descripcion = entity.descripcion,
+                    fecha = entity.fecha,
+                    archivoPdfUrl = entity.archivoPdfUrl,
+                    archivoPdfNombre = entity.archivoPdfNombre,
+                    creador = entity.creador,
+                    asignaturaId = entity.asignaturaId
+                )
+            }
+        }
+    }
+
+    /**
+     * Obtiene clases de múltiples asignaturas (para alumnos inscritos).
+     */
+    fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): Flow<List<Clase>> {
+        if (asignaturasIds.isEmpty()) {
+            return kotlinx.coroutines.flow.flowOf(emptyList())
+        }
+
+        return claseDao.obtenerClasesPorAsignaturas(asignaturasIds).map { entities ->
+            entities.map { entity ->
+                Clase(
+                    id = entity.id,
+                    nombre = entity.nombre,
+                    descripcion = entity.descripcion,
+                    fecha = entity.fecha,
+                    archivoPdfUrl = entity.archivoPdfUrl,
+                    archivoPdfNombre = entity.archivoPdfNombre,
+                    creador = entity.creador,
+                    asignaturaId = entity.asignaturaId
                 )
             }
         }
@@ -90,7 +136,8 @@ class ClaseRepository(context: Context) {
                     fecha = entity.fecha,
                     archivoPdfUrl = entity.archivoPdfUrl,
                     archivoPdfNombre = entity.archivoPdfNombre,
-                    creador = entity.creador
+                    creador = entity.creador,
+                    asignaturaId = entity.asignaturaId
                 )
             } else null
         } catch (_: Exception) {
@@ -101,8 +148,7 @@ class ClaseRepository(context: Context) {
     /**
      * Sincroniza clases desde Supabase a Room.
      */
-    suspend fun sincronizarDesdeFirestore() {
-        // Renombrado para mantener compatibilidad, pero ahora usa Supabase
+    suspend fun sincronizarDesdeSupabase() {
         try {
             // PASO 1: Subir clases pendientes desde Room a Supabase
             val clasesNoSincronizadas = claseDao.obtenerNoSincronizadas()
@@ -177,14 +223,13 @@ class ClaseRepository(context: Context) {
         onError: (String) -> Unit
     ) {
         try {
-            // Generar ID si no existe
-            val claseConId = if (clase.id.isEmpty()) {
-                clase.copy(id = "clase_${'$'}{System.currentTimeMillis()}_${'$'}{uid.take(8)}")
-            } else {
-                clase
+            // El ID ya debe venir generado desde el ViewModel
+            if (clase.id.isEmpty()) {
+                onError("Error: La clase debe tener un ID válido")
+                return
             }
 
-            val result = supabaseRepo.crearClase(claseConId)
+            val result = supabaseRepo.crearClase(clase)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase creada exitosamente en Supabase")
@@ -194,10 +239,10 @@ class ClaseRepository(context: Context) {
                 onFailure = { error ->
                     Log.e("ClaseRepository", "❌ Error creando clase en Supabase: $error")
                     // Guardar localmente con sincronizado = false
-                    claseDao.insertarClase(claseConId.toEntityLocal(false))
+                    claseDao.insertarClase(clase.toEntityLocal(false))
                     Log.d(
                         "ClaseRepository",
-                        "💾 Clase guardada localmente por error en Supabase: ${'$'}{claseConId.id}"
+                        "💾 Clase guardada localmente por error en Supabase: ${clase.id}"
                     )
                     onSuccess() // Consideramos éxito local para la UI
                     // No llamamos onError aquí ya que la guardamos localmente
@@ -205,15 +250,17 @@ class ClaseRepository(context: Context) {
             )
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error general en crearClase: $e")
-            // Guardar localmente con sincronizado = false
-            val claseLocal =
-                clase.copy(id = clase.id.ifEmpty { "clase_${'$'}{System.currentTimeMillis()}_${'$'}{uid.take(8)}" })
-            claseDao.insertarClase(claseLocal.toEntityLocal(false))
-            Log.d(
-                "ClaseRepository",
-                "💾 Clase guardada localmente por excepción: ${'$'}{claseLocal.id}"
-            )
-            onSuccess() // Consideramos éxito local para la UI
+            // Guardar localmente con sincronizado = false si tiene ID válido
+            if (clase.id.isNotEmpty()) {
+                claseDao.insertarClase(clase.toEntityLocal(false))
+                Log.d(
+                    "ClaseRepository",
+                    "💾 Clase guardada localmente por excepción: ${clase.id}"
+                )
+                onSuccess() // Consideramos éxito local para la UI
+            } else {
+                onError("Error: No se pudo crear la clase - ID inválido")
+            }
         }
     }
 
@@ -420,14 +467,14 @@ class ClaseRepository(context: Context) {
                 nombre = "Introducción a Desarrollo Android con Kotlin",
                 descripcion = """
                     En esta clase exploraremos los fundamentos del desarrollo móvil Android utilizando Kotlin.
-                    
+
                     Actividades:
                     • Configuración del entorno de desarrollo
                     • Sintaxis básica de Kotlin
                     • Creación de la primera aplicación
                     • Arquitectura MVVM
                     • Integración con Supabase
-                    
+
                     Material incluido: Guía completa en PDF con ejemplos prácticos.
                 """.trimIndent(),
                 fecha = "Lunes 4 de Noviembre, 14:00hrs",

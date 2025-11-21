@@ -70,7 +70,7 @@ class ListaClasesActivity : AppCompatActivity() {
         setupObservers()
         setupListeners()
 
-        viewModel.sincronizarConFirestore()
+        viewModel.sincronizarConSupabase()
     }
 
     private fun setupRecyclerView() {
@@ -79,6 +79,8 @@ class ListaClasesActivity : AppCompatActivity() {
             onClaseClick = { clase ->
                 val intent = Intent(this, DetalleClaseActivity::class.java)
                 intent.putExtra("CLASE_ID", clase.id)
+                // ✅ CORREGIDO: Añadir flag ES_ALUMNO=false para que docente vea botones IA
+                intent.putExtra("ES_ALUMNO", false)
                 startActivity(intent)
             },
             onEditarClick = { clase ->
@@ -275,7 +277,7 @@ class ListaClasesActivity : AppCompatActivity() {
                                     btnGuardar.isEnabled = true
                                     tempPdfUri = ""
                                     tempPdfName = ""
-                                    viewModel.sincronizarConFirestore()
+                                    viewModel.sincronizarConSupabase()
                                 }
                             },
                             onError = { error ->
@@ -421,7 +423,7 @@ class ListaClasesActivity : AppCompatActivity() {
                             dialog.dismiss()
                             isSaving = false
                             btnGuardar.isEnabled = true
-                            viewModel.sincronizarConFirestore()
+                            viewModel.sincronizarConSupabase()
                         }
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
@@ -466,7 +468,7 @@ class ListaClasesActivity : AppCompatActivity() {
                         "✅ Clase eliminada",
                         Toast.LENGTH_SHORT
                     ).show()
-                    viewModel.sincronizarConFirestore()
+                    viewModel.sincronizarConSupabase()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {

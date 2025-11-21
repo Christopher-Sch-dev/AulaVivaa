@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * Repository que maneja toda la lógica de autenticación.
- * AHORA USA SUPABASE 100% (NO Firebase).
+ * Utiliza Supabase Auth y gestión de usuarios.
  *
  * Adaptador entre Activities y SupabaseAuthManager.
  */

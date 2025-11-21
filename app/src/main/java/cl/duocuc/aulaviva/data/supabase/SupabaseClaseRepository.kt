@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
  * Maneja CRUD en Postgres + Storage para PDFs.
  * Sincroniza con Room (caché local).
  *
- * REEMPLAZA 100% ClaseRepository con Firebase.
+ * Implementa arquitectura offline-first con Supabase.
  */
 class SupabaseClaseRepository(private val claseDao: ClaseDao) {
 
@@ -47,7 +47,8 @@ class SupabaseClaseRepository(private val claseDao: ClaseDao) {
                 fecha = claseConCreador.fecha,
                 archivo_pdf_url = claseConCreador.archivoPdfUrl,
                 archivo_pdf_nombre = claseConCreador.archivoPdfNombre,
-                creador = claseConCreador.creador
+                creador = claseConCreador.creador,
+                asignatura_id = claseConCreador.asignaturaId
             )
 
             // Insertar en Postgres
@@ -276,7 +277,8 @@ data class ClaseDTO(
     val fecha: String,
     val archivo_pdf_url: String = "",
     val archivo_pdf_nombre: String = "",
-    val creador: String
+    val creador: String,
+    val asignatura_id: String? = null
 )
 
 // ============ Extensiones de mapeo ============
@@ -289,7 +291,8 @@ fun ClaseDTO.toClase(): Clase {
         fecha = this.fecha,
         archivoPdfUrl = this.archivo_pdf_url,
         archivoPdfNombre = this.archivo_pdf_nombre,
-        creador = this.creador
+        creador = this.creador,
+        asignaturaId = this.asignatura_id ?: ""  // Convertir null a vacío
     )
 }
 
@@ -302,6 +305,7 @@ fun Clase.toEntity(): ClaseEntity {
         archivoPdfUrl = this.archivoPdfUrl,
         archivoPdfNombre = this.archivoPdfNombre,
         creador = this.creador,
+        asignaturaId = this.asignaturaId,
         sincronizado = true
     )
 }

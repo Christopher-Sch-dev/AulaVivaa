@@ -4,22 +4,40 @@
     <option name="migrationStatus" value="IN_PROGRESS" />
     <option name="pendingSessionIds">
       <option value="03e0f555-6fde-43f5-a7bb-d9be693c4eb9" />
+      <option value="05bdd304-5a88-4161-a62a-70719bbc93d1" />
       <option value="16db2dec-dcde-4200-bfcb-29460a9efb44" />
       <option value="27843963-4e30-420e-b960-d859fd5c38ae" />
       <option value="460b98c5-0651-4a62-8059-73712432dd16" />
       <option value="49f6519c-9011-460d-9004-4ad9b5615d29" />
       <option value="5a16e508-12d9-40d8-95e6-9be5a922e9c8" />
+      <option value="7082ca1d-07cd-496e-bc89-1a26dceb6d53" />
+      <option value="712e1567-60c4-42fd-841a-d11a5d44581a" />
       <option value="72290f73-d5df-4e02-b353-c976c26771b4" />
+      <option value="8c6c22bb-9ef9-45ed-856c-2be3e10ae177" />
+      <option value="91f4ec71-cb81-4477-9d4d-7767d661a62c" />
+      <option value="94464226-ef98-48e1-9202-c5c54ab61428" />
       <option value="9bf7bb71-31e5-4ee4-88d9-719eccde22d1" />
       <option value="aa091703-1fcc-4b16-b281-c059c8fe4be0" />
       <option value="abd6fe1b-e22c-40e4-84ea-2076cc1e77b1" />
+      <option value="ad2d3d83-b48b-4984-8d3b-aa2247408d71" />
+      <option value="b1895a4a-4b8d-4610-b057-b0b3d382965f" />
+      <option value="b8e5ace8-e6b7-4274-a899-2f2cc37c9dfe" />
       <option value="c62c1a13-009a-463b-93c1-fa95042c9182" />
       <option value="d9d54b89-00b3-410d-aaa0-41061f433c41" />
       <option value="e6ef2816-498a-4498-bfb2-26209da09573" />
+      <option value="f3315705-19c1-47ef-a24b-edbaacef5d1e" />
       <option value="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4" />
     </option>
     <option name="pendingTurns">
       <map>
+        <entry key="05bdd304-5a88-4161-a62a-70719bbc93d1">
+          <value>
+            <set>
+              <option value="30fa551c-1d83-46ee-a656-42f1386e6e23" />
+              <option value="dee5acd0-4391-448e-b9c5-518def9e5a7f" />
+            </set>
+          </value>
+        </entry>
         <entry key="27843963-4e30-420e-b960-d859fd5c38ae">
           <value>
             <set>
@@ -125,80 +143,80 @@
         <entry key="aa091703-1fcc-4b16-b281-c059c8fe4be0">
           <value>
             <set>
+              <option value="0cea0c53-0faf-4603-8352-074ff6de2b0a" />
               <option value="0d3f5008-b961-4b7f-8409-8df486800160" />
-              <option value="5f26659e-6f08-463f-b776-4d318554e542" />
-              <option value="9f87f35f-6fba-4538-946c-5e11d0e6445e" />
-              <option value="d48eaa0a-bf27-40a2-ace1-8814ab04cc6d" />
+              <option value="329e1ce4-ac67-4204-b649-53c2cd97331a" />
               <option value="56179b4d-d71d-4b9a-baf3-186f6a256aca" />
-              <option value="af5a453d-f9c9-4d2c-a895-14d2a4a6a8f6" />
-              <option value="c18975b8-cd9d-4e0d-b591-ac5d0228c454" />
-              <option value="ba8da70a-2b4e-4df8-943b-7de5d1419a3e" />
+              <option value="5f26659e-6f08-463f-b776-4d318554e542" />
               <option value="5f5d676c-39a4-4935-a28a-d46708ffb75a" />
               <option value="6538ab60-6ba2-433f-a7e2-de0c04817728" />
-              <option value="fee62f45-b78f-4f50-9ae7-836f576f43ab" />
-              <option value="d2c4aeac-e2d7-463e-9ec3-33c8059b17bd" />
-              <option value="e1f970a7-a6c6-4925-9235-6394de4e4a38" />
-              <option value="97da7479-4c55-437e-bba7-80cde8ddbd95" />
-              <option value="0cea0c53-0faf-4603-8352-074ff6de2b0a" />
-              <option value="97f58029-4a3f-4313-93c0-349bf4682a03" />
-              <option value="d9158345-8c8c-401e-8605-c67f21657848" />
               <option value="6b0ff517-7269-4cfe-ae01-ed57f42e724d" />
               <option value="81bea88c-9813-47b0-a30b-2c0c72b1808f" />
-              <option value="329e1ce4-ac67-4204-b649-53c2cd97331a" />
+              <option value="97da7479-4c55-437e-bba7-80cde8ddbd95" />
+              <option value="97f58029-4a3f-4313-93c0-349bf4682a03" />
+              <option value="9f87f35f-6fba-4538-946c-5e11d0e6445e" />
+              <option value="af5a453d-f9c9-4d2c-a895-14d2a4a6a8f6" />
+              <option value="ba8da70a-2b4e-4df8-943b-7de5d1419a3e" />
+              <option value="c18975b8-cd9d-4e0d-b591-ac5d0228c454" />
+              <option value="d2c4aeac-e2d7-463e-9ec3-33c8059b17bd" />
+              <option value="d48eaa0a-bf27-40a2-ace1-8814ab04cc6d" />
+              <option value="d9158345-8c8c-401e-8605-c67f21657848" />
+              <option value="e1f970a7-a6c6-4925-9235-6394de4e4a38" />
+              <option value="fee62f45-b78f-4f50-9ae7-836f576f43ab" />
             </set>
           </value>
         </entry>
         <entry key="abd6fe1b-e22c-40e4-84ea-2076cc1e77b1">
           <value>
             <set>
-              <option value="892cca17-7652-4552-8b8c-72c1d536b64d" />
-              <option value="4ef29ba3-4d38-42a8-a39b-d9bbb4be6835" />
-              <option value="51e9575f-03a7-43d0-9b45-ad3e9223ddf5" />
-              <option value="76a4e9cc-fb74-4e7a-aa8c-509f9d0e660d" />
-              <option value="b5e5a5e9-592f-4f20-ba50-6cadc32617e5" />
-              <option value="e22fd9d7-ff9f-449f-98b6-f6554598c39d" />
-              <option value="4e096008-235a-4c50-83d4-769a44cbba83" />
-              <option value="8c626597-1164-46a1-ba40-8e9ad719983e" />
-              <option value="6bb300fe-e30c-4e1d-854c-ab2a1e225f86" />
-              <option value="ee292467-8a23-4295-be99-d8df2c37856d" />
-              <option value="e121bef1-9cd8-4733-ab40-8657e80ab1e0" />
-              <option value="114ec248-a280-421f-bee9-7083dfcd9bad" />
-              <option value="7f02382f-615c-46af-a058-0b35f1d72ad4" />
-              <option value="e7d33f58-77dd-4889-be87-bda0bfce02af" />
-              <option value="d220463a-fd55-47bc-b3be-dc3d68fddfe8" />
-              <option value="94add446-1257-474e-b08d-af46cc68f378" />
-              <option value="450105b2-1434-41f4-8727-ca98094ab10d" />
-              <option value="2c3469e7-84d5-4206-a50c-f551b6d67f6c" />
-              <option value="a1fd29ff-1676-449d-8ada-9a6b726530b5" />
-              <option value="71d2063d-4ad8-4049-86cb-edae0c2a6fe6" />
-              <option value="0d1c32b5-be26-4a28-b457-e8e8b31b776d" />
-              <option value="33b6df15-4d7b-4c1a-ad36-3f3ccc66506f" />
-              <option value="2e037f22-073c-4ce4-b459-562498ad8176" />
-              <option value="7a1abf72-a277-456f-b334-6e76559dbb1e" />
-              <option value="7740be38-f196-4e44-9bd4-458ce1f62bcd" />
-              <option value="b2190cd2-7a15-4ff9-a4c8-af41cfa94924" />
               <option value="030fc9c3-3226-45e4-9e83-ce8e926baee7" />
-              <option value="8f9f2590-aefa-4f57-841f-e85c1caa9321" />
-              <option value="314c9345-f378-4ad6-969d-a16760c73c8c" />
-              <option value="2fc59cfb-b883-4a0e-b8d7-6530059d9a11" />
-              <option value="50ab60a9-bdf3-4149-891d-a9c3aecfd772" />
-              <option value="1d127c71-fd47-4aa8-96a6-ffed7bd2a67e" />
-              <option value="4c8ecfc0-e06d-43f5-9b52-ac9c8f2eb777" />
-              <option value="37f914da-ac3a-471c-915f-facbc51ea773" />
+              <option value="0d1c32b5-be26-4a28-b457-e8e8b31b776d" />
+              <option value="114ec248-a280-421f-bee9-7083dfcd9bad" />
               <option value="1ba7dece-5828-4bb9-b0f0-87cf2f315e42" />
+              <option value="1d127c71-fd47-4aa8-96a6-ffed7bd2a67e" />
+              <option value="2c3469e7-84d5-4206-a50c-f551b6d67f6c" />
+              <option value="2e037f22-073c-4ce4-b459-562498ad8176" />
+              <option value="2fc59cfb-b883-4a0e-b8d7-6530059d9a11" />
+              <option value="314c9345-f378-4ad6-969d-a16760c73c8c" />
+              <option value="33b6df15-4d7b-4c1a-ad36-3f3ccc66506f" />
+              <option value="37f914da-ac3a-471c-915f-facbc51ea773" />
+              <option value="450105b2-1434-41f4-8727-ca98094ab10d" />
+              <option value="4c8ecfc0-e06d-43f5-9b52-ac9c8f2eb777" />
+              <option value="4e096008-235a-4c50-83d4-769a44cbba83" />
+              <option value="4ef29ba3-4d38-42a8-a39b-d9bbb4be6835" />
+              <option value="50ab60a9-bdf3-4149-891d-a9c3aecfd772" />
+              <option value="51e9575f-03a7-43d0-9b45-ad3e9223ddf5" />
+              <option value="6bb300fe-e30c-4e1d-854c-ab2a1e225f86" />
+              <option value="71d2063d-4ad8-4049-86cb-edae0c2a6fe6" />
+              <option value="76a4e9cc-fb74-4e7a-aa8c-509f9d0e660d" />
+              <option value="7740be38-f196-4e44-9bd4-458ce1f62bcd" />
+              <option value="7a1abf72-a277-456f-b334-6e76559dbb1e" />
+              <option value="7f02382f-615c-46af-a058-0b35f1d72ad4" />
+              <option value="892cca17-7652-4552-8b8c-72c1d536b64d" />
+              <option value="8c626597-1164-46a1-ba40-8e9ad719983e" />
+              <option value="8f9f2590-aefa-4f57-841f-e85c1caa9321" />
+              <option value="94add446-1257-474e-b08d-af46cc68f378" />
+              <option value="a1fd29ff-1676-449d-8ada-9a6b726530b5" />
+              <option value="b2190cd2-7a15-4ff9-a4c8-af41cfa94924" />
+              <option value="b5e5a5e9-592f-4f20-ba50-6cadc32617e5" />
+              <option value="d220463a-fd55-47bc-b3be-dc3d68fddfe8" />
+              <option value="e121bef1-9cd8-4733-ab40-8657e80ab1e0" />
+              <option value="e22fd9d7-ff9f-449f-98b6-f6554598c39d" />
+              <option value="e7d33f58-77dd-4889-be87-bda0bfce02af" />
+              <option value="ee292467-8a23-4295-be99-d8df2c37856d" />
             </set>
           </value>
         </entry>
         <entry key="c62c1a13-009a-463b-93c1-fa95042c9182">
           <value>
             <set>
-              <option value="8b267ef6-c0a0-4ee5-8272-27dee9cf0a2a" />
               <option value="21c00dbb-4bdd-4b80-8981-9754a5cf2252" />
-              <option value="569dab06-b0b3-4ab9-865d-9610fdf56110" />
-              <option value="9768e1a4-be12-4948-b2ef-397e0d3578a9" />
               <option value="3244c005-430e-415f-9c2b-dc6f3a21f990" />
-              <option value="dae4de1d-b3ee-435e-9c30-e813cc3ea54f" />
+              <option value="569dab06-b0b3-4ab9-865d-9610fdf56110" />
               <option value="7d76c7aa-8765-42c0-adb7-6ac3b4fd6f53" />
+              <option value="8b267ef6-c0a0-4ee5-8272-27dee9cf0a2a" />
+              <option value="9768e1a4-be12-4948-b2ef-397e0d3578a9" />
+              <option value="dae4de1d-b3ee-435e-9c30-e813cc3ea54f" />
             </set>
           </value>
         </entry>
@@ -212,8 +230,8 @@
         <entry key="e6ef2816-498a-4498-bfb2-26209da09573">
           <value>
             <set>
-              <option value="3e1dd43b-af48-4bd7-bd78-0afbfc7f7b57" />
               <option value="0a84f41a-b516-4311-a454-e873909e5a11" />
+              <option value="3e1dd43b-af48-4bd7-bd78-0afbfc7f7b57" />
             </set>
           </value>
         </entry>
@@ -238,132 +256,14 @@
     </option>
     <pendingWorkingSetItems>
       <entry key="27843963-4e30-420e-b960-d859fd5c38ae" />
-      <entry key="49f6519c-9011-460d-9004-4ad9b5615d29">
-        <set>
-          <option value="file://$PROJECT_DIR$/app/src/main/res/values/dimens.xml" />
-          <option value="file://$PROJECT_DIR$/gradle.properties" />
-          <option value="file://$PROJECT_DIR$/build.gradle.kts" />
-          <option value="file://$PROJECT_DIR$/app/build.gradle.kts" />
-          <option value="file://$PROJECT_DIR$/CHECKLIST_PORTABILIDAD.md" />
-          <option value="file://$PROJECT_DIR$/RESUMEN_CORRECCIONES.md" />
-          <option value="file://$PROJECT_DIR$/SETUP_RAPIDO.md" />
-        </set>
-      </entry>
+      <entry key="49f6519c-9011-460d-9004-4ad9b5615d29" />
       <entry key="5a16e508-12d9-40d8-95e6-9be5a922e9c8" />
       <entry key="9bf7bb71-31e5-4ee4-88d9-719eccde22d1" />
-      <entry key="aa091703-1fcc-4b16-b281-c059c8fe4be0">
-        <set>
-          <option value="file://$PROJECT_DIR$/app/build.gradle.kts" />
-          <option value="file://$PROJECT_DIR$/build.gradle.kts" />
-          <option value="file://$PROJECT_DIR$/local.properties" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/supabase/SupabaseClient.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/supabase/SupabaseAuthManager.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/supabase/SupabaseClaseRepository.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/AuthRepository.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/ClaseRepository.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/WelcomeActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/main/PanelPrincipalActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/viewmodel/ClaseViewModel.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/DetalleClaseActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/ListaClasesActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/AulaVivaApplication.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
-          <option value="file://$PROJECT_DIR$/MIGRACION_SUPABASE.md" />
-          <option value="file://$PROJECT_DIR$/GUIA_RAPIDA.md" />
-          <option value="file://$PROJECT_DIR$/SUPABASE_VERIFICACION.md" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/UsuarioRepository.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/LoginActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/ai/GeminiHelper.kt" />
-          <option value="file://$PROJECT_DIR$/CHECKLIST_FINAL.md" />
-          <option value="file://$PROJECT_DIR$/app/src/main/res/values/themes.xml" />
-          <option value="file://$PROJECT_DIR$/app/src/main/res/values-night/themes.xml" />
-          <option value="file://$PROJECT_DIR$/settings.gradle.kts" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/pdf/PdfViewerActivity.kt" />
-        </set>
-      </entry>
-      <entry key="abd6fe1b-e22c-40e4-84ea-2076cc1e77b1">
-        <set>
-          <option value="file://$PROJECT_DIR$/app/src/main/res/values/strings.xml" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/ClaseRepository.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/pdf/PdfViewerActivity.kt" />
-          <option value="file://$PROJECT_DIR$/local.properties" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/AuthRepository.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/supabase/SupabaseAuthManager.kt" />
-          <option value="file://$PROJECT_DIR$/SOLUCION_API_KEY.md" />
-          <option value="file://$PROJECT_DIR$/diagnostico_supabase.sh" />
-          <option value="file://$PROJECT_DIR$/diagnostico_supabase.bat" />
-          <option value="file://$PROJECT_DIR$/CONFIGURACION_SUPABASE_OBLIGATORIA.md" />
-          <option value="file://$PROJECT_DIR$/LEER_PRIMERO.txt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/auth/LoginActivity.kt" />
-          <option value="file://$PROJECT_DIR$/RESUMEN_CORRECCIONES.md" />
-          <option value="file://$PROJECT_DIR$/EJECUTAR_EN_SUPABASE.sql" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/UsuarioRepository.kt" />
-          <option value="file://$PROJECT_DIR$/CREAR_USUARIO_PRUEBA.sql" />
-          <option value="file://$PROJECT_DIR$/AUTO_CONFIRMAR_USUARIOS.sql" />
-          <option value="file://$PROJECT_DIR$/REGISTRO_CORREGIDO.md" />
-          <option value="file://$PROJECT_DIR$/README.md" />
-          <option value="file://$PROJECT_DIR$/local.properties.template" />
-          <option value="file://$PROJECT_DIR$/GUIA_DUOC.md" />
-          <option value="file://$PROJECT_DIR$/CHECKLIST.md" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/IARepository.kt" />
-          <option value="file://$PROJECT_DIR$/CORRECCIONES_PDF_GEMINI.md" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/DetalleClaseActivity.kt" />
-          <option value="file://$PROJECT_DIR$/TODAS_LAS_IA_MEJORADAS.md" />
-          <option value="file://$PROJECT_DIR$/SCRIPTS_SUPABASE.sql" />
-          <option value="file://$PROJECT_DIR$/AUDITORIA_COMPLETA.md" />
-          <option value="file://$PROJECT_DIR$/LIMPIEZA_FINAL.md" />
-          <option value="file://$PROJECT_DIR$/app/build.gradle.kts" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/pdf/PdfViewerActivityNew.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_pdf_viewer.xml" />
-          <option value="file://$PROJECT_DIR$/PDF_VIEWER_NATIVO.md" />
-          <option value="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
-          <option value="file://$PROJECT_DIR$/SOLUCION_DEFINITIVA_PDF.md" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/utils/PdfUtils.kt" />
-          <option value="file://$PROJECT_DIR$/IMPLEMENTACION_FINAL_PDF.md" />
-          <option value="file://$PROJECT_DIR$/VERIFICACION_RUBRICA.md" />
-          <option value="file://$PROJECT_DIR$/GUION_PRESENTACION.md" />
-          <option value="file://$PROJECT_DIR$/MAPA_CODIGO_TECNICO.md" />
-          <option value="file://$PROJECT_DIR$/INSTRUCCIONES_DUOC.md" />
-          <option value="file://$PROJECT_DIR$/CREDENCIALES.txt" />
-          <option value="file://$PROJECT_DIR$/QUE_LLEVAR_MANANA.md" />
-        </set>
-      </entry>
-      <entry key="c62c1a13-009a-463b-93c1-fa95042c9182">
-        <set>
-          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/activity_lista_clases.xml" />
-          <option value="file://$PROJECT_DIR$/app/build.gradle.kts" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/ia/ResultadoIAActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/DetalleClaseActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/adapter/ClaseAdapter.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/res/layout/item_clase.xml" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/ListaClasesActivity.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/ClaseRepository.kt" />
-          <option value="file://$PROJECT_DIR$/CORRECCIONES_APLICADAS.md" />
-          <option value="file://$PROJECT_DIR$/QUICK_REFERENCE.md" />
-          <option value="file://$PROJECT_DIR$/GUIA_VISUAL.md" />
-          <option value="file://$PROJECT_DIR$/INSTRUCCIONES_COMPILACION.md" />
-          <option value="file://$PROJECT_DIR$/INDICE_DOCUMENTACION.md" />
-          <option value="file://$PROJECT_DIR$/gradle.properties" />
-          <option value="file://$PROJECT_DIR$/SOLUCION_ERROR_LINT_BLOQUEADO.md" />
-          <option value="file://$PROJECT_DIR$/ANALISIS_ARQUITECTURA_COMPLETO.md" />
-          <option value="file://$PROJECT_DIR$/FIREBASE_STORAGE_RULES.md" />
-          <option value="file://$PROJECT_DIR$/IMPLEMENTACION_FIREBASE_STORAGE.md" />
-          <option value="file://$PROJECT_DIR$/CHECKLIST_FINAL_FIREBASE.md" />
-          <option value="file://$PROJECT_DIR$/GUIA_TESTING_RAPIDA.md" />
-        </set>
-      </entry>
-      <entry key="d9d54b89-00b3-410d-aaa0-41061f433c41">
-        <set>
-          <option value="file://$PROJECT_DIR$/AUDITORIA_MIGRACION_FIREBASE_SUPABASE.md" />
-          <option value="file://$PROJECT_DIR$/RESUMEN_EJECUTIVO_MIGRACION.md" />
-          <option value="file://$PROJECT_DIR$/EQUIVALENCIAS_FIREBASE_SUPABASE.md" />
-        </set>
-      </entry>
-      <entry key="e6ef2816-498a-4498-bfb2-26209da09573">
-        <set>
-          <option value="file://$PROJECT_DIR$/app/build.gradle.kts" />
-        </set>
-      </entry>
+      <entry key="aa091703-1fcc-4b16-b281-c059c8fe4be0" />
+      <entry key="abd6fe1b-e22c-40e4-84ea-2076cc1e77b1" />
+      <entry key="c62c1a13-009a-463b-93c1-fa95042c9182" />
+      <entry key="d9d54b89-00b3-410d-aaa0-41061f433c41" />
+      <entry key="e6ef2816-498a-4498-bfb2-26209da09573" />
       <entry key="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4" />
     </pendingWorkingSetItems>
   </component>

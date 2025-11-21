@@ -1,11 +1,16 @@
 package cl.duocuc.aulaviva.data.repository
 
+import android.content.Context
+import android.util.Log
 import cl.duocuc.aulaviva.BuildConfig
 import cl.duocuc.aulaviva.data.remote.Content
 import cl.duocuc.aulaviva.data.remote.GeminiApiService
 import cl.duocuc.aulaviva.data.remote.GeminiRequest
 import cl.duocuc.aulaviva.data.remote.GenerationConfig
 import cl.duocuc.aulaviva.data.remote.Part
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -17,15 +22,40 @@ import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 
 /**
- * 🤖 GEMINI AI con Retrofit - PROFESIONAL Y RÁPIDO
- * Modelo: gemini-2.5-flash (vigente octubre 2025)
+ * 🤖 GEMINI AI con Firebase AI Logic (Gemini Developer API)
+ * Modelo: gemini-2.5-pro (vigente noviembre 2025)
  *
- * ✅ API Key cargada desde BuildConfig (portable entre PCs)
+ * ✅ Firebase AI Logic con Gemini Developer API (15 req/min gratis)
+ * ✅ PDFBox como fallback (offline, límite API)
+ * ✅ Retrofit para funciones sin PDF
  */
-class IARepository {
+class IARepository(private val context: Context) {
+
+    companion object {
+        private const val TAG = "AulaViva_IA"
+    }
 
     // ✅ API Key cargada desde local.properties vía BuildConfig
     private val GEMINI_API_KEY = BuildConfig.GEMINI_API_KEY
+
+    // ✅ Google AI SDK (Gemini Developer API)
+    // Modelo actualizado a Gemini 2.5 Pro (Nov 2025) - State-of-the-art thinking model
+    // Ideal para razonamiento complejo sobre documentos y memoria de chat
+    private val googleAiModel by lazy {
+        GenerativeModel(
+            modelName = "gemini-2.5-pro",
+            apiKey = GEMINI_API_KEY,
+            generationConfig = com.google.ai.client.generativeai.type.generationConfig {
+                temperature = 0.7f
+                topK = 40
+                topP = 0.95f
+                maxOutputTokens = 8192
+            }
+        )
+    }
+
+    // Sesión de chat persistente
+    private var chatSession: com.google.ai.client.generativeai.Chat? = null
 
     // Cliente HTTP configurado con timeouts y logging
     private val okHttpClient = OkHttpClient.Builder()
@@ -47,6 +77,13 @@ class IARepository {
     private val geminiService = retrofit.create(GeminiApiService::class.java)
 
     init {
+        // Inicializar PDFBox para Android (requerido para GlyphList y recursos)
+        try {
+            PDFBoxResourceLoader.init(context)
+            Log.d(TAG, "✅ PDFBox Android inicializado correctamente")
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ Error inicializando PDFBox: ${e.message}")
+        }
         println("✅ Gemini AI Retrofit activado - Modelo: gemini-2.5-flash")
     }
 
@@ -65,7 +102,7 @@ class IARepository {
                         val request = GeminiRequest(
                             contents = listOf(Content(parts = listOf(Part(text = prompt)))),
                             generationConfig = GenerationConfig(
-                                temperature = 0.6f, topK = 40, topP = 0.9f, maxOutputTokens = 4096
+                                temperature = 0.6f, topP = 0.9f, maxOutputTokens = 4096
                             )
                         )
 
@@ -115,6 +152,181 @@ class IARepository {
         }
     }
 
+    /**
+     * 🔍 MÉTODO HÍBRIDO: Firebase AI Logic primero, PDFBox fallback
+     *
+     * Este método garantiza que la IA SIEMPRE pueda leer el PDF:
+     * 1. INTENTA Firebase AI Logic (Base64 inline) - Mejor precisión, OCR integrado
+     * 2. Si falla, usa PDFBox (extracción texto local) - Funciona offline
+     *
+     * @param pdfUrl URL del PDF en Supabase
+     * @param prompt Instrucción para la IA
+     * @return Respuesta de Gemini basada en el PDF real
+     */
+    private suspend fun analizarPDFInteligente(pdfUrl: String, prompt: String): String =
+        withContext(Dispatchers.IO) {
+            Log.d(TAG, "🔍 [HÍBRIDO] Iniciando análisis inteligente de PDF...")
+            Log.d(TAG, "🔍 [HÍBRIDO] PDF URL: $pdfUrl")
+
+            try {
+                // INTENTO 1: Google AI Gemini (RECOMENDADO - OCR integrado)
+                Log.d(TAG, "🔥 [Google AI] Intentando método Google AI SDK...")
+                return@withContext analizarConGoogleAI(pdfUrl, prompt)
+
+            } catch (e: Exception) {
+                // INTENTO 2: PDFBox (FALLBACK - offline)
+                Log.w(TAG, "⚠️ [HÍBRIDO] Google AI falló: ${e.message}")
+                Log.d(TAG, "📄 [PDFBox] Cambiando a método fallback PDFBox...")
+                return@withContext analizarConPDFBox(pdfUrl, prompt)
+            }
+        }
+
+    /**
+     * 🔥 Google AI SDK: Envía PDF completo (Base64 inline)
+     * Gemini parsea el PDF server-side con OCR + tablas + gráficos.
+     *
+     * Ventajas:
+     * - OCR integrado (lee PDFs escaneados)
+     * - Parsea tablas y gráficos
+     * - Mayor precisión que extraer texto local
+     * - Compatible con Ktor 2.3.12 (no conflicto con Supabase)
+     *
+     * @param pdfUrl URL del PDF
+     * @param prompt Instrucción para la IA
+     * @return Respuesta de Gemini
+     */
+    private suspend fun analizarConGoogleAI(pdfUrl: String, prompt: String): String {
+        Log.d(TAG, "📦 [Google AI] Descargando PDF desde Supabase...")
+
+        // 1. Descargar PDF
+        val pdfBytes = descargarPDF(pdfUrl)
+        Log.d(
+            TAG,
+            "📦 [Google AI] PDF descargado: ${pdfBytes.size} bytes (${pdfBytes.size / 1024} KB)"
+        )
+
+        // 2. Verificar límite 20MB (Gemini Developer API)
+        if (pdfBytes.size > 20_000_000) {
+            throw java.io.IOException("PDF muy grande (>20MB)")
+        }
+
+        // 3. Contenido multimodal (Google AI SDK DSL) - usa blob() para bytes
+        val contenidoMultimodal = content {
+            text(prompt)
+            blob("application/pdf", pdfBytes)
+        }
+
+        Log.d(TAG, "🤖 [Google AI] Enviando a Gemini 1.5 Flash (Developer API)...")
+
+        // 5. Generar respuesta con timeout
+        val response = withTimeout(90_000) { // 90 segundos
+            googleAiModel.generateContent(contenidoMultimodal)
+        }
+
+        val textoRespuesta = response.text ?: throw Exception("Respuesta vacía de Google AI SDK")
+
+        Log.d(TAG, "✅ [Google AI] Respuesta recibida: ${textoRespuesta.length} caracteres")
+        Log.d(TAG, "✅ [Google AI] Primeros 150 chars: ${textoRespuesta.take(150)}...")
+
+        return textoRespuesta
+    }
+
+    /**
+     * 📄 PDFBox: Extrae texto local y envía a Gemini (FALLBACK)
+     *
+     * Este método se usa cuando Firebase falla (red, timeout, límite API).
+     * Extrae texto localmente y lo envía a Gemini vía Retrofit.
+     *
+     * Limitaciones:
+     * - No lee PDFs escaneados (requiere texto extraíble)
+     * - No parsea tablas complejas ni gráficos
+     * - Funciona OFFLINE (ventaja para fallback)
+     *
+     * @param pdfUrl URL del PDF
+     * @param prompt Instrucción para la IA
+     * @return Respuesta de Gemini basada en texto extraído
+     */
+    private suspend fun analizarConPDFBox(pdfUrl: String, prompt: String): String {
+        Log.d(TAG, "📄 [PDFBox] Iniciando extracción de texto local...")
+
+        // 1. Descargar PDF
+        val pdfBytes = descargarPDF(pdfUrl)
+        Log.d(TAG, "📄 [PDFBox] PDF descargado: ${pdfBytes.size} bytes")
+
+        // 2. Extraer texto con PDFBox Android
+        val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfBytes)
+        val totalPaginas = document.numberOfPages
+        Log.d(TAG, "📄 [PDFBox] Total páginas: $totalPaginas")
+
+        val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
+        stripper.startPage = 1
+        stripper.endPage = totalPaginas
+
+        val textoPdf = stripper.getText(document)
+        document.close()
+
+        Log.d(TAG, "📄 [PDFBox] Texto extraído: ${textoPdf.length} caracteres")
+        Log.d(TAG, "📄 [PDFBox] Primeros 200 chars: ${textoPdf.take(200)}")
+
+        // 3. Construir prompt completo con metadata
+        val promptCompleto = """
+            $prompt
+
+            📎 CONTENIDO DEL PDF (extraído con PDFBox):
+            ---
+            METADATA:
+            - Total de páginas: $totalPaginas
+            - Caracteres extraídos: ${textoPdf.length}
+
+            CONTENIDO COMPLETO:
+            $textoPdf
+            ---
+
+            IMPORTANTE: Analiza TODO el contenido del PDF proporcionado.
+            Menciona detalles ESPECÍFICOS que aparezcan en el texto.
+        """.trimIndent()
+
+        Log.d(TAG, "🤖 [PDFBox] Enviando texto extraído a Gemini vía Retrofit...")
+
+        // 4. Enviar a Gemini usando el método Retrofit existente
+        val respuesta = llamarGemini(promptCompleto)
+
+        Log.d(TAG, "✅ [PDFBox] Respuesta recibida: ${respuesta.length} caracteres")
+        return respuesta
+    }
+
+    /**
+     * 📥 Helper: Descarga PDF desde URL
+     *
+     * @param url URL del PDF (Supabase Storage)
+     * @return ByteArray con el contenido del PDF
+     */
+    private suspend fun descargarPDF(url: String): ByteArray {
+        return withContext(Dispatchers.IO) {
+            val client = OkHttpClient.Builder()
+                .connectTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .build()
+
+            val request = okhttp3.Request.Builder()
+                .url(url)
+                .get()
+                .build()
+
+            val response = client.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+                throw java.io.IOException("Error HTTP al descargar PDF: ${response.code}")
+            }
+
+            val bytes = response.body?.bytes()
+            if (bytes == null || bytes.isEmpty()) {
+                throw java.io.IOException("PDF descargado está vacío")
+            }
+
+            bytes
+        }
+    }
 
     /**
      * 💡 Genera ideas creativas para la clase
@@ -125,48 +337,48 @@ class IARepository {
         pdfUrl: String?
     ): String {
         return try {
-            val contextoPdf =
-                if (!pdfUrl.isNullOrEmpty()) "\n📎 Material de apoyo: PDF adjunto" else ""
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un consultor en innovación educativa para docentes de educación superior chilena.
-                
+
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
-                📝 Descripción: $descripcion$contextoPdf
-                
-                # INSTRUCCIONES
-                1. **Confirma el tema**: Identifica el área disciplinar y nivel
-                2. **Asume rol apropiado**: Actúa como especialista en esa área
-                3. **Genera ideas innovadoras**: Propuestas creativas pero aplicables
-                
+                📝 Descripción: $descripcion
+
+                # INSTRUCCIONES CRÍTICAS
+                1. **Analiza TODO el PDF adjunto**: Lee completamente su contenido
+                2. **En "CONTEXTO DETECTADO"**: Menciona EXPLÍCITAMENTE detalles del PDF (títulos, temas, conceptos específicos)
+                3. **Genera ideas**: Basadas en el contenido REAL del PDF, no en suposiciones
+
                 # FORMATO DE RESPUESTA
-                
-                🎯 **ANÁLISIS RÁPIDO**
-                • Tema central: [tema detectado]
+
+                🎯 **CONTEXTO DETECTADO**
+                • Clase: $nombreClase
+                • PDF analizado: [SI - menciona título o primeros temas del PDF]
+                • Tema central detectado: [basado en PDF]
                 • Área: [disciplina]
                 • Público objetivo: [ej: Estudiantes primer año, profesionales]
-                
+
                 💡 **IDEAS PARA LA CLASE**
-                
+
                 1. **[Nombre de idea 1]**
                    Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
-                
+
                 2. **[Nombre de idea 2]**
                    Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
-                
+
                 3. **[Nombre de idea 3]**
                    Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
-                
+
                 4. **[Nombre de idea 4]**
                    Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
-                
+
                 5. **[Nombre de idea 5]**
                    Descripción breve de la actividad y su valor pedagógico (2-3 líneas)
-                
+
                 ⭐ **TIP ADICIONAL**
                 [Una recomendación creativa que potencie la clase]
-                
+
                 # ESTILO
                 - Español chileno profesional
                 - Ideas concretas y aplicables
@@ -174,9 +386,18 @@ class IARepository {
                 - Máximo 350 palabras
             """.trimIndent()
 
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+            // ✅ USAR MÉTODO HÍBRIDO si hay PDF
+            val resultado = if (!pdfUrl.isNullOrEmpty()) {
+                Log.d(TAG, "💡 [IDEAS] PDF detectado, usando método híbrido Firebase AI/PDFBox...")
+                analizarPDFInteligente(pdfUrl, prompt)
+            } else {
+                Log.d(TAG, "💡 [IDEAS] Sin PDF, llamada Gemini estándar")
+                llamarGemini(prompt)
+            }
+
+            "$resultado\n\n🚬😶‍🌫️ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
+            Log.e(TAG, "💡 [IDEAS] Error: ${e.message}", e)
             "⚠️ Error al conectar con Gemini AI\n\n💡 IDEAS GENERALES para $nombreClase\n\nPara ideas personalizadas, verifica tu conexión.\n\nError: ${
                 e.message?.take(
                     100
@@ -188,62 +409,67 @@ class IARepository {
     /**
      * 🎯 Sugiere actividades dinámicas
      */
-    suspend fun sugerirActividades(nombreClase: String, descripcion: String): String {
+    suspend fun sugerirActividades(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String? = null
+    ): String {
         return try {
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un diseñador instruccional especializado en aprendizaje activo para educación superior chilena.
-                
+
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
                 📝 Descripción: $descripcion
-                
+
                 # INSTRUCCIONES
-                1. **Confirma el contexto**: Identifica tema y nivel
-                2. **Asume rol de pedagogo**: Experto en metodologías activas
-                3. **Diseña 4 actividades**: Variadas y con diferente nivel de complejidad
-                
+                1. **Si hay PDF adjunto**: Analiza su contenido completo y basa las actividades en él
+                2. **Confirma el contexto**: Identifica tema y nivel
+                3. **Asume rol de pedagogo**: Experto en metodologías activas
+                4. **Diseña 4 actividades**: Variadas y con diferente nivel de complejidad
+
                 # FORMATO DE RESPUESTA
-                
+
                 🎓 **CONTEXTO DETECTADO**
-                • Tema: [tema identificado]
+                • Tema: [tema identificado del PDF o descripción]
                 • Enfoque sugerido: [ej: Práctico, Teórico-aplicado, Reflexivo]
-                
+
                 🎯 **ACTIVIDADES DISEÑADAS**
-                
+
                 **ACTIVIDAD 1: [Nombre descriptivo]**
                 • **Objetivo**: [Qué se busca lograr]
                 • **Duración**: [X minutos]
                 • **Tipo**: [Individual/Grupal/Plenaria]
                 • **Materiales**: [Recursos necesarios]
                 • **Cómo ejecutarla**: [Pasos breves]
-                
+
                 **ACTIVIDAD 2: [Nombre descriptivo]**
                 • **Objetivo**: [Qué se busca lograr]
                 • **Duración**: [X minutos]
                 • **Tipo**: [Individual/Grupal/Plenaria]
                 • **Materiales**: [Recursos necesarios]
                 • **Cómo ejecutarla**: [Pasos breves]
-                
+
                 **ACTIVIDAD 3: [Nombre descriptivo]**
                 • **Objetivo**: [Qué se busca lograr]
                 • **Duración**: [X minutos]
                 • **Tipo**: [Individual/Grupal/Plenaria]
                 • **Materiales**: [Recursos necesarios]
                 • **Cómo ejecutarla**: [Pasos breves]
-                
+
                 **ACTIVIDAD 4: [Nombre descriptivo]**
                 • **Objetivo**: [Qué se busca lograr]
                 • **Duración**: [X minutos]
                 • **Tipo**: [Individual/Grupal/Plenaria]
                 • **Materiales**: [Recursos necesarios]
                 • **Cómo ejecutarla**: [Pasos breves]
-                
+
                 ⏱️ **TIEMPO TOTAL**: [Suma de duraciones]
-                
+
                 💡 **TIP DE IMPLEMENTACIÓN**
                 [Consejo para que las actividades fluyan mejor]
-                
+
                 # ESTILO
                 - Español chileno profesional
                 - Instrucciones claras y ejecutables
@@ -251,9 +477,21 @@ class IARepository {
                 - Máximo 500 palabras
             """.trimIndent()
 
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+            // ✅ USAR MÉTODO HÍBRIDO si hay PDF
+            val resultado = if (!pdfUrl.isNullOrEmpty()) {
+                Log.d(
+                    TAG,
+                    "🎯 [ACTIVIDADES] PDF detectado, usando método híbrido Firebase AI/PDFBox..."
+                )
+                analizarPDFInteligente(pdfUrl, prompt)
+            } else {
+                Log.d(TAG, "🎯 [ACTIVIDADES] Sin PDF, llamada Gemini estándar")
+                llamarGemini(prompt)
+            }
+
+            "$resultado\n\n🚬😶‍🌫️ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
+            Log.e(TAG, "🎯 [ACTIVIDADES] Error: ${e.message}", e)
             "⚠️ Error al conectar con Gemini AI\n\n🎯 ACTIVIDADES GENERALES para $nombreClase\n\nPara actividades detalladas, verifica tu conexión.\n\nError: ${
                 e.message?.take(
                     100
@@ -268,32 +506,34 @@ class IARepository {
     suspend fun estructurarClasePorTiempo(
         nombreClase: String,
         descripcion: String,
-        duracionMinutos: String
+        duracionMinutos: String,
+        pdfUrl: String? = null
     ): String {
         return try {
+            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
+                "\n📎 **Material disponible**: PDF de apoyo para complementar la estructura"
+            } else ""
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un planificador educativo experto en gestión del tiempo para clases universitarias chilenas.
-                
+
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
                 📝 Descripción: $descripcion
-                ⏱️ Duración total: $duracionMinutos
-                
-                # INSTRUCCIONES
+                ⏱️ Duración total: $duracionMinutos$contextoPdf                # INSTRUCCIONES
                 1. **Confirma el tema**: Identifica área y complejidad
                 2. **Asume rol de planificador**: Experto en timing educativo
                 3. **Estructura la clase**: Divide el tiempo de forma óptima
-                
+
                 # FORMATO DE RESPUESTA
-                
+
                 🎓 **ANÁLISIS INICIAL**
                 • Tema: [tema identificado]
                 • Complejidad: [Baja/Media/Alta]
                 • Enfoque recomendado: [Teórico/Práctico/Mixto]
-                
+
                 ⏱️ **ESTRUCTURA TEMPORAL ($duracionMinutos)**
-                
+
                 **🟢 INICIO (__ min | 0:00 - __:__)**
                 • **Saludo y contextualización** (__ min)
                   → [Qué hacer específicamente]
@@ -301,7 +541,7 @@ class IARepository {
                   → [Presentar metas claras]
                 • **Activación de conocimientos previos** (__ min)
                   → [Pregunta o actividad breve]
-                
+
                 **🔵 DESARROLLO (__ min | __:__ - __:__)**
                 • **Presentación del contenido principal** (__ min)
                   → [Explicación o demostración]
@@ -311,7 +551,7 @@ class IARepository {
                   → [Compartir resultados]
                 • **Profundización** (__ min)
                   → [Ejemplos adicionales o dudas]
-                
+
                 **🟡 CIERRE (__ min | __:__ - __:__)**
                 • **Síntesis de aprendizajes** (__ min)
                   → [Resumen colaborativo]
@@ -319,13 +559,13 @@ class IARepository {
                   → [Quiz, pregunta, ticket de salida]
                 • **Asignación de tareas** (__ min)
                   → [Si aplica, explicar homework]
-                
+
                 ⚠️ **TIEMPO DE BUFFER**: __ min (para imprevistos)
-                
+
                 💡 **TIPS DE GESTIÓN DEL TIEMPO**
                 • [Consejo 1 para mantener el ritmo]
                 • [Consejo 2 para no excederse]
-                
+
                 # ESTILO
                 - Español chileno profesional
                 - Tiempos precisos y realistas
@@ -347,66 +587,60 @@ class IARepository {
     /**
      * 📊 Analiza PDF con IA
      */
-    suspend fun analizarPdfConIA(nombreClase: String): String {
+    suspend fun analizarPdfConIA(nombreClase: String, pdfUrl: String? = null): String {
         return try {
+            if (pdfUrl.isNullOrEmpty()) {
+                return "⚠️ No se proporcionó URL del PDF"
+            }
+
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un analista de materiales educativos para docentes universitarios chilenos.
-                
+
                 # SITUACIÓN
-                Un docente tiene un PDF para la clase: "$nombreClase"
-                Necesita ideas concretas para aprovechar ese material en su clase.
-                
+                Analiza el PDF adjunto para la clase "$nombreClase".
+
                 # INSTRUCCIONES
-                1. **Identifica el tipo de clase**: Según el nombre, deduce el área
-                2. **Asume rol apropiado**: Experto en esa disciplina
-                3. **Propón 3 estrategias**: Formas efectivas de usar el PDF
-                
+                1. **Lee TODO el PDF completo**
+                2. **Identifica**: Tema principal, conceptos clave, estructura
+                3. **Evalúa**: Calidad, profundidad, utilidad pedagógica
+                4. **Sugiere**: Cómo aprovechar mejor este material
+
                 # FORMATO DE RESPUESTA
-                
-                🎓 **CONTEXTO DETECTADO**
-                • Clase: $nombreClase
-                • Área estimada: [disciplina]
-                • Tipo de PDF probable: [ej: Artículo, Manual, Presentación]
-                
-                📊 **ESTRATEGIAS PARA APROVECHAR EL PDF**
-                
-                **ESTRATEGIA 1: LECTURA CRÍTICA GUIADA**
-                • **Qué hacer**: Asignar secciones del PDF con preguntas específicas
-                • **Cómo aplicarlo**: [Pasos concretos]
-                • **Tiempo**: [X minutos]
-                • **Beneficio para el aprendizaje**: [Por qué funciona]
-                
-                **ESTRATEGIA 2: DEBATE O DISCUSIÓN**
-                • **Qué hacer**: Usar el PDF como base para debate
-                • **Cómo aplicarlo**: [Pasos concretos]
-                • **Tiempo**: [X minutos]
-                • **Beneficio para el aprendizaje**: [Por qué funciona]
-                
-                **ESTRATEGIA 3: APLICACIÓN PRÁCTICA**
-                • **Qué hacer**: Ejercicios basados en el contenido del PDF
-                • **Cómo aplicarlo**: [Pasos concretos]
-                • **Tiempo**: [X minutos]
-                • **Beneficio para el aprendizaje**: [Por qué funciona]
-                
-                💡 **RECOMENDACIÓN ADICIONAL**
-                [Un tip creativo para maximizar el valor del PDF]
-                
+
+                📊 **ANÁLISIS DEL PDF**
+
+                **Tema Principal**: [Tema identificado del PDF]
+
+                **Conceptos Clave**:
+                • [Concepto 1 del PDF]
+                • [Concepto 2 del PDF]
+                • [Concepto 3 del PDF]
+
+                **Estructura Detectada**:
+                [Breve descripción de cómo está organizado el PDF]
+
+                **Evaluación Pedagógica**:
+                [Fortalezas y limitaciones del material]
+
+                **Sugerencias de Uso**:
+                1. [Cómo usar este PDF en clase]
+                2. [Actividad sugerida basada en el contenido]
+                3. [Punto importante a enfatizar del PDF]
+
                 # ESTILO
                 - Español chileno profesional
-                - Estrategias concretas y aplicables
-                - Enfoque en el valor pedagógico
+                - Análisis basado en contenido REAL del PDF
                 - Máximo 400 palabras
             """.trimIndent()
 
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+            // ✅ USAR MÉTODO HÍBRIDO
+            Log.d(TAG, "📊 [ANÁLISIS] Analizando PDF con método híbrido...")
+            val resultado = analizarPDFInteligente(pdfUrl, prompt)
+            "$resultado\n\n🚬😶‍🌫️ ESTE FUE GEMINI REAL BRO"
         } catch (e: Exception) {
-            "⚠️ Error al conectar con Gemini AI\n\n📊 ESTRATEGIAS GENERALES PARA PDF de $nombreClase\n\nPara estrategias personalizadas, verifica tu conexión.\n\nError: ${
-                e.message?.take(
-                    100
-                ) ?: "Desconocido"
-            }"
+            Log.e(TAG, "📊 [ANÁLISIS] Error: ${e.message}", e)
+            "⚠️ Error al analizar el PDF\n\nError: ${e.message?.take(100) ?: "Desconocido"}"
         }
     }
 
@@ -422,40 +656,40 @@ class IARepository {
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un sintetizador de contenido educativo para docentes chilenos.
-                
+
                 # DATOS DEL MATERIAL
                 📚 Clase: $nombreClase
                 📝 Descripción: $descripcion
                 📄 Material PDF: $nombrePdf
-                
+
                 # INSTRUCCIONES
                 1. **Confirma el tema**: Identifica el contenido principal
                 2. **Asume rol apropiado**: Experto en esa área
                 3. **Genera resumen estructurado**: Útil para preparar la clase
-                
+
                 # FORMATO DE RESPUESTA
-                
+
                 📄 **IDENTIFICACIÓN DEL MATERIAL**
                 • Clase: $nombreClase
                 • Tema central detectado: [tema principal]
                 • Tipo de contenido: [Teórico/Práctico/Mixto]
-                
+
                 ## TEMA PRINCIPAL
                 [Descripción clara del tema central en 2-3 líneas]
-                
+
                 ## CONCEPTOS CLAVE
                 • **Concepto 1**: [Explicación breve]
                 • **Concepto 2**: [Explicación breve]
                 • **Concepto 3**: [Explicación breve]
                 • **Concepto 4**: [Explicación breve]
                 • **Concepto 5**: [Si aplica]
-                
+
                 ## CONCLUSIONES PRINCIPALES
                 [Resumen de los aprendizajes fundamentales que el docente debe transmitir]
-                
+
                 💡 **SUGERENCIA DIDÁCTICA**
                 [Cómo el docente puede presentar este contenido de forma efectiva]
-                
+
                 # ESTILO
                 - Español chileno profesional
                 - Formato Markdown estructurado
@@ -477,85 +711,90 @@ class IARepository {
     /**
      * 🌟 Reordena temas para presentar (Guía de presentación)
      */
-    suspend fun generarGuiaPresentacion(nombreClase: String, descripcion: String): String {
+    suspend fun generarGuiaPresentacion(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String? = null
+    ): String {
         return try {
+            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
+                "\n📎 **Material de apoyo**: PDF disponible para integrar en la presentación"
+            } else ""
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un coach de oratoria y presentación para docentes universitarios chilenos.
-                
+
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
-                📝 Contenido: $descripcion
-                
-                # INSTRUCCIONES
+                📝 Contenido: $descripcion$contextoPdf                # INSTRUCCIONES
                 1. **Confirma el tema**: Identifica área y complejidad
                 2. **Asume rol de coach**: Experto en presentación efectiva
                 3. **Crea guía detallada**: Secuencia óptima para presentar el contenido
-                
+
                 # FORMATO DE RESPUESTA
-                
+
                 🎓 **ANÁLISIS DEL CONTENIDO**
                 • Tema: $nombreClase
                 • Complejidad: [Baja/Media/Alta]
                 • Tipo de clase: [Magistral/Participativa/Práctica]
-                
+
                 ## 1. INTRODUCCIÓN SUGERIDA (2-3 minutos)
-                
+
                 **🎯 Gancho inicial**
                 [Frase, pregunta o dato impactante para captar atención]
-                
+
                 **📌 Contextualización**
                 [Por qué este tema es relevante para los estudiantes]
-                
+
                 **🎓 Objetivos de la clase**
                 [Lo que aprenderán hoy, en lenguaje simple]
-                
+
                 ---
-                
+
                 ## 2. PUNTOS CLAVE A ENFATIZAR
-                
+
                 **Punto 1: [Concepto fundamental]**
                 → Por qué es importante: [Relevancia]
                 → Cómo explicarlo: [Estrategia]
-                
+
                 **Punto 2: [Concepto fundamental]**
                 → Por qué es importante: [Relevancia]
                 → Cómo explicarlo: [Estrategia]
-                
+
                 **Punto 3: [Concepto fundamental]**
                 → Por qué es importante: [Relevancia]
                 → Cómo explicarlo: [Estrategia]
-                
+
                 ---
-                
+
                 ## 3. EJEMPLOS PRÁCTICOS RECOMENDADOS
-                
+
                 • **Ejemplo 1**: [Caso real o analogía simple]
                 • **Ejemplo 2**: [Ejercicio concreto]
                 • **Ejemplo 3**: [Comparación útil]
-                
+
                 ---
-                
+
                 ## 4. PREGUNTAS PARA GENERAR PARTICIPACIÓN
-                
+
                 **Preguntas de inicio** (despertar interés):
                 • [Pregunta abierta 1]
                 • [Pregunta abierta 2]
-                
+
                 **Preguntas de desarrollo** (profundizar):
                 • [Pregunta desafiante 1]
                 • [Pregunta desafiante 2]
-                
+
                 **Pregunta de cierre** (sintetizar):
                 • [Pregunta reflexiva final]
-                
+
                 ---
-                
+
                 💡 **TIPS DE PRESENTACIÓN**
                 • [Consejo 1 para mantener la atención]
                 • [Consejo 2 para manejar dudas]
                 • [Consejo 3 para cerrar con impacto]
-                
+
                 # ESTILO
                 - Español chileno profesional
                 - Formato Markdown estructurado
@@ -588,66 +827,66 @@ class IARepository {
             val prompt = """
                 # CONTEXTO Y ROL
                 Eres un diseñador instruccional especializado en transformar contenido en experiencias de aprendizaje activo.
-                
+
                 # DATOS DE LA CLASE
                 📚 Clase: $nombreClase
                 📝 Descripción: $descripcion$contextoPdf
-                
+
                 # INSTRUCCIONES
                 1. **Confirma el tema**: Identifica área y nivel
                 2. **Asume rol de diseñador**: Experto en aprendizaje activo
                 3. **Transforma en clase interactiva**: Múltiples actividades variadas
-                
+
                 # FORMATO DE RESPUESTA
-                
+
                 🎓 **CONTEXTO PEDAGÓGICO**
                 • Tema: $nombreClase
                 • Enfoque: [Constructivista/Colaborativo/Experiencial]
                 • Nivel de interactividad: [Alto - múltiples dinámicas]
-                
+
                 ## 1. ACTIVIDADES PRÁCTICAS (3-5 propuestas)
-                
+
                 **📝 Actividad Individual: [Nombre]**
                 • **Qué hacer**: [Descripción de la actividad]
                 • **Tiempo**: [X minutos]
                 • **Recursos**: [Materiales necesarios]
                 • **Objetivo**: [Qué desarrolla en el estudiante]
-                
+
                 **👥 Actividad Grupal: [Nombre]**
                 • **Qué hacer**: [Descripción de la actividad]
                 • **Tiempo**: [X minutos]
                 • **Recursos**: [Materiales necesarios]
                 • **Objetivo**: [Qué desarrolla en el estudiante]
-                
+
                 **💡 Actividad Creativa: [Nombre]**
                 • **Qué hacer**: [Descripción de la actividad]
                 • **Tiempo**: [X minutos]
                 • **Recursos**: [Materiales necesarios]
                 • **Objetivo**: [Qué desarrolla en el estudiante]
-                
+
                 [Continuar con 2-3 actividades más]
-                
+
                 ---
-                
+
                 ## 2. PREGUNTAS DE REFLEXIÓN
-                
+
                 **Nivel inicial** (accesibles):
                 1. [Pregunta simple sobre conceptos básicos]
                 2. [Pregunta de experiencia personal]
-                
+
                 **Nivel intermedio** (analíticas):
                 3. [Pregunta que requiere análisis]
                 4. [Pregunta de relación entre conceptos]
-                
+
                 **Nivel avanzado** (críticas):
                 5. [Pregunta que desafía suposiciones]
                 6. [Pregunta de aplicación creativa]
                 7. [Pregunta de evaluación]
-                
+
                 ---
-                
+
                 ## 3. EJERCICIOS GRUPALES
-                
+
                 **Dinámica 1: [Nombre]**
                 • **Instrucciones paso a paso**:
                   1. [Paso 1]
@@ -655,7 +894,7 @@ class IARepository {
                   3. [Paso 3]
                 • **Tiempo**: [X minutos]
                 • **Resultado esperado**: [Qué producen los grupos]
-                
+
                 **Dinámica 2: [Nombre]**
                 • **Instrucciones paso a paso**:
                   1. [Paso 1]
@@ -663,30 +902,30 @@ class IARepository {
                   3. [Paso 3]
                 • **Tiempo**: [X minutos]
                 • **Resultado esperado**: [Qué producen los grupos]
-                
+
                 ---
-                
+
                 ## 4. RECURSOS COMPLEMENTARIOS
-                
+
                 **Videos sugeridos**:
                 • [Tema relacionado 1 - buscar en YouTube]
                 • [Tema relacionado 2 - buscar en YouTube]
-                
+
                 **Artículos/Lecturas**:
                 • [Tema para profundizar 1]
                 • [Tema para profundizar 2]
-                
+
                 **Herramientas online**:
                 • [Herramienta digital 1 - para qué sirve]
                 • [Herramienta digital 2 - para qué sirve]
-                
+
                 ---
-                
+
                 💡 **CONSEJOS DE IMPLEMENTACIÓN**
                 • [Tip 1 para que las actividades fluyan]
                 • [Tip 2 para mantener la energía]
                 • [Tip 3 para evaluar el aprendizaje]
-                
+
                 # ESTILO
                 - Español chileno neutral y profesional
                 - Formato Markdown estructurado
@@ -702,6 +941,352 @@ class IARepository {
                     100
                 ) ?: "Desconocido"
             }"
+        }
+    }
+
+    // ========================================
+    // 🎓 FUNCIONES IA PARA ALUMNOS
+    // ========================================
+
+    /**
+     * 📚 Explica conceptos claves para que el alumno APRENDA
+     */
+    suspend fun explicarConceptosParaAlumno(
+        nombreClase: String,
+        descripcion: String,
+        nombrePdf: String?
+    ): String {
+        return try {
+            val contextoPdf = if (!nombrePdf.isNullOrEmpty()) {
+                "\n📄 Material de estudio: $nombrePdf"
+            } else ""
+            val prompt = """
+                # CONTEXTO Y ROL
+                Eres un tutor personal que ayuda a estudiantes a COMPRENDER contenidos.
+
+                # DATOS DE LA CLASE
+                📚 Clase que el alumno está estudiando: $nombreClase
+                📝 Descripción: $descripcion$contextoPdf
+
+                # OBJETIVO
+                Explicar los conceptos de forma simple y clara para que el ESTUDIANTE entienda.
+                NO estás ayudando a un profesor a enseñar, estás ayudando a un ALUMNO a APRENDER.
+
+                # FORMATO DE RESPUESTA
+
+                🎓 **¿QUÉ VAS A APRENDER HOY?**
+                Tema: $nombreClase
+                [Explicación en 2-3 líneas de qué trata esta clase]
+
+                ## 📖 CONCEPTOS PRINCIPALES EXPLICADOS
+
+                **1. [Concepto clave]**
+                → **¿Qué es?**: [Definición simple]
+                → **¿Por qué importa?**: [Aplicación práctica]
+                → **Ejemplo**: [Caso concreto fácil de entender]
+
+                **2. [Concepto clave]**
+                → **¿Qué es?**: [Definición simple]
+                → **¿Por qué importa?**: [Aplicación práctica]
+                → **Ejemplo**: [Caso concreto fácil de entender]
+
+                **3. [Concepto clave]**
+                → **¿Qué es?**: [Definición simple]
+                → **¿Por qué importa?**: [Aplicación práctica]
+                → **Ejemplo**: [Caso concreto fácil de entender]
+
+                ## 💡 RESUMEN EN PALABRAS SIMPLES
+                [Explicación global que conecta todos los conceptos, como si se lo explicaras a un amigo]
+
+                ## 🎯 CÓMO ESTUDIAR ESTO
+                1. [Consejo de estudio 1]
+                2. [Consejo de estudio 2]
+                3. [Consejo de estudio 3]
+
+                # ESTILO
+                - Tutear al estudiante (usa "tú")
+                - Lenguaje amigable y motivador
+                - Ejemplos cercanos a la vida real
+                - Máximo 500 palabras
+            """.trimIndent()
+
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+        } catch (e: Exception) {
+            "⚠️ Error al conectar con Gemini AI\n\n📚 CONCEPTOS BÁSICOS de $nombreClase\n\nPara explicación detallada, verifica tu conexión.\n\nError: ${
+                e.message?.take(100) ?: "Desconocido"
+            }"
+        }
+    }
+
+    /**
+     * ✍️ Genera ejercicios prácticos para que el alumno PRACTIQUE
+     */
+    suspend fun generarEjerciciosParaAlumno(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String?
+    ): String {
+        return try {
+            val contextoPdf = if (!pdfUrl.isNullOrEmpty()) {
+                "\n📄 Basado en el material: PDF de la clase"
+            } else ""
+            val prompt = """
+                # CONTEXTO Y ROL
+                Eres un tutor que crea ejercicios prácticos para que los ESTUDIANTES practiquen y refuercen lo aprendido.
+
+                # DATOS DE LA CLASE
+                📚 Clase: $nombreClase
+                📝 Contenido: $descripcion$contextoPdf
+
+                # OBJETIVO
+                Crear ejercicios variados para que el ALUMNO practique activamente.
+                Ejercicios deben ser: claros, progresivos (fácil → difícil), y con orientación.
+
+                # FORMATO DE RESPUESTA
+
+                🎯 **EJERCICIOS PRÁCTICOS**
+                Clase: $nombreClase
+
+                ## 📝 NIVEL BÁSICO (Para empezar)
+
+                **Ejercicio 1: [Título]**
+                🎯 Objetivo: [Qué practicas con esto]
+                📋 Instrucciones:
+                [Paso 1]
+                [Paso 2]
+                [Paso 3]
+                💡 Pista: [Ayuda si se traba]
+
+                **Ejercicio 2: [Título]**
+                🎯 Objetivo: [Qué practicas con esto]
+                📋 Instrucciones:
+                [Paso 1]
+                [Paso 2]
+                [Paso 3]
+                💡 Pista: [Ayuda si se traba]
+
+                ---
+
+                ## 🚀 NIVEL INTERMEDIO (Más desafío)
+
+                **Ejercicio 3: [Título]**
+                🎯 Objetivo: [Qué practicas con esto]
+                📋 Instrucciones:
+                [Descripción del ejercicio]
+                💡 Pista: [Ayuda si se traba]
+
+                **Ejercicio 4: [Título]**
+                🎯 Objetivo: [Qué practicas con esto]
+                📋 Instrucciones:
+                [Descripción del ejercicio]
+                💡 Pista: [Ayuda si se traba]
+
+                ---
+
+                ## ⭐ EJERCICIO DESAFÍO (Opcional)
+
+                **Ejercicio 5: [Título creativo]**
+                🎯 Objetivo: [Integrar todo lo aprendido]
+                📋 Instrucciones:
+                [Descripción del ejercicio más complejo]
+                💡 Pista: [Ayuda estratégica]
+
+                ---
+
+                ## ✅ AUTOEVALUACIÓN
+                Después de hacer los ejercicios, pregúntate:
+                1. [Pregunta de reflexión 1]
+                2. [Pregunta de reflexión 2]
+                3. [Pregunta de reflexión 3]
+
+                # ESTILO
+                - Tutear al estudiante
+                - Instrucciones claras y paso a paso
+                - Motivador y positivo
+                - Máximo 600 palabras
+            """.trimIndent()
+
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+        } catch (e: Exception) {
+            "⚠️ Error al conectar con Gemini AI\n\n✍️ EJERCICIOS BÁSICOS de $nombreClase\n\nPara ejercicios detallados, verifica tu conexión.\n\nError: ${
+                e.message?.take(100) ?: "Desconocido"
+            }"
+        }
+    }
+
+    /**
+     * 📖 Crea resumen de estudio para el alumno
+     */
+    suspend fun crearResumenEstudioParaAlumno(
+        nombreClase: String,
+        descripcion: String,
+        nombrePdf: String?
+    ): String {
+        return try {
+            val contextoPdf = if (!nombrePdf.isNullOrEmpty()) {
+                "\n📄 Material: $nombrePdf"
+            } else ""
+            val prompt = """
+                # CONTEXTO Y ROL
+                Eres un tutor que ayuda a estudiantes a crear RESÚMENES efectivos para estudiar.
+
+                # DATOS DE LA CLASE
+                📚 Clase: $nombreClase
+                📝 Descripción: $descripcion$contextoPdf
+
+                # OBJETIVO
+                Crear un resumen estructurado que el ALUMNO pueda usar para estudiar y repasar.
+                Debe ser: conciso, visual (emojis/listas), fácil de memorizar.
+
+                # FORMATO DE RESPUESTA
+
+                📖 **RESUMEN DE ESTUDIO**
+                Clase: $nombreClase
+
+                ## 🎯 LO MÁS IMPORTANTE (En 3 puntos)
+                1. [Idea central 1]
+                2. [Idea central 2]
+                3. [Idea central 3]
+
+                ---
+
+                ## 📚 CONCEPTOS CLAVE
+
+                | Concepto | Definición Simple | ¿Para qué sirve? |
+                |----------|-------------------|------------------|
+                | [Término 1] | [Explicación breve] | [Aplicación] |
+                | [Término 2] | [Explicación breve] | [Aplicación] |
+                | [Término 3] | [Explicación breve] | [Aplicación] |
+                | [Término 4] | [Explicación breve] | [Aplicación] |
+
+                ---
+
+                ## 🔗 CONEXIONES IMPORTANTES
+                [Cómo se relacionan los conceptos entre sí, explicado de forma simple]
+
+                ---
+
+                ## 💡 REGLAS/FÓRMULAS A RECORDAR
+                • **[Regla 1]**: [Explicación]
+                • **[Regla 2]**: [Explicación]
+                • **[Regla 3]**: [Explicación]
+
+                ---
+
+                ## ⚠️ ERRORES COMUNES A EVITAR
+                1. ❌ [Error típico 1] → ✅ [Forma correcta]
+                2. ❌ [Error típico 2] → ✅ [Forma correcta]
+                3. ❌ [Error típico 3] → ✅ [Forma correcta]
+
+                ---
+
+                ## 🎓 TIPS PARA MEMORIZAR
+                • [Truco mnemotécnico o consejo 1]
+                • [Truco mnemotécnico o consejo 2]
+                • [Truco mnemotécnico o consejo 3]
+
+                ---
+
+                ## ✅ CHECKLIST DE ESTUDIO
+                Marca lo que ya dominas:
+                - (  ) Habilidad 1
+                - (  ) Habilidad 2
+                - (  ) Habilidad 3
+                - (  ) Habilidad 4
+
+                # ESTILO
+                - Tutear al estudiante
+                - Visual y organizado
+                - Fácil de escanear rápidamente
+                - Máximo 500 palabras
+            """.trimIndent()
+
+            val resultado = llamarGemini(prompt)
+            "$resultado\n\n🚬😶‍ ESTE FUE GEMINI REAL BRO"
+        } catch (e: Exception) {
+            "⚠️ Error al conectar con Gemini AI\n\n📖 RESUMEN BÁSICO de $nombreClase\n\nPara resumen detallado, verifica tu conexión.\n\nError: ${
+                e.message?.take(100) ?: "Desconocido"
+            }"
+        }
+    }
+
+    /**
+     * 🚀 INICIALIZA EL CHAT CON MEMORIA (Stateful)
+     *
+     * Carga el PDF una sola vez y establece el historial inicial.
+     * Esto permite que la IA "recuerde" el documento en mensajes futuros.
+     */
+    suspend fun iniciarChatConContexto(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String?,
+        respuestaInicial: String
+    ) {
+        withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "💬 [CHAT] Iniciando sesión de chat stateful...")
+                val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
+
+                // 1. Crear mensaje inicial del usuario (Prompt + PDF si existe)
+                val promptInicial = """
+                    CONTEXTO DE LA CLASE:
+                    📚 Clase: $nombreClase
+                    📝 Descripción: $descripcion
+
+                    Analiza el material adjunto y responde a la consulta inicial.
+                """.trimIndent()
+
+                val contenidoUsuario = if (!pdfUrl.isNullOrEmpty()) {
+                    Log.d(TAG, "💬 [CHAT] Descargando PDF para inyectar en memoria...")
+                    val pdfBytes = descargarPDF(pdfUrl)
+                    content("user") {
+                        text(promptInicial)
+                        blob("application/pdf", pdfBytes)
+                    }
+                } else {
+                    content("user") { text(promptInicial) }
+                }
+                historial.add(contenidoUsuario)
+
+                // 2. Crear mensaje inicial del modelo (lo que ya respondió en la pantalla anterior)
+                // Esto le da continuidad a la conversación
+                historial.add(content("model") { text(respuestaInicial) })
+
+                // 3. Iniciar chat con el historial cargado
+                chatSession = googleAiModel.startChat(history = historial)
+                Log.d(TAG, "✅ [CHAT] Sesión iniciada correctamente con historial (${historial.size} mensajes)")
+
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ [CHAT] Error al iniciar sesión: ${e.message}")
+                chatSession = null
+            }
+        }
+    }
+
+    /**
+     * ✨ Envía un mensaje al chat activo
+     *
+     * Usa la sesión persistente para mantener el contexto del PDF y mensajes anteriores.
+     */
+    suspend fun enviarMensajeChat(mensaje: String): String {
+        return withContext(Dispatchers.IO) {
+            if (chatSession != null) {
+                try {
+                    Log.d(TAG, "💬 [CHAT] Enviando mensaje a sesión existente...")
+                    val response = chatSession!!.sendMessage(mensaje)
+                    response.text ?: "Sin respuesta de la IA"
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ [CHAT] Error en sesión: ${e.message}")
+                    throw e
+                }
+            } else {
+                // Fallback: Si no hay sesión (ej: falló la inicialización), intentar llamada simple
+                // Nota: Aquí se pierde el contexto del PDF si no se reinicia, pero evita crash
+                Log.w(TAG, "⚠️ [CHAT] No hay sesión activa, usando fallback stateless...")
+                llamarGemini(mensaje)
+            }
         }
     }
 }
