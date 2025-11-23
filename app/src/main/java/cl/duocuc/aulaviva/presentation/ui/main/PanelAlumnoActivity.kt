@@ -39,6 +39,7 @@ class PanelAlumnoActivity : BaseActivity() {
 
         setupToolbar()
         setupRecyclerView()
+        setupSwipeRefresh()
         setupButtons()
         observeViewModel()
 
@@ -71,6 +72,13 @@ class PanelAlumnoActivity : BaseActivity() {
         }
     }
 
+    private fun setupSwipeRefresh() {
+        // Permitir que el usuario arrastre hacia abajo para forzar sincronización
+        binding.swipeRefresh.setOnRefreshListener {
+            viewModel.sincronizarAsignaturasInscritas()
+        }
+    }
+
     private fun observeViewModel() {
         // Obtener asignaturas donde el alumno está inscrito
         viewModel.asignaturasInscritas.observe(this) { asignaturas ->
@@ -82,6 +90,10 @@ class PanelAlumnoActivity : BaseActivity() {
                 binding.recyclerViewAsignaturas.visibility = View.VISIBLE
                 adapter.updateList(asignaturas)
             }
+        }
+        // Mostrar estado de carga en SwipeRefreshLayout
+        viewModel.isLoading.observe(this) { isLoading ->
+            binding.swipeRefresh.isRefreshing = isLoading
         }
 
         viewModel.inscripcionExitosa.observe(this) { asignatura ->

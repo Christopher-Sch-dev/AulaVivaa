@@ -93,28 +93,40 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <!-- Lista de asignaturas -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerViewAsignaturas"
+            <!-- SwipeRefresh que envuelve lista y estado vacío -->
+            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                android:id="@+id/swipeRefresh"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1"
-                android:nestedScrollingEnabled="true" />
+                android:layout_weight="1">
 
-            <!-- Mensaje cuando no hay asignaturas -->
-            <TextView
-                android:id="@+id/textViewEmpty"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="40dp"
-                android:gravity="center"
-                android:text="📭\n\nNo estás inscrito en ninguna asignatura\n\n¡Ingresa un código para comenzar!"
-                android:textColor="#7F8C8D"
-                android:textSize="14sp"
-                android:visibility="gone" />
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <!-- RecyclerView -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerViewAsignaturas"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:nestedScrollingEnabled="true" />
+
+                    <!-- Mensaje cuando no hay asignaturas (centrado) -->
+                    <TextView
+                        android:id="@+id/textViewEmpty"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="📭\n\nNo estás inscrito en ninguna asignatura\n\n¡Ingresa un código para comenzar!"
+                        android:textColor="#7F8C8D"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                </FrameLayout>
+
+            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
 
     <!-- Botón de cerrar sesión flotante -->
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
