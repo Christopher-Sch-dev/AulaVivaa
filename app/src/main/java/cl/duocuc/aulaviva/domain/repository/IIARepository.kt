@@ -13,4 +13,8 @@ interface IIARepository {
     suspend fun iniciarChatConContexto(nombreClase: String, descripcion: String, pdfUrl: String?, respuestaInicial: String)
     suspend fun enviarMensajeChat(mensaje: String): String
     suspend fun analizarPdfConIA(nombreClase: String, pdfUrl: String?): String
+    // Nuevos métodos para persistencia y reanálisis
+    suspend fun obtenerUltimaSesionParaClase(nombreClase: String): cl.duocuc.aulaviva.domain.model.ChatSession?
+    suspend fun obtenerMensajesDeSesion(sessionId: Long): List<cl.duocuc.aulaviva.domain.model.ChatMessage>
+    suspend fun reanalizarPdfParaSesion(sessionId: Long, pdfUrl: String?): String
 }

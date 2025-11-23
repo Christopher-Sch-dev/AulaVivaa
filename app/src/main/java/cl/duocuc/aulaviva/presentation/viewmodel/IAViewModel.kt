@@ -20,6 +20,7 @@ import cl.duocuc.aulaviva.domain.usecase.GenerarIdeasUseCase
 import cl.duocuc.aulaviva.domain.usecase.ResumirContenidoPdfUseCase
 import cl.duocuc.aulaviva.domain.usecase.SugerirActividadesUseCase
 import cl.duocuc.aulaviva.domain.usecase.IniciarChatUseCase
+import cl.duocuc.aulaviva.domain.usecase.ReanalizarPdfUseCase
 
 /**
  * ViewModel wrapper para lógica de IA.
@@ -43,6 +44,29 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
     private val crearResumenEstudioUseCase by lazy { CrearResumenEstudioUseCase(iaRepository) }
     private val iniciarChatUseCase by lazy { IniciarChatUseCase(iaRepository) }
     private val enviarMensajeChatUseCase by lazy { EnviarMensajeChatUseCase(iaRepository) }
+    private val reanalizarPdfUseCase by lazy { ReanalizarPdfUseCase(iaRepository) }
+
+    // Lectura de sesiones/mensajes
+    fun obtenerUltimaSesion(nombreClase: String) = liveData(Dispatchers.IO) {
+        try {
+            val s = iaRepository.obtenerUltimaSesionParaClase(nombreClase)
+            emit(Result.success(s))
+        } catch (e: Exception) { emit(Result.failure(e)) }
+    }
+
+    fun obtenerMensajes(sessionId: Long) = liveData(Dispatchers.IO) {
+        try {
+            val msgs = iaRepository.obtenerMensajesDeSesion(sessionId)
+            emit(Result.success(msgs))
+        } catch (e: Exception) { emit(Result.failure(e)) }
+    }
+
+    fun reanalizarPdf(sessionId: Long, pdfUrl: String?) = liveData(Dispatchers.IO) {
+        try {
+            val r = reanalizarPdfUseCase(sessionId, pdfUrl)
+            emit(Result.success(r))
+        } catch (e: Exception) { emit(Result.failure(e)) }
+    }
 
     fun iniciarChatConContexto(
         nombreClase: String,

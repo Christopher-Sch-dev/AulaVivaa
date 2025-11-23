@@ -430,4 +430,36 @@ class IARepository(private val context: Context) : IIARepository {
         }
     }
 
+    // --- Implementación de métodos de lectura/reanálisis definidos en IIARepository
+    override suspend fun obtenerUltimaSesionParaClase(nombreClase: String): cl.duocuc.aulaviva.domain.model.ChatSession? {
+        val s = chatDao.getLatestSessionForClass(nombreClase) ?: return null
+        return cl.duocuc.aulaviva.domain.model.ChatSession(
+            id = s.id,
+            nombreClase = s.nombreClase,
+            descripcion = s.descripcion,
+            pdfUrl = s.pdfUrl,
+            analysisText = s.analysisText,
+            startedAt = s.startedAt,
+            lastActivityAt = s.lastActivityAt
+        )
+    }
+
+    override suspend fun obtenerMensajesDeSesion(sessionId: Long): List<cl.duocuc.aulaviva.domain.model.ChatMessage> {
+        val msgs = chatDao.getMessagesForSession(sessionId)
+        return msgs.map { m -> cl.duocuc.aulaviva.domain.model.ChatMessage(id = m.id, sessionId = m.sessionId, sender = m.sender, message = m.message, createdAt = m.createdAt) }
+    }
+
+    override suspend fun reanalizarPdfParaSesion(sessionId: Long, pdfUrl: String?): String {
+        if (pdfUrl.isNullOrEmpty()) return "⚠️ No hay PDF para reanalizar"
+        val analysis = analizarPDFInteligente(pdfUrl, "Reanálisis solicitado para la sesión $sessionId")
+        // actualizar sesión con nuevo análisis
+        val sess = chatDao.getSessionById(sessionId)
+        if (sess != null) {
+            val updated = sess.copy(analysisText = analysis, lastActivityAt = System.currentTimeMillis())
+            chatDao.updateSession(updated)
+            chatDao.insertMessage(ChatMessageEntity(sessionId = sessionId, sender = "ai", message = analysis))
+        }
+        return analysis
+    }
+
 }
