@@ -13,7 +13,6 @@ import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 // Auth via ViewModels/Repositories (no direct Supabase calls from Activity)
 import com.google.android.material.datepicker.MaterialDatePicker
-import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

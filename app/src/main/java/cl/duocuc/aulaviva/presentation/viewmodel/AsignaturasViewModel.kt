@@ -9,7 +9,6 @@ import androidx.lifecycle.viewModelScope
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.data.repository.AsignaturasRepository
-import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
 import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.repository.ClaseRepository
 
