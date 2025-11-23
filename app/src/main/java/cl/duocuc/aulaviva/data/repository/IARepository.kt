@@ -43,7 +43,7 @@ class IARepository(private val application: Application) {
     // Ideal para razonamiento complejo sobre documentos y memoria de chat
     private val googleAiModel by lazy {
         GenerativeModel(
-            modelName = "gemini-2.5-pro",
+            modelName = "gemini-2.5-flash",
             apiKey = GEMINI_API_KEY,
             generationConfig = com.google.ai.client.generativeai.type.generationConfig {
                 temperature = 0.7f
@@ -1256,7 +1256,10 @@ class IARepository(private val application: Application) {
 
                 // 3. Iniciar chat con el historial cargado
                 chatSession = googleAiModel.startChat(history = historial)
-                Log.d(TAG, "✅ [CHAT] Sesión iniciada correctamente con historial (${historial.size} mensajes)")
+                Log.d(
+                    TAG,
+                    "✅ [CHAT] Sesión iniciada correctamente con historial (${historial.size} mensajes)"
+                )
 
             } catch (e: Exception) {
                 Log.e(TAG, "❌ [CHAT] Error al iniciar sesión: ${e.message}")
