@@ -250,93 +250,33 @@ class CrearEditarClaseActivity : BaseActivity() {
     }
 
     private fun subirPdfYActualizarClase(nombre: String, descripcion: String, fecha: String) {
-        lifecycleScope.launch {
-            try {
-                binding.buttonGuardar.isEnabled = false
-                binding.buttonGuardar.text = "Subiendo PDF..."
-
-                val pdfUrl = subirPdfASupabase(tempPdfUri!!, tempPdfName)
-
-                if (pdfUrl.isNotEmpty()) {
-                    // Actualizar clase con nuevo PDF
-                    viewModel.actualizarClase(
-                        claseId = claseId!!,
-                        nombre = nombre,
-                        descripcion = descripcion,
-                        fecha = fecha,
-                        archivoPdfUrl = pdfUrl,
-                        archivoPdfNombre = tempPdfName
-                    )
-
-                    observarResultado()
-                } else {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            this@CrearEditarClaseActivity,
-                            "Error al subir PDF",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        binding.buttonGuardar.isEnabled = true
-                        binding.buttonGuardar.text = "Guardar Clase"
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        this@CrearEditarClaseActivity,
-                        "Error: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    binding.buttonGuardar.isEnabled = true
-                    binding.buttonGuardar.text = "Guardar Clase"
-                }
-            }
-        }
+        // Delegar al ViewModel: sube PDF y actualiza la clase
+        binding.buttonGuardar.isEnabled = false
+        binding.buttonGuardar.text = "Subiendo PDF..."
+        viewModel.subirPdfYActualizarClase(
+            uri = tempPdfUri!!,
+            nombreArchivo = tempPdfName,
+            claseId = claseId!!,
+            nombre = nombre,
+            descripcion = descripcion,
+            fecha = fecha
+        )
+        observarResultado()
     }
 
     private fun subirPdfYCrearClase(nombre: String, descripcion: String, fecha: String) {
-        lifecycleScope.launch {
-            try {
-                binding.buttonGuardar.isEnabled = false
-                binding.buttonGuardar.text = "Subiendo PDF..."
-
-                val pdfUrl = subirPdfASupabase(tempPdfUri!!, tempPdfName)
-
-                if (pdfUrl.isNotEmpty()) {
-                    // Crear clase con PDF
-                    viewModel.crearClase(
-                        nombre = nombre,
-                        descripcion = descripcion,
-                        fecha = fecha,
-                        archivoPdfUrl = pdfUrl,
-                        archivoPdfNombre = tempPdfName,
-                        asignaturaId = asignaturaId
-                    )
-
-                    observarResultado()
-                } else {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            this@CrearEditarClaseActivity,
-                            "Error al subir PDF",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        binding.buttonGuardar.isEnabled = true
-                        binding.buttonGuardar.text = "Guardar Clase"
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        this@CrearEditarClaseActivity,
-                        "Error: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    binding.buttonGuardar.isEnabled = true
-                    binding.buttonGuardar.text = "Guardar Clase"
-                }
-            }
-        }
+        // Delegar al ViewModel: sube PDF y crea la clase
+        binding.buttonGuardar.isEnabled = false
+        binding.buttonGuardar.text = "Subiendo PDF..."
+        viewModel.subirPdfYCrearClase(
+            uri = tempPdfUri!!,
+            nombreArchivo = tempPdfName,
+            nombre = nombre,
+            descripcion = descripcion,
+            fecha = fecha,
+            asignaturaId = asignaturaId
+        )
+        observarResultado()
     }
 
     private fun crearClaseSinPdf(nombre: String, descripcion: String, fecha: String) {
@@ -368,26 +308,7 @@ class CrearEditarClaseActivity : BaseActivity() {
         }
     }
 
-    private suspend fun subirPdfASupabase(uri: Uri, nombreArchivo: String): String {
-        return withContext(Dispatchers.IO) {
-            try {
-                val supabase = SupabaseClientProvider.getClient()
-                val inputStream = contentResolver.openInputStream(uri)
-                val bytes = inputStream?.readBytes() ?: return@withContext ""
-
-                val uniqueName = cl.duocuc.aulaviva.utils.IdUtils.generateUniqueName(nombreArchivo)
-                val bucket = supabase.storage["clases"]
-
-                bucket.upload(uniqueName, bytes)
-
-                val publicUrl = bucket.publicUrl(uniqueName)
-                publicUrl
-            } catch (e: Exception) {
-                e.printStackTrace()
-                ""
-            }
-        }
-    }
+    // La subida a Supabase ahora la maneja `ClaseViewModel` vía `StorageRepository`.
 
     override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()

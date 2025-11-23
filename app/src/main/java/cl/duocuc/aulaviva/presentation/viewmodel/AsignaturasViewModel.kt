@@ -11,6 +11,7 @@ import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.data.repository.AsignaturasRepository
 import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
 import kotlinx.coroutines.launch
+import cl.duocuc.aulaviva.data.repository.ClaseRepository
 
 /**
  * ViewModel para gestión de asignaturas (DOCENTES).
@@ -48,6 +49,16 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
     init {
         // ✅ Sincronizar UNA SOLA VEZ al inicio
         sincronizarAsignaturas()
+    }
+
+    // ClaseRepository para operaciones relacionadas con clases (ej.: verificar existencia)
+    private val claseRepository = ClaseRepository(application)
+
+    /**
+     * Verifica si una asignatura tiene clases (delegado al ClaseRepository).
+     */
+    suspend fun tieneClases(asignaturaId: String): Boolean {
+        return claseRepository.tieneClases(asignaturaId)
     }
 
     /**

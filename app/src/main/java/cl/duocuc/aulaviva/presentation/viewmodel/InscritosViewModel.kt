@@ -9,6 +9,8 @@ import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.repository.AsignaturasRepository
 import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
 import kotlinx.coroutines.launch
+import androidx.lifecycle.asLiveData
+import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
 
 /**
  * ViewModel para la pantalla de inscritos.
@@ -52,4 +54,11 @@ class InscritosViewModel(application: Application) : AndroidViewModel(applicatio
             _isLoading.value = false
         }
     }
+
+    /**
+     * Expone los inscritos como LiveData para que la UI los observe.
+     * Esto evita que la Activity acceda directamente a `AppDatabase`.
+     */
+    fun obtenerInscritosLive(asignaturaId: String) =
+        database.alumnoAsignaturaDao().obtenerInscripcionesPorAsignatura(asignaturaId).asLiveData()
 }

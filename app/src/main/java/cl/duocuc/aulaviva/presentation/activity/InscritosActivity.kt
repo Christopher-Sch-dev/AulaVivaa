@@ -86,24 +86,19 @@ class InscritosActivity : BaseActivity() {
     }
 
     private fun cargarInscritos() {
-        val database = AppDatabase.getDatabase(this@InscritosActivity)
-
-        // Observar Flow de inscritos
-        database.alumnoAsignaturaDao()
-            .obtenerInscripcionesPorAsignatura(asignaturaId)
-            .asLiveData()
-            .observe(this) { inscritos: List<AlumnoAsignaturaEntity> ->
-                if (inscritos.isEmpty()) {
-                    binding.textViewEmpty.visibility = View.VISIBLE
-                    binding.recyclerViewInscritos.visibility = View.GONE
-                    binding.textViewTotal.text = "Total: 0 alumnos"
-                } else {
-                    binding.textViewEmpty.visibility = View.GONE
-                    binding.recyclerViewInscritos.visibility = View.VISIBLE
-                    binding.textViewTotal.text = "Total: ${inscritos.size} alumnos"
-                    adapter.submitList(inscritos)
-                }
+        // Delegar la observación de inscritos al ViewModel
+        viewModel.obtenerInscritosLive(asignaturaId).observe(this) { inscritos: List<AlumnoAsignaturaEntity> ->
+            if (inscritos.isEmpty()) {
+                binding.textViewEmpty.visibility = View.VISIBLE
+                binding.recyclerViewInscritos.visibility = View.GONE
+                binding.textViewTotal.text = "Total: 0 alumnos"
+            } else {
+                binding.textViewEmpty.visibility = View.GONE
+                binding.recyclerViewInscritos.visibility = View.VISIBLE
+                binding.textViewTotal.text = "Total: ${inscritos.size} alumnos"
+                adapter.submitList(inscritos)
             }
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {

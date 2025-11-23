@@ -212,17 +212,14 @@ class DocenteAsignaturasActivity : BaseActivity() {
         // ✅ NUEVO: Verificar que la asignatura esté vacía antes de eliminar
         lifecycleScope.launch {
             try {
-                val claseRepository = cl.duocuc.aulaviva.data.repository.ClaseRepository(this@DocenteAsignaturasActivity)
-                val clasesDao = cl.duocuc.aulaviva.data.local.AppDatabase.getDatabase(this@DocenteAsignaturasActivity).claseDao()
+                // Delegar la verificación al ViewModel para evitar acceso directo a AppDatabase
+                val tieneClases = viewModel.tieneClases(asignatura.id)
 
-                // Obtener clases de esta asignatura desde Room (local)
-                val clases = clasesDao.obtenerClasesPorAsignaturaDirecto(asignatura.id)
-
-                if (clases.isNotEmpty()) {
+                if (tieneClases) {
                     // La asignatura tiene clases, no se puede eliminar
                     MaterialAlertDialogBuilder(this@DocenteAsignaturasActivity)
                         .setTitle("⚠️ No se puede eliminar")
-                        .setMessage("La asignatura '${asignatura.nombre}' tiene ${clases.size} clase(s) dentro.\n\n❌ Primero debes eliminar todas las clases para poder eliminar la asignatura.")
+                        .setMessage("La asignatura '${asignatura.nombre}' tiene clases asociadas.\n\n❌ Primero debes eliminar todas las clases para poder eliminar la asignatura.")
                         .setPositiveButton("Ver Clases") { _, _ ->
                             // Redirigir a ver las clases de esta asignatura
                             abrirClasesAsignatura(asignatura)

@@ -522,6 +522,21 @@ class ClaseRepository(context: Context) {
     }
 
     /**
+     * Comprueba si una asignatura tiene clases asociadas.
+     * Retorna `true` si existe al menos una clase para la asignatura.
+     */
+    suspend fun tieneClases(asignaturaId: String): Boolean {
+        return try {
+            val clases = claseDao.obtenerClasesPorAsignaturaDirecto(asignaturaId)
+            clases.isNotEmpty()
+        } catch (e: Exception) {
+            Log.e("ClaseRepository", "❌ Error verificando clases para $asignaturaId", e)
+            // En caso de error, conservador: asumimos que sí tiene clases para evitar borrados accidentales
+            true
+        }
+    }
+
+    /**
      * Sube un PDF a Supabase Storage y retorna la URL pública.
      */
     suspend fun subirPdfASupabaseStorage(

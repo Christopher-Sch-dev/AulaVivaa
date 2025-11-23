@@ -8,6 +8,8 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.data.repository.ClaseRepository
+import cl.duocuc.aulaviva.data.repository.StorageRepository
+import android.net.Uri
 import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
 import kotlinx.coroutines.launch
 
@@ -21,6 +23,7 @@ import kotlinx.coroutines.launch
 class ClaseViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = ClaseRepository(application.applicationContext)
+    private val storageRepository = StorageRepository(application.applicationContext)
     private val uid = SupabaseAuthManager.getCurrentUserId() ?: ""
 
     // LiveData que lee directamente de Room usando Flow.
@@ -189,6 +192,77 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
                     _error.value = errorMsg
                 }
             )
+        }
+    }
+
+    /**
+     * Sube un PDF y crea la clase (upload + crear).
+     * La UI delega aquí en lugar de hacer la subida directamente.
+     */
+    fun subirPdfYCrearClase(
+        uri: Uri,
+        nombreArchivo: String,
+        nombre: String,
+        descripcion: String,
+        fecha: String,
+        asignaturaId: String
+    ) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val uploadResult = storageRepository.subirPdf(uri, nombreArchivo)
+                uploadResult.fold(onSuccess = { url ->
+                    crearClase(
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        fecha = fecha,
+                        archivoPdfUrl = url,
+                        archivoPdfNombre = nombreArchivo,
+                        asignaturaId = asignaturaId
+                    )
+                }, onFailure = { ex ->
+                    _isLoading.value = false
+                    _error.value = "Error subiendo PDF: ${ex.message}"
+                })
+            } catch (e: Exception) {
+                _isLoading.value = false
+                _error.value = "Error subiendo PDF: ${e.message}"
+            }
+        }
+    }
+
+    /**
+     * Sube un PDF y actualiza la clase existente.
+     */
+    fun subirPdfYActualizarClase(
+        uri: Uri,
+        nombreArchivo: String,
+        claseId: String,
+        nombre: String,
+        descripcion: String,
+        fecha: String
+    ) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val uploadResult = storageRepository.subirPdf(uri, nombreArchivo)
+                uploadResult.fold(onSuccess = { url ->
+                    actualizarClase(
+                        claseId = claseId,
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        fecha = fecha,
+                        archivoPdfUrl = url,
+                        archivoPdfNombre = nombreArchivo
+                    )
+                }, onFailure = { ex ->
+                    _isLoading.value = false
+                    _error.value = "Error subiendo PDF: ${ex.message}"
+                })
+            } catch (e: Exception) {
+                _isLoading.value = false
+                _error.value = "Error subiendo PDF: ${e.message}"
+            }
         }
     }
 

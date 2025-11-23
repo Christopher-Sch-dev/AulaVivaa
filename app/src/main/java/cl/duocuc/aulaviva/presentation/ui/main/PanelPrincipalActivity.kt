@@ -17,12 +17,16 @@ import cl.duocuc.aulaviva.databinding.ActivityPanelPrincipalBinding
 import cl.duocuc.aulaviva.presentation.ui.auth.LoginActivity
 import cl.duocuc.aulaviva.utils.NotificationHelper
 import kotlinx.coroutines.launch
+import androidx.activity.viewModels
+import androidx.lifecycle.Observer
+import cl.duocuc.aulaviva.presentation.viewmodel.PanelPrincipalViewModel
 
 class PanelPrincipalActivity : BaseActivity() {
 
     private lateinit var binding: ActivityPanelPrincipalBinding
     private lateinit var notificationHelper: NotificationHelper
     private var rolActual: String = ""
+    private val viewModel: PanelPrincipalViewModel by viewModels()
 
     // Launcher para pedir permiso de notificaciones (Android 13+)
     private val requestPermissionLauncher = registerForActivityResult(
@@ -39,6 +43,16 @@ class PanelPrincipalActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityPanelPrincipalBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Observadores del ViewModel
+        viewModel.toastMessage.observe(this, Observer { msg ->
+            msg?.let {
+                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+            }
+        })
+        viewModel.demoCodigo.observe(this, Observer { codigo ->
+            // Si necesitas hacer algo extra con el código, hacerlo aquí
+        })
 
         // Inicializo el helper de notificaciones (RECURSO NATIVO #1)
         notificationHelper = NotificationHelper(this)
@@ -187,99 +201,8 @@ class PanelPrincipalActivity : BaseActivity() {
                 Log.d("PanelPrincipal", "🔄 Creando asignatura y clase demo...")
                 Toast.makeText(this, "⏳ Creando demostración...", Toast.LENGTH_SHORT).show()
 
-                lifecycleScope.launch {
-                    try {
-                        val db = cl.duocuc.aulaviva.data.local.AppDatabase.getDatabase(this@PanelPrincipalActivity)
-                        val asignaturasRepo = cl.duocuc.aulaviva.data.repository.AsignaturasRepository(
-                            db.asignaturaDao(),
-                            db.alumnoAsignaturaDao(),
-                            cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository(
-                                db.asignaturaDao(),
-                                db.alumnoAsignaturaDao()
-                            )
-                        )
-                        val clasesRepo = cl.duocuc.aulaviva.data.repository.ClaseRepository(this@PanelPrincipalActivity)
-
-                        // PASO 1: Crear asignatura DEMO usando la firma correcta
-                        val resultAsignatura = asignaturasRepo.crearAsignatura(
-                            nombre = "Programación Móvil DEMO",
-                            descripcion = "Asignatura de demostración con clase de prueba incluida"
-                        )
-
-                        if (resultAsignatura.isFailure) {
-                            throw resultAsignatura.exceptionOrNull() ?: Exception("Error desconocido al crear asignatura")
-                        }
-
-                        val asignaturaCreada = resultAsignatura.getOrNull()!!
-                        val codigoFinal = asignaturaCreada.codigoAcceso.uppercase() // MAYÚSCULAS
-                        Log.d("PanelPrincipal", "✅ Asignatura demo creada con código: $codigoFinal")
-
-                        // PASO 2: Crear clase DEMO dentro de la asignatura
-                        val claseDemo = cl.duocuc.aulaviva.data.model.Clase(
-                            id = cl.duocuc.aulaviva.utils.IdUtils.generateId(),
-                            nombre = "Introducción a Kotlin para Android",
-                            descripcion = """
-                                📱 Clase demostrativa sobre Kotlin y desarrollo Android
-
-                                📚 Contenido:
-                                • Sintaxis básica de Kotlin
-                                • Null safety y tipos de datos
-                                • Funciones y lambdas
-                                • Coroutines para programación asíncrona
-                                • Jetpack Compose UI moderna
-
-                                🎯 Objetivos:
-                                1. Comprender conceptos fundamentales
-                                2. Aplicar patrones de diseño MVVM
-                                3. Integrar APIs REST con Retrofit
-
-                                🔗 Recursos:
-                                • Documentación oficial: kotlinlang.org
-                                • Android Developers: developer.android.com
-                            """.trimIndent(),
-                            fecha = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date()),
-                            asignaturaId = asignaturaCreada.id,
-                            archivoPdfUrl = "https://kotlinlang.org/docs/kotlin-reference.pdf",
-                            archivoPdfNombre = "Kotlin_Reference_Demo.pdf",
-                            creador = cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager.getCurrentUserId() ?: ""
-                        )
-
-                        clasesRepo.crearClaseAsync(
-                            clase = claseDemo,
-                            onSuccess = {
-                                Log.d("PanelPrincipal", "✅ Demo completa: Asignatura + Clase con PDF creadas")
-                                runOnUiThread {
-                                    Toast.makeText(
-                                        this@PanelPrincipalActivity,
-                                        "✅ ¡Demo creada!\n\nCódigo: $codigoFinal\n\nVe a 'Mis Asignaturas' → ${asignaturaCreada.nombre}",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            },
-                                scope = lifecycleScope,
-                            onError = { error ->
-                                Log.e("PanelPrincipal", "❌ Error creando clase demo: $error")
-                                runOnUiThread {
-                                    Toast.makeText(
-                                        this@PanelPrincipalActivity,
-                                        "⚠️ Asignatura creada, pero error en clase: $error",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                        )
-
-                    } catch (e: Exception) {
-                        Log.e("PanelPrincipal", "❌ Error en modo demostración", e)
-                        runOnUiThread {
-                            Toast.makeText(
-                                this@PanelPrincipalActivity,
-                                "❌ Error al crear demo: ${e.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                }
+                // Delegar la creación de demo al ViewModel
+                viewModel.crearAsignaturaYClaseDemo()
             }
             .setNegativeButton("Cancelar", null)
             .show()
