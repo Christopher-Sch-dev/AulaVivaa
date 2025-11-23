@@ -14,9 +14,11 @@ import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.databinding.ActivityResultadoIaChatBinding
 import cl.duocuc.aulaviva.data.repository.IARepository
 import io.noties.markwon.Markwon
+import androidx.activity.viewModels
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import cl.duocuc.aulaviva.presentation.viewmodel.IAViewModel
 
 /**
  * ✨ NUEVA FUNCIÓN: Interfaz tipo chat para resultados de IA
@@ -30,7 +32,7 @@ import kotlinx.coroutines.withContext
 class ResultadoIAActivity : BaseActivity() {
 
     private lateinit var binding: ActivityResultadoIaChatBinding
-    private lateinit var iaRepository: IARepository
+    private val iaViewModel: IAViewModel by viewModels()
     private lateinit var markwon: Markwon
 
     // Estado del chat
@@ -50,8 +52,11 @@ class ResultadoIAActivity : BaseActivity() {
 
         // Edge-to-edge: aplicado automáticamente por BaseActivity
 
-        // Inicializar repositorio IA con applicationContext para evitar fugas de Activity
-        iaRepository = IARepository(applicationContext)
+        // Iniciar chat stateful via ViewModel (centraliza IARepository)
+        // Llamada no bloqueante: iniciamos y no necesitamos esperar para mostrar UI inicial
+        iaViewModel.iniciarChatConContexto(nombreClase, descripcionClase, if (pdfUrl.isNullOrEmpty()) null else pdfUrl, contenidoOriginal).observe(this) { _ ->
+            // No action needed on success; failures will be emitted but no UI change required here
+        }
 
         // Configurar Markwon para renderizar Markdown
         markwon = Markwon.builder(this)
@@ -151,49 +156,36 @@ class ResultadoIAActivity : BaseActivity() {
         val loadingView = agregarIndicadorCarga()
 
         // Llamar a la IA con el contexto completo
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                // ✅ USAR CHAT STATEFUL: Ya no concatenamos todo el historial manualmente.
-                // La sesión en IARepository mantiene el contexto del PDF y mensajes previos.
-                val respuesta = iaRepository.enviarMensajeChat(mensaje)
-
-                // Agregar respuesta al contexto local (solo para logs/debug)
+        // Usar ViewModel para enviar mensaje y observar el resultado
+        val live = iaViewModel.enviarMensajeChat(mensaje)
+        live.observe(this) { result ->
+            // Remover indicador de carga
+            binding.chatContainer.removeView(loadingView)
+            if (result.isSuccess) {
+                val respuesta = result.getOrNull() ?: ""
                 conversacionCompleta.append("IA: $respuesta\n\n")
-
-                withContext(Dispatchers.Main) {
-                    // Remover indicador de carga
-                    binding.chatContainer.removeView(loadingView)
-
-                    // Agregar respuesta de la IA
-                    agregarMensajeIA(respuesta)
-
-                    // Habilitar input si quedan mensajes
-                    if (mensajesRestantes > 0) {
-                        binding.inputMensaje.isEnabled = true
-                    } else {
-                        // Deshabilitar completamente el input
-                        binding.layoutInputMensaje.alpha = 0.5f
-                        Toast.makeText(
-                            this@ResultadoIAActivity,
-                            "⚠️ Has alcanzado el límite de mensajes para esta consulta",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    binding.chatContainer.removeView(loadingView)
+                agregarMensajeIA(respuesta)
+                if (mensajesRestantes > 0) {
+                    binding.inputMensaje.isEnabled = true
+                } else {
+                    binding.layoutInputMensaje.alpha = 0.5f
                     Toast.makeText(
                         this@ResultadoIAActivity,
-                        "❌ Error: ${e.message}",
+                        "⚠️ Has alcanzado el límite de mensajes para esta consulta",
                         Toast.LENGTH_LONG
                     ).show()
-
-                    // Restaurar contador y habilitar input
-                    mensajesRestantes++
-                    actualizarContadorMensajes()
-                    binding.inputMensaje.isEnabled = true
                 }
+            } else {
+                val ex = result.exceptionOrNull()
+                Toast.makeText(
+                    this@ResultadoIAActivity,
+                    "❌ Error: ${ex?.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+                // Restaurar contador y habilitar input
+                mensajesRestantes++
+                actualizarContadorMensajes()
+                binding.inputMensaje.isEnabled = true
             }
         }
     }
