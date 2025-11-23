@@ -77,7 +77,6 @@ class ListaClasesActivity : BaseActivity() {
 
     private fun setupRecyclerView() {
         adapter = ClaseAdapter(
-            clases = emptyList(),
             onClaseClick = { clase ->
                 val intent = Intent(this, DetalleClaseActivity::class.java)
                 intent.putExtra("CLASE_ID", clase.id)
@@ -91,6 +90,8 @@ class ListaClasesActivity : BaseActivity() {
             onEliminarClick = { clase ->
                 confirmarEliminarClase(clase)
             }
+            ,
+            esAlumno = false
         )
 
         val rv = findViewById<RecyclerView>(R.id.recyclerViewClases)

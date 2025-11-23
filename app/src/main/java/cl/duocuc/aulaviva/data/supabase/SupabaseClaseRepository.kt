@@ -9,6 +9,7 @@ import cl.duocuc.aulaviva.data.model.Clase
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 
@@ -86,21 +87,29 @@ class SupabaseClaseRepository(private val claseDao: ClaseDao) {
 
             val clases = clasesFiltradas.map { it.toClase() }
 
-            // Sincronizar a Room
-            claseDao.eliminarTodas()
-            clases.forEach { claseDao.insertarClase(it.toEntity()) }
+            // Sincronizar a Room: insertar/actualizar (onConflict=REPLACE via DAO)
+            // Evitamos eliminar todas las clases localmente para no provocar vacíos
+            // en caso de que la descarga falle o el alcance sea distinto (alumno vs docente).
+            if (clases.isNotEmpty()) {
+                claseDao.insertarVarias(clases.map { it.toEntity() })
+            } else {
+                // Si la respuesta filtrada quedó vacía, no borramos la cache local.
+                Log.w("SupabaseRepo", "⚠️ Respuesta vacía tras filtrar por creador: no se modifica cache local")
+            }
 
             Log.d("SupabaseRepo", "✅ ${clases.size} clases obtenidas")
             Result.success(clases)
 
         } catch (e: Exception) {
             Log.e("SupabaseRepo", "❌ Error obteniendo clases", e)
-            // Fallback a Room (caché local)
-            try {
-                val clasesLocal = claseDao.obtenerNoSincronizadas().map { it.toClase() }
-                Log.w("SupabaseRepo", "⚠️ Usando datos locales: ${clasesLocal.size} clases")
-                Result.success(clasesLocal)
+            // Fallback seguro: devolver todas las clases locales para no quedar en vacío
+            return@withContext try {
+                val entidades = claseDao.obtenerTodasLasClases().first()
+                val todas = entidades.map { it.toClase() }
+                Log.w("SupabaseRepo", "⚠️ Usando cache local: ${todas.size} clases")
+                Result.success(todas)
             } catch (localError: Exception) {
+                Log.e("SupabaseRepo", "❌ Error fallback obteniendo cache local", localError)
                 Result.failure(Exception("Error al obtener clases: ${e.message}"))
             }
         }
