@@ -37,6 +37,7 @@ class CrearEditarClaseActivity : AppCompatActivity() {
     private var claseId: String? = null  // null = crear, valor = editar
     private var tempPdfUri: Uri? = null
     private var tempPdfName: String = ""
+    private var existingPdfUrl: String = ""
 
     private val pickPdfLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -164,9 +165,32 @@ class CrearEditarClaseActivity : AppCompatActivity() {
     }
 
     private fun cargarDatosClase(id: String) {
-        // TODO: Cargar datos de la clase existente desde ViewModel
-        // Por ahora dejamos vacío, se puede implementar después
-        Toast.makeText(this, "Modo edición (implementar carga de datos)", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            try {
+                val clase = viewModel.obtenerClasePorId(id)
+                if (clase == null) {
+                    Toast.makeText(this@CrearEditarClaseActivity, "Clase no encontrada", Toast.LENGTH_SHORT).show()
+                    finish()
+                    return@launch
+                }
+
+                // Poblar campos en UI
+                binding.inputNombreClase.setText(clase.nombre)
+                binding.inputDescripcionClase.setText(clase.descripcion)
+                binding.inputFechaClase.setText(clase.fecha)
+
+                // Guardar URL/nombre de PDF existentes (si aplica)
+                existingPdfUrl = clase.archivoPdfUrl ?: ""
+                if (!clase.archivoPdfNombre.isNullOrEmpty()) {
+                    tempPdfName = clase.archivoPdfNombre
+                    binding.textViewPdfSelected.text = "📄 ${clase.archivoPdfNombre}"
+                    binding.buttonSelectPdf.text = "Cambiar PDF"
+                }
+
+            } catch (e: Exception) {
+                Toast.makeText(this@CrearEditarClaseActivity, "Error cargando clase: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun guardarClase() {
@@ -193,12 +217,78 @@ class CrearEditarClaseActivity : AppCompatActivity() {
         binding.layoutDescripcionClase.error = null
         binding.layoutFechaClase.error = null
 
-        // Si hay PDF, subir primero
+        // Si estamos en modo edición, actualizar
+        if (claseId != null) {
+            // Si hay PDF nuevo, subir y luego actualizar
+            if (tempPdfUri != null) {
+                subirPdfYActualizarClase(nombre, descripcion, fecha)
+            } else {
+                // Actualizar usando URL/nombre de PDF existentes (si los hubo)
+                viewModel.actualizarClase(
+                    claseId = claseId!!,
+                    nombre = nombre,
+                    descripcion = descripcion,
+                    fecha = fecha,
+                    archivoPdfUrl = existingPdfUrl,
+                    archivoPdfNombre = tempPdfName
+                )
+
+                observarResultado()
+            }
+            return
+        }
+
+        // Si hay PDF, subir primero y crear
         if (tempPdfUri != null) {
             subirPdfYCrearClase(nombre, descripcion, fecha)
         } else {
             // Crear clase sin PDF
             crearClaseSinPdf(nombre, descripcion, fecha)
+        }
+    }
+
+    private fun subirPdfYActualizarClase(nombre: String, descripcion: String, fecha: String) {
+        lifecycleScope.launch {
+            try {
+                binding.buttonGuardar.isEnabled = false
+                binding.buttonGuardar.text = "Subiendo PDF..."
+
+                val pdfUrl = subirPdfASupabase(tempPdfUri!!, tempPdfName)
+
+                if (pdfUrl.isNotEmpty()) {
+                    // Actualizar clase con nuevo PDF
+                    viewModel.actualizarClase(
+                        claseId = claseId!!,
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        fecha = fecha,
+                        archivoPdfUrl = pdfUrl,
+                        archivoPdfNombre = tempPdfName
+                    )
+
+                    observarResultado()
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            this@CrearEditarClaseActivity,
+                            "Error al subir PDF",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        binding.buttonGuardar.isEnabled = true
+                        binding.buttonGuardar.text = "Guardar Clase"
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@CrearEditarClaseActivity,
+                        "Error: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    binding.buttonGuardar.isEnabled = true
+                    binding.buttonGuardar.text = "Guardar Clase"
+                }
+            }
         }
     }
 

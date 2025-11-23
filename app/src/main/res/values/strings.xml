@@ -11,6 +11,7 @@
     <string name="panel_subtitulo">Panel de control docente</string>
     <string name="btn_gestionar_clases">Gestionar mis clases</string>
     <string name="btn_ver_clases">Ver clases</string>
+    <string name="btn_ver_mis_asignaturas">👀 Ver Mis Asignaturas</string>
     <string name="btn_crear_demo">🎓 Crear Asignatura y Clase Demo</string>
     <string name="btn_cerrar_sesion">Cerrar sesión</string>
     <string name="demo_desc">Genera automáticamente una asignatura completa con una clase funcional que incluye PDF de ejemplo, perfecta para explorar todas las herramientas IA y funcionalidades de Aula Viva</string>
