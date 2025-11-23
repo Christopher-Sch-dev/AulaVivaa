@@ -102,3 +102,8 @@ Thumbs.db
 # Add any custom files you don't want to track
 screenshots/
 *.md
+
+database
+
+informes_de_todo
+
