@@ -10,6 +10,7 @@ import cl.duocuc.aulaviva.data.repository.AsignaturasRepository
 import cl.duocuc.aulaviva.data.repository.ClaseRepository
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.data.repository.AuthRepository
+import cl.duocuc.aulaviva.data.repository.StorageRepository
 import cl.duocuc.aulaviva.utils.IdUtils
 import kotlinx.coroutines.launch
 
@@ -18,6 +19,8 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
     private val app = application
 
     private val authRepository: AuthRepository = RepositoryProvider.provideAuthRepository()
+    // Storage repository available for uploads (centralized)
+    private val storageRepository: StorageRepository = RepositoryProvider.provideStorageRepository(app)
 
     private val _userEmail = MutableLiveData<String?>()
     val userEmail: LiveData<String?> = _userEmail
