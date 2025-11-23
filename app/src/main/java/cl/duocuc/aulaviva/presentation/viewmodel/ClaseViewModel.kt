@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.data.repository.ClaseRepository
 import cl.duocuc.aulaviva.data.repository.StorageRepository
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import android.net.Uri
 import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
 import kotlinx.coroutines.launch
@@ -22,8 +23,8 @@ import kotlinx.coroutines.launch
  */
 class ClaseViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = ClaseRepository(application.applicationContext)
-    private val storageRepository = StorageRepository(application.applicationContext)
+    private val repository: ClaseRepository = RepositoryProvider.provideClaseRepository(application)
+    private val storageRepository: StorageRepository = RepositoryProvider.provideStorageRepository(application)
     private val uid = SupabaseAuthManager.getCurrentUserId() ?: ""
 
     // LiveData que lee directamente de Room usando Flow.

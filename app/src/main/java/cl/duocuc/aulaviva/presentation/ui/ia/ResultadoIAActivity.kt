@@ -52,11 +52,7 @@ class ResultadoIAActivity : BaseActivity() {
 
         // Edge-to-edge: aplicado automáticamente por BaseActivity
 
-        // Iniciar chat stateful via ViewModel (centraliza IARepository)
-        // Llamada no bloqueante: iniciamos y no necesitamos esperar para mostrar UI inicial
-        iaViewModel.iniciarChatConContexto(nombreClase, descripcionClase, if (pdfUrl.isNullOrEmpty()) null else pdfUrl, contenidoOriginal).observe(this) { _ ->
-            // No action needed on success; failures will be emitted but no UI change required here
-        }
+        // Nota: inicializamos la sesión de chat más abajo, después de obtener los datos del intent
 
         // Configurar Markwon para renderizar Markdown
         markwon = Markwon.builder(this)
@@ -95,15 +91,18 @@ class ResultadoIAActivity : BaseActivity() {
         }
         conversacionCompleta.append("Respuesta inicial de la IA:\n$contenidoOriginal\n\n")
 
-        // 🚀 INICIALIZAR SESIÓN DE CHAT STATEFUL
+        // 🚀 INICIALIZAR SESIÓN DE CHAT STATEFUL usando ViewModel
         // Esto carga el PDF y el historial inicial en la memoria de la IA
-        lifecycleScope.launch(Dispatchers.IO) {
-            iaRepository.iniciarChatConContexto(
-                nombreClase = nombreClase,
-                descripcion = descripcionClase,
-                pdfUrl = pdfUrl,
-                respuestaInicial = contenidoOriginal
-            )
+        iaViewModel.iniciarChatConContexto(
+            nombreClase = nombreClase,
+            descripcion = descripcionClase,
+            pdfUrl = if (pdfUrl.isNullOrEmpty()) null else pdfUrl,
+            respuestaInicial = contenidoOriginal
+        ).observe(this) { result ->
+            // Podemos loguear errores si aparecen, pero no bloqueamos la UI
+            if (result.isFailure) {
+                android.util.Log.w("ResultadoIA", "Error iniciando chat: ${result.exceptionOrNull()?.message}")
+            }
         }
     }
 

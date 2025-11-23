@@ -12,7 +12,6 @@ import cl.duocuc.aulaviva.databinding.ActivityCrearEditarClaseBinding
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
-import cl.duocuc.aulaviva.data.supabase.SupabaseClientProvider
 import com.google.android.material.datepicker.MaterialDatePicker
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers

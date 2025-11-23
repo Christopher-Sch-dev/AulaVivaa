@@ -26,4 +26,12 @@ object RepositoryProvider {
     fun provideClaseRepository(application: Application): ClaseRepository {
         return ClaseRepository(application)
     }
+
+    fun provideStorageRepository(application: Application): StorageRepository {
+        return StorageRepository(application.applicationContext)
+    }
+
+    fun provideIARepository(application: Application): cl.duocuc.aulaviva.data.repository.IARepository {
+        return cl.duocuc.aulaviva.data.repository.IARepository(application.applicationContext)
+    }
 }

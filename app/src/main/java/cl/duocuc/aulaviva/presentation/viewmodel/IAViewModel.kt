@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.liveData
 import kotlinx.coroutines.Dispatchers
 import cl.duocuc.aulaviva.data.repository.IARepository
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 
 /**
  * ViewModel wrapper para lógica de IA.
@@ -13,7 +14,7 @@ import cl.duocuc.aulaviva.data.repository.IARepository
  */
 class IAViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val iaRepository = IARepository(application.applicationContext)
+    private val iaRepository: IARepository = RepositoryProvider.provideIARepository(application)
 
     fun iniciarChatConContexto(
         nombreClase: String,
