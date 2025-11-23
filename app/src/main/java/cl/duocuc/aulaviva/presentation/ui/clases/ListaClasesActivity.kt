@@ -206,113 +206,55 @@ class ListaClasesActivity : BaseActivity() {
                 isSaving = true
                 btnGuardar.isEnabled = false
 
-                // 📤 TAREA 3: Subir PDF a Supabase Storage antes de crear clase
-                lifecycleScope.launch {
-                    try {
-                        var urlPdfSupabase = ""
-
-                        // ✅ SI HAY PDF SELECCIONADO, SUBIRLO PRIMERO
-                        if (tempPdfUri.isNotEmpty()) {
-                            try {
-                                android.util.Log.d(
-                                    "ListaClases",
-                                    "📤 Subiendo PDF a Supabase Storage..."
-                                )
-
-                                // Mostrar progreso
-                                withContext(Dispatchers.Main) {
-                                    textPdfSeleccionado.text = "Subiendo PDF..."
-                                }
-
-                                // Subir a Supabase Storage
-                                val repository =
-                                    cl.duocuc.aulaviva.data.repository.ClaseRepository(this@ListaClasesActivity)
-                                urlPdfSupabase = repository.subirPdfASupabaseStorage(
-                                    Uri.parse(tempPdfUri),
-                                    tempPdfName
-                                )
-
-                                android.util.Log.d(
-                                    "ListaClases",
-                                    "✅ PDF subido con URL: $urlPdfSupabase"
-                                )
-
-                                withContext(Dispatchers.Main) {
-                                    textPdfSeleccionado.text = "$tempPdfName ✅"
-                                }
-
-                            } catch (pdfError: Exception) {
-                                android.util.Log.e(
-                                    "ListaClases",
-                                    "❌ Error subiendo PDF: ${pdfError.message}"
-                                )
-                                throw Exception("No se pudo subir el PDF: ${pdfError.message}")
-                            }
-                        }
-
-                        // ✅ CREAR CLASE CON URL DEL PDF (ahora pública de Supabase Storage)
-                        val nuevaClase = Clase(
-                            id = "",
-                            nombre = nombre,
-                            descripcion = descripcion,
-                            fecha = fecha,
-                            archivoPdfUrl = urlPdfSupabase, // URL pública de Storage
-                            archivoPdfNombre = tempPdfName,
-                            creador = cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager.getCurrentUserId()
-                                ?: ""
-                        )
-
-                        // Guardar en Repository (Room + Supabase)
-                        val repository =
-                            cl.duocuc.aulaviva.data.repository.ClaseRepository(this@ListaClasesActivity)
-                        repository.crearClaseAsync(
-                            clase = nuevaClase,
-                            onSuccess = {
-                                lifecycleScope.launch(Dispatchers.Main) {
-                                    android.util.Log.d("ListaClases", "✅ Clase creada exitosamente")
-                                    Toast.makeText(
-                                        this@ListaClasesActivity,
-                                        if (urlPdfSupabase.isNotEmpty()) "✅ Clase creada con PDF" else "✅ Clase creada",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    dialog.dismiss()
-                                    isSaving = false
-                                    btnGuardar.isEnabled = true
-                                    tempPdfUri = ""
-                                    tempPdfName = ""
-                                    viewModel.sincronizarConSupabase()
-                                }
-                            },
-                            scope = lifecycleScope,
-                            onError = { error ->
-                                lifecycleScope.launch(Dispatchers.Main) {
-                                    android.util.Log.e(
-                                        "ListaClases",
-                                        "❌ Error guardando clase: $error"
-                                    )
-                                    Toast.makeText(
-                                        this@ListaClasesActivity,
-                                        "❌ Error: $error",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                    isSaving = false
-                                    btnGuardar.isEnabled = true
-                                }
-                            }
-                        )
-
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            android.util.Log.e("ListaClases", "❌ Error general en creación", e)
-                            Toast.makeText(
-                                this@ListaClasesActivity,
-                                "❌ Error: ${e.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            isSaving = false
-                            btnGuardar.isEnabled = true
-                        }
+                // Observadores locales para cerrar diálogo y restaurar estado
+                val successObserver = androidx.lifecycle.Observer<String?> { message ->
+                    if (message != null) {
+                        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                        isSaving = false
+                        btnGuardar.isEnabled = true
+                        tempPdfUri = ""
+                        tempPdfName = ""
+                        viewModel.sincronizarConSupabase()
+                        viewModel.clearMessages()
+                        viewModel.operationSuccess.removeObserver(successObserver)
+                        viewModel.error.removeObserver(errorObserver)
                     }
+                }
+
+                val errorObserver = androidx.lifecycle.Observer<String?> { err ->
+                    err?.let {
+                        Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+                        isSaving = false
+                        btnGuardar.isEnabled = true
+                        viewModel.clearMessages()
+                        viewModel.operationSuccess.removeObserver(successObserver)
+                        viewModel.error.removeObserver(errorObserver)
+                    }
+                }
+
+                viewModel.operationSuccess.observe(this, successObserver)
+                viewModel.error.observe(this, errorObserver)
+
+                // Delegar la subida/creación al ViewModel
+                if (tempPdfUri.isNotEmpty()) {
+                    viewModel.subirPdfYCrearClase(
+                        uri = Uri.parse(tempPdfUri),
+                        nombreArchivo = tempPdfName,
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        fecha = fecha,
+                        asignaturaId = "" // si ListaClases usa asignatura, adaptar según contexto
+                    )
+                } else {
+                    viewModel.crearClase(
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        fecha = fecha,
+                        archivoPdfUrl = "",
+                        archivoPdfNombre = "",
+                        asignaturaId = ""
+                    )
                 }
             }
         }
@@ -414,32 +356,56 @@ class ListaClasesActivity : BaseActivity() {
                     archivoPdfNombre = tempPdfName
                 )
 
-                val repository = cl.duocuc.aulaviva.data.repository.ClaseRepository(this)
-                lifecycleScope.launch(Dispatchers.IO) {
-                    try {
-                        repository.actualizarClase(claseActualizada)
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                this@ListaClasesActivity,
-                                "✅ Clase actualizada",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            dialog.dismiss()
-                            isSaving = false
-                            btnGuardar.isEnabled = true
-                            viewModel.sincronizarConSupabase()
-                        }
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                this@ListaClasesActivity,
-                                "❌ Error: ${e.message}",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            isSaving = false
-                            btnGuardar.isEnabled = true
-                        }
+                // Observadores locales para cerrar diálogo y restaurar estado
+                val successObserver = androidx.lifecycle.Observer<String?> { message ->
+                    if (message != null) {
+                        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                        dialog.dismiss()
+                        isSaving = false
+                        btnGuardar.isEnabled = true
+                        tempPdfUri = ""
+                        tempPdfName = ""
+                        viewModel.sincronizarConSupabase()
+                        viewModel.clearMessages()
+                        viewModel.operationSuccess.removeObserver(successObserver)
+                        viewModel.error.removeObserver(errorObserver)
                     }
+                }
+
+                val errorObserver = androidx.lifecycle.Observer<String?> { err ->
+                    err?.let {
+                        Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+                        isSaving = false
+                        btnGuardar.isEnabled = true
+                        viewModel.clearMessages()
+                        viewModel.operationSuccess.removeObserver(successObserver)
+                        viewModel.error.removeObserver(errorObserver)
+                    }
+                }
+
+                viewModel.operationSuccess.observe(this, successObserver)
+                viewModel.error.observe(this, errorObserver)
+
+                // Si tempPdfUri parece ser un content URI se sube primero, si es URL pública entonces se usa directamente
+                if (tempPdfUri.startsWith("content://") || tempPdfUri.startsWith("file://")) {
+                    viewModel.subirPdfYActualizarClase(
+                        uri = Uri.parse(tempPdfUri),
+                        nombreArchivo = tempPdfName,
+                        claseId = clase.id,
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        fecha = fecha
+                    )
+                } else {
+                    // Usar directamente el URL actual (o vacío)
+                    viewModel.actualizarClase(
+                        claseId = clase.id,
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        fecha = fecha,
+                        archivoPdfUrl = tempPdfUri,
+                        archivoPdfNombre = tempPdfName
+                    )
                 }
             }
         }
@@ -462,27 +428,7 @@ class ListaClasesActivity : BaseActivity() {
     }
 
     private fun eliminarClase(clase: Clase) {
-        val repository = cl.duocuc.aulaviva.data.repository.ClaseRepository(this)
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                repository.eliminarClase(clase.id)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        this@ListaClasesActivity,
-                        "✅ Clase eliminada",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    viewModel.sincronizarConSupabase()
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        this@ListaClasesActivity,
-                        "❌ Error al eliminar: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
+        // Delegar eliminación al ViewModel
+        viewModel.eliminarClase(clase.id)
     }
 }

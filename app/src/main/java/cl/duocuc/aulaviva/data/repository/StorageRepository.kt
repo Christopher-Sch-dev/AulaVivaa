@@ -3,9 +3,11 @@ package cl.duocuc.aulaviva.data.repository
 import android.content.Context
 import android.net.Uri
 import cl.duocuc.aulaviva.data.supabase.SupabaseClientProvider
+import io.github.jan.supabase.storage.storage
 import cl.duocuc.aulaviva.utils.IdUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.util.Log
 
 /**
  * Encapsula operaciones de Storage (subir/descargar) usando Supabase.
@@ -25,13 +27,16 @@ class StorageRepository(private val context: Context) {
             val inputStream = withContext(Dispatchers.IO) { appContext.contentResolver.openInputStream(uri) }
             val bytes = inputStream?.readBytes() ?: return Result.failure(Exception("No fue posible leer el archivo"))
 
-            val uniqueName = IdUtils.generateUniqueName(nombreArchivo)
-            val bucket = supabase.storage["clases"]
+            val timestamp = System.currentTimeMillis()
+            val uid = cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager.getCurrentUserId() ?: "unknown"
+            val remotePath = "clases/$uid/${timestamp}_${IdUtils.generateUniqueName(nombreArchivo)}"
 
-            // subir bytes
-            bucket.upload(uniqueName, bytes)
+            Log.d("StorageRepository", "Subiendo a Supabase: $remotePath (${bytes.size} bytes)")
 
-            val publicUrl = bucket.publicUrl(uniqueName)
+            // Subir usando la API común (from(...).upload)
+            supabase.storage.from("clases").upload(remotePath, bytes, upsert = false)
+
+            val publicUrl = supabase.storage.from("clases").publicUrl(remotePath)
             Result.success(publicUrl)
         } catch (e: Exception) {
             Result.failure(e)
