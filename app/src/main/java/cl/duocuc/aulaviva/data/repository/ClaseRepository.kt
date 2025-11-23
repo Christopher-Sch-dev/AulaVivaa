@@ -292,7 +292,7 @@ class ClaseRepository(private val application: Application) {
         clase: Clase,
         onSuccess: () -> Unit,
         onError: (String) -> Unit,
-        scope: CoroutineScope = CoroutineScope(Dispatchers.IO) // Preferir pasar viewModelScope desde UI
+        scope: CoroutineScope
     ) {
         scope.launch {
             crearClase(clase, onSuccess, onError)

@@ -195,30 +195,26 @@ class DetalleClaseActivity : BaseActivity() {
             "🎯 Diseñando actividades...",
             "La IA está trabajando, por favor espera"
         )
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val live = iaViewModel.sugerirActividades(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
-                live.observe(this@DetalleClaseActivity) { result ->
-                    loading.dismiss()
-                    if (result.isSuccess) {
-                        mostrarResultadoIA(
-                            titulo = "🎯 Actividades sugeridas",
-                            contenido = result.getOrNull() ?: "",
-                            tipoConsulta = "IDEAS",
-                            nombreClase = clase.nombre,
-                            descripcionClase = clase.descripcion,
-                            pdfUrl = clase.archivoPdfUrl
-                        )
-                    } else {
-                        Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    loading.dismiss()
-                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
+        try {
+            val live = iaViewModel.sugerirActividades(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
+            live.observe(this@DetalleClaseActivity) { result ->
+                loading.dismiss()
+                if (result.isSuccess) {
+                    mostrarResultadoIA(
+                        titulo = "🎯 Actividades sugeridas",
+                        contenido = result.getOrNull() ?: "",
+                        tipoConsulta = "IDEAS",
+                        nombreClase = clase.nombre,
+                        descripcionClase = clase.descripcion,
+                        pdfUrl = clase.archivoPdfUrl
+                    )
+                } else {
+                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
                 }
             }
+        } catch (e: Exception) {
+            loading.dismiss()
+            Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -233,24 +229,19 @@ class DetalleClaseActivity : BaseActivity() {
                     "⏱️ Estructurando...",
                     "La IA está trabajando, por favor espera"
                 )
-                lifecycleScope.launch(Dispatchers.IO) {
-                    try {
-                        val live = iaViewModel.estructurarClasePorTiempo(clase.nombre, clase.descripcion, duracion, clase.archivoPdfUrl)
-                        live.observe(this@DetalleClaseActivity) { result ->
-                            loading.dismiss()
-                            if (result.isSuccess) {
-                                mostrarResultadoIA("⏱️ Estructura de $duracion", result.getOrNull() ?: "")
-                            } else {
-                                Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            loading.dismiss()
-                            Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT)
-                                .show()
+                try {
+                    val live = iaViewModel.estructurarClasePorTiempo(clase.nombre, clase.descripcion, duracion, clase.archivoPdfUrl)
+                    live.observe(this@DetalleClaseActivity) { result ->
+                        loading.dismiss()
+                        if (result.isSuccess) {
+                            mostrarResultadoIA("⏱️ Estructura de $duracion", result.getOrNull() ?: "")
+                        } else {
+                            Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
                         }
                     }
+                } catch (e: Exception) {
+                    loading.dismiss()
+                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancelar", null)
@@ -261,23 +252,19 @@ class DetalleClaseActivity : BaseActivity() {
         val clase = claseActual ?: return
         val loading =
             mostrarDialogoCarga("📄 Analizando PDF...", "La IA está trabajando, por favor espera")
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val live = iaViewModel.analizarPdfConIA(clase.nombre, clase.archivoPdfUrl)
-                live.observe(this@DetalleClaseActivity) { result ->
-                    loading.dismiss()
-                    if (result.isSuccess) {
-                        mostrarResultadoIA("📄 Análisis del material PDF", result.getOrNull() ?: "")
-                    } else {
-                        Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    loading.dismiss()
-                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
+        try {
+            val live = iaViewModel.analizarPdfConIA(clase.nombre, clase.archivoPdfUrl)
+            live.observe(this@DetalleClaseActivity) { result ->
+                loading.dismiss()
+                if (result.isSuccess) {
+                    mostrarResultadoIA("📄 Análisis del material PDF", result.getOrNull() ?: "")
+                } else {
+                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
                 }
             }
+        } catch (e: Exception) {
+            loading.dismiss()
+            Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -287,23 +274,19 @@ class DetalleClaseActivity : BaseActivity() {
             "📝 Resumiendo contenido...",
             "La IA está trabajando, por favor espera"
         )
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val live = iaViewModel.resumirContenidoPdf(clase.nombre, clase.descripcion, clase.archivoPdfNombre ?: "Material educativo")
-                live.observe(this@DetalleClaseActivity) { result ->
-                    loading.dismiss()
-                    if (result.isSuccess) {
-                        mostrarResultadoIA("📝 Resumen del contenido", result.getOrNull() ?: "")
-                    } else {
-                        Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    loading.dismiss()
-                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
+        try {
+            val live = iaViewModel.resumirContenidoPdf(clase.nombre, clase.descripcion, clase.archivoPdfNombre ?: "Material educativo")
+            live.observe(this@DetalleClaseActivity) { result ->
+                loading.dismiss()
+                if (result.isSuccess) {
+                    mostrarResultadoIA("📝 Resumen del contenido", result.getOrNull() ?: "")
+                } else {
+                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
                 }
             }
+        } catch (e: Exception) {
+            loading.dismiss()
+            Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -314,23 +297,19 @@ class DetalleClaseActivity : BaseActivity() {
                 "🎤 Preparando presentación...",
                 "La IA está trabajando, por favor espera"
             )
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val live = iaViewModel.generarGuiaPresentacion(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
-                live.observe(this@DetalleClaseActivity) { result ->
-                    loading.dismiss()
-                    if (result.isSuccess) {
-                        mostrarResultadoIA("🎤 Guía de Presentación", result.getOrNull() ?: "")
-                    } else {
-                        Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    loading.dismiss()
-                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
+        try {
+            val live = iaViewModel.generarGuiaPresentacion(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
+            live.observe(this@DetalleClaseActivity) { result ->
+                loading.dismiss()
+                if (result.isSuccess) {
+                    mostrarResultadoIA("🎤 Guía de Presentación", result.getOrNull() ?: "")
+                } else {
+                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
                 }
             }
+        } catch (e: Exception) {
+            loading.dismiss()
+            Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -341,23 +320,19 @@ class DetalleClaseActivity : BaseActivity() {
                 "🎮 Creando actividades...",
                 "La IA está trabajando, por favor espera"
             )
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val live = iaViewModel.generarActividadesInteractivas(clase.nombre, clase.descripcion, clase.archivoPdfNombre)
-                live.observe(this@DetalleClaseActivity) { result ->
-                    loading.dismiss()
-                    if (result.isSuccess) {
-                        mostrarResultadoIA("🎮 Actividades Interactivas", result.getOrNull() ?: "")
-                    } else {
-                        Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    loading.dismiss()
-                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
+        try {
+            val live = iaViewModel.generarActividadesInteractivas(clase.nombre, clase.descripcion, clase.archivoPdfNombre)
+            live.observe(this@DetalleClaseActivity) { result ->
+                loading.dismiss()
+                if (result.isSuccess) {
+                    mostrarResultadoIA("🎮 Actividades Interactivas", result.getOrNull() ?: "")
+                } else {
+                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
                 }
             }
+        } catch (e: Exception) {
+            loading.dismiss()
+            Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -392,30 +367,26 @@ class DetalleClaseActivity : BaseActivity() {
             "📚 Explicando conceptos...",
             "Tu tutor IA está preparando la explicación"
         )
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val live = iaViewModel.explicarConceptosParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfNombre)
-                live.observe(this@DetalleClaseActivity) { result ->
-                    loading.dismiss()
-                    if (result.isSuccess) {
-                        mostrarResultadoIA(
-                            titulo = "📚 Conceptos explicados para ti",
-                            contenido = result.getOrNull() ?: "",
-                            tipoConsulta = "ALUMNO_CONCEPTOS",
-                            nombreClase = clase.nombre,
-                            descripcionClase = clase.descripcion,
-                            pdfUrl = clase.archivoPdfUrl
-                        )
-                    } else {
-                        Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    loading.dismiss()
-                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
+        try {
+            val live = iaViewModel.explicarConceptosParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfNombre)
+            live.observe(this@DetalleClaseActivity) { result ->
+                loading.dismiss()
+                if (result.isSuccess) {
+                    mostrarResultadoIA(
+                        titulo = "📚 Conceptos explicados para ti",
+                        contenido = result.getOrNull() ?: "",
+                        tipoConsulta = "ALUMNO_CONCEPTOS",
+                        nombreClase = clase.nombre,
+                        descripcionClase = clase.descripcion,
+                        pdfUrl = clase.archivoPdfUrl
+                    )
+                } else {
+                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
                 }
             }
+        } catch (e: Exception) {
+            loading.dismiss()
+            Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -425,30 +396,26 @@ class DetalleClaseActivity : BaseActivity() {
             "✍️ Creando ejercicios...",
             "Tu tutor IA está diseñando ejercicios de práctica"
         )
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val live = iaViewModel.generarEjerciciosParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
-                live.observe(this@DetalleClaseActivity) { result ->
-                    loading.dismiss()
-                    if (result.isSuccess) {
-                        mostrarResultadoIA(
-                            titulo = "✍️ Ejercicios de práctica",
-                            contenido = result.getOrNull() ?: "",
-                            tipoConsulta = "ALUMNO_EJERCICIOS",
-                            nombreClase = clase.nombre,
-                            descripcionClase = clase.descripcion,
-                            pdfUrl = clase.archivoPdfUrl
-                        )
-                    } else {
-                        Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    loading.dismiss()
-                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
+        try {
+            val live = iaViewModel.generarEjerciciosParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
+            live.observe(this@DetalleClaseActivity) { result ->
+                loading.dismiss()
+                if (result.isSuccess) {
+                    mostrarResultadoIA(
+                        titulo = "✍️ Ejercicios de práctica",
+                        contenido = result.getOrNull() ?: "",
+                        tipoConsulta = "ALUMNO_EJERCICIOS",
+                        nombreClase = clase.nombre,
+                        descripcionClase = clase.descripcion,
+                        pdfUrl = clase.archivoPdfUrl
+                    )
+                } else {
+                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
                 }
             }
+        } catch (e: Exception) {
+            loading.dismiss()
+            Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
         }
     }
 
