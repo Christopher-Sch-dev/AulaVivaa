@@ -290,9 +290,10 @@ class ClaseRepository(context: Context) {
     fun crearClaseAsync(
         clase: Clase,
         onSuccess: () -> Unit,
-        onError: (String) -> Unit
+        onError: (String) -> Unit,
+        scope: CoroutineScope = CoroutineScope(Dispatchers.IO) // Preferir pasar viewModelScope desde UI
     ) {
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch {
             crearClase(clase, onSuccess, onError)
         }
     }

@@ -283,6 +283,7 @@ class ListaClasesActivity : BaseActivity() {
                                     viewModel.sincronizarConSupabase()
                                 }
                             },
+                            scope = lifecycleScope,
                             onError = { error ->
                                 lifecycleScope.launch(Dispatchers.Main) {
                                     android.util.Log.e(

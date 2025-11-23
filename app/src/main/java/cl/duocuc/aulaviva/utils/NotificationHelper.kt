@@ -20,11 +20,12 @@ import cl.duocuc.aulaviva.R
  * El profe puede avisar de una clase nueva, o el alumno recibe recordatorios.
  */
 class NotificationHelper(private val context: Context) {
-    
+
+    private val appContext = context.applicationContext
     private val CHANNEL_ID = "aulaviva_channel"
     private val CHANNEL_NAME = "Notificaciones Aula Viva"
-    private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    
+    private val notificationManager = appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
     init {
         crearCanalNotificaciones()
     }
@@ -72,8 +73,8 @@ class NotificationHelper(private val context: Context) {
                     .bigText(mensaje)
             )
         
-        // Genero un ID único basado en el tiempo para que no se reemplacen
-        val notificationId = System.currentTimeMillis().toInt()
+        // Genero un ID único incremental seguro para evitar overflow
+        val notificationId = NotificationHelper.idCounter.incrementAndGet()
         
         // Muestro la notificación
         notificationManager.notify(notificationId, builder.build())
@@ -107,5 +108,9 @@ class NotificationHelper(private val context: Context) {
             titulo = "Recordatorio 🔔",
             mensaje = mensaje
         )
+    }
+
+    companion object {
+        private val idCounter = java.util.concurrent.atomic.AtomicInteger((System.currentTimeMillis() % 1000).toInt())
     }
 }

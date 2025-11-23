@@ -4,7 +4,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AppCompatActivity
-import cl.duocuc.aulaviva.presentation.util.applyEdgeToEdge
+import cl.duocuc.aulaviva.utils.applyEdgeToEdge
 
 /**
  * BaseActivity centraliza el comportamiento edge-to-edge.

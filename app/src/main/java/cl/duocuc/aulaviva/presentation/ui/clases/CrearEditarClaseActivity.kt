@@ -375,7 +375,7 @@ class CrearEditarClaseActivity : BaseActivity() {
                 val inputStream = contentResolver.openInputStream(uri)
                 val bytes = inputStream?.readBytes() ?: return@withContext ""
 
-                val uniqueName = "${UUID.randomUUID()}_$nombreArchivo"
+                val uniqueName = cl.duocuc.aulaviva.utils.IdUtils.generateUniqueName(nombreArchivo)
                 val bucket = supabase.storage["clases"]
 
                 bucket.upload(uniqueName, bytes)

@@ -97,7 +97,7 @@ class AsignaturasRepository(
         val now = java.time.Instant.now().toString()
 
         val asignatura = Asignatura(
-            id = java.util.UUID.randomUUID().toString(),
+            id = cl.duocuc.aulaviva.utils.IdUtils.generateId(),
             nombre = nombre,
             codigoAcceso = codigoTemporal,
             docenteId = docenteId,

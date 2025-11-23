@@ -216,7 +216,7 @@ class PanelPrincipalActivity : BaseActivity() {
 
                         // PASO 2: Crear clase DEMO dentro de la asignatura
                         val claseDemo = cl.duocuc.aulaviva.data.model.Clase(
-                            id = java.util.UUID.randomUUID().toString(),
+                            id = cl.duocuc.aulaviva.utils.IdUtils.generateId(),
                             nombre = "Introducción a Kotlin para Android",
                             descripcion = """
                                 📱 Clase demostrativa sobre Kotlin y desarrollo Android
@@ -256,6 +256,7 @@ class PanelPrincipalActivity : BaseActivity() {
                                     ).show()
                                 }
                             },
+                                scope = lifecycleScope,
                             onError = { error ->
                                 Log.e("PanelPrincipal", "❌ Error creando clase demo: $error")
                                 runOnUiThread {

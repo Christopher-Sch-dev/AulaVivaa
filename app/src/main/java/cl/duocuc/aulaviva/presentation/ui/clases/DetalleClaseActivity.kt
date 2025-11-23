@@ -125,7 +125,7 @@ class DetalleClaseActivity : BaseActivity() {
      * Solución centralizada y profesional.
      */
     private fun abrirPdf(pdfUrl: String) {
-        cl.duocuc.aulaviva.presentation.utils.PdfUtils.abrirPdfExterno(this, pdfUrl)
+        cl.duocuc.aulaviva.utils.PdfUtils.abrirPdfExterno(this, pdfUrl)
     }
 
     /**
@@ -133,7 +133,7 @@ class DetalleClaseActivity : BaseActivity() {
      * Mantenido por compatibilidad pero ya no se usa directamente.
      */
     private fun abrirEnNavegador(pdfUrl: String) {
-        cl.duocuc.aulaviva.presentation.utils.PdfUtils.abrirPdfExterno(this, pdfUrl)
+        cl.duocuc.aulaviva.utils.PdfUtils.abrirPdfExterno(this, pdfUrl)
     }
 
     private fun mostrarDialogoCarga(titulo: String, mensaje: String): AlertDialog {

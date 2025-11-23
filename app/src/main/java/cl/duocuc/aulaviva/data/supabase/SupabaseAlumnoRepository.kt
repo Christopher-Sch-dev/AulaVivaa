@@ -60,7 +60,7 @@ class SupabaseAlumnoRepository(
 
             // 3. Crear inscripción en Supabase
             val inscripcionDto = AlumnoAsignaturaSupabaseDto(
-                id = java.util.UUID.randomUUID().toString(),
+                id = cl.duocuc.aulaviva.utils.IdUtils.generateId(),
                 alumnoId = alumnoId,
                 asignaturaId = asignaturaDto.id,
                 estado = "activo"
