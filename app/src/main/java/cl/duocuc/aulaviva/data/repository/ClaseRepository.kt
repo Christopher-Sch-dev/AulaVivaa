@@ -1,6 +1,6 @@
 package cl.duocuc.aulaviva.data.repository
 
-import android.content.Context
+import android.app.Application
 import android.net.Uri
 import android.util.Log
 import cl.duocuc.aulaviva.data.local.AppDatabase
@@ -30,18 +30,18 @@ import kotlinx.coroutines.withContext
  * - Si no hay internet, guardo en Room con sincronizado=false
  * - Cuando vuelve internet, subo lo pendiente
  */
-class ClaseRepository(context: Context) {
+class ClaseRepository(private val application: Application) {
 
     private val uid: String get() = SupabaseAuthManager.getCurrentUserId() ?: ""
 
     // Referencia al DAO de Room (BD local)
-    private val db = AppDatabase.getDatabase(context.applicationContext)
+    private val db = AppDatabase.getDatabase(application)
     private val claseDao: ClaseDao = db.claseDao()
 
     // Referencia al repository de Supabase
     private val supabaseRepo = SupabaseClaseRepository(claseDao)
 
-    private val appContext = context.applicationContext
+    private val appContext = application.applicationContext
 
     /**
      * Mapeo local Clase -> ClaseEntity controlando el flag de sincronización.
@@ -546,19 +546,17 @@ class ClaseRepository(context: Context) {
     ): String = withContext(Dispatchers.IO) {
         try {
             Log.d("ClaseRepository", "📤 Iniciando subida de PDF: $nombreArchivo")
+            // Use centralized StorageRepository to perform uploads
+            val storageRepo = RepositoryProvider.provideStorageRepository(application)
+            val uploadResult = storageRepo.subirPdf(pdfUri, nombreArchivo)
 
-            val result = supabaseRepo.subirPdf(appContext, pdfUri, nombreArchivo)
-
-            result.fold(
-                onSuccess = { url ->
-                    Log.d("ClaseRepository", "✅ PDF subido exitosamente")
-                    return@withContext url
-                },
-                onFailure = { error ->
-                    Log.e("ClaseRepository", "❌ Error subiendo PDF", error)
-                    throw Exception(error.message ?: "Error subiendo PDF")
-                }
-            )
+            uploadResult.fold(onSuccess = { url ->
+                Log.d("ClaseRepository", "✅ PDF subido exitosamente")
+                return@withContext url
+            }, onFailure = { error ->
+                Log.e("ClaseRepository", "❌ Error subiendo PDF", error)
+                throw Exception(error.message ?: "Error subiendo PDF")
+            })
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error en subirPdfASupabaseStorage", e)
             throw Exception("Error subiendo PDF: ${'$'}{e.message}")

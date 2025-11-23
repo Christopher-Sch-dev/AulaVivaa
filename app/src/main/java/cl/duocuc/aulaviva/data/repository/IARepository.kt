@@ -1,6 +1,6 @@
 package cl.duocuc.aulaviva.data.repository
 
-import android.content.Context
+import android.app.Application
 import android.util.Log
 import cl.duocuc.aulaviva.BuildConfig
 import cl.duocuc.aulaviva.data.remote.Content
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
  * ✅ PDFBox como fallback (offline, límite API)
  * ✅ Retrofit para funciones sin PDF
  */
-class IARepository(private val context: Context) {
+class IARepository(private val application: Application) {
 
     companion object {
         private const val TAG = "AulaViva_IA"
@@ -79,7 +79,7 @@ class IARepository(private val context: Context) {
     init {
         // Inicializar PDFBox para Android (requerido para GlyphList y recursos)
         try {
-            PDFBoxResourceLoader.init(context)
+            PDFBoxResourceLoader.init(application)
             Log.d(TAG, "✅ PDFBox Android inicializado correctamente")
         } catch (e: Exception) {
             Log.w(TAG, "⚠️ Error inicializando PDFBox: ${e.message}")

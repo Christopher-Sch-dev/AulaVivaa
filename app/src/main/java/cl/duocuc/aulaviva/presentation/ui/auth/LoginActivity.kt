@@ -24,7 +24,7 @@ class LoginActivity : BaseActivity() {
     private val viewModel: AuthViewModel by viewModels()
 
     // Repository para consultar rol
-    private val authRepository = AuthRepository()
+    private val authRepository = cl.duocuc.aulaviva.data.repository.RepositoryProvider.provideAuthRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

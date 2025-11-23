@@ -1,6 +1,6 @@
 package cl.duocuc.aulaviva.data.supabase
 
-import android.content.Context
+import android.app.Application
 import android.net.Uri
 import android.util.Log
 import cl.duocuc.aulaviva.data.local.ClaseDao
@@ -8,6 +8,7 @@ import cl.duocuc.aulaviva.data.local.ClaseEntity
 import cl.duocuc.aulaviva.data.model.Clase
 import io.github.jan.supabase.postgrest.from
 import cl.duocuc.aulaviva.data.repository.StorageRepository
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -271,13 +272,13 @@ class SupabaseClaseRepository(private val claseDao: ClaseDao) {
      * Retorna URL pública del archivo.
      */
     suspend fun subirPdf(
-        context: Context,
+        application: Application,
         pdfUri: Uri,
         nombreArchivo: String
     ): Result<String> = withContext(Dispatchers.IO) {
         // Delegar la subida a `StorageRepository` para centralizar la lógica de Storage
         try {
-            val storageRepo = StorageRepository(context)
+            val storageRepo = RepositoryProvider.provideStorageRepository(application)
             return@withContext storageRepo.subirPdf(pdfUri, nombreArchivo)
         } catch (e: Exception) {
             Log.e("SupabaseRepo", "❌ Error delegando subida a StorageRepository", e)

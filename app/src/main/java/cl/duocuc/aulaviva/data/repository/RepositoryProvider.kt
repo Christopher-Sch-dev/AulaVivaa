@@ -65,7 +65,7 @@ object RepositoryProvider {
     @Synchronized
     fun provideStorageRepository(application: Application): StorageRepository {
         return storageRepository ?: run {
-            val repo = StorageRepository(application.applicationContext)
+            val repo = StorageRepository(application)
             storageRepository = repo
             repo
         }
@@ -74,7 +74,7 @@ object RepositoryProvider {
     @Synchronized
     fun provideIARepository(application: Application): cl.duocuc.aulaviva.data.repository.IARepository {
         return iaRepository ?: run {
-            val repo = cl.duocuc.aulaviva.data.repository.IARepository(application.applicationContext)
+            val repo = cl.duocuc.aulaviva.data.repository.IARepository(application)
             iaRepository = repo
             repo
         }
