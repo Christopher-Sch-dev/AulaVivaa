@@ -10,6 +10,7 @@ import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.data.repository.AlumnoRepository
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.data.repository.AuthRepository
+import cl.duocuc.aulaviva.data.repository.StorageRepository
 import kotlinx.coroutines.launch
 
 /**
@@ -21,6 +22,8 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
     // Repository
     private val repository: AlumnoRepository = RepositoryProvider.provideAlumnoRepository(application)
     private val authRepository: AuthRepository = RepositoryProvider.provideAuthRepository()
+    // Centralized storage repo (for future uploads/downloads)
+    private val storageRepository: StorageRepository = RepositoryProvider.provideStorageRepository(application)
 
     private val _logoutEvent = MutableLiveData<Boolean>()
     val logoutEvent: LiveData<Boolean> = _logoutEvent
