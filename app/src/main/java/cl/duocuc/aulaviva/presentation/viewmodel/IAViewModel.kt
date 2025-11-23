@@ -8,16 +8,41 @@ import kotlinx.coroutines.Dispatchers
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.domain.repository.IIARepository
 import cl.duocuc.aulaviva.domain.repository.IStorageRepository
+import cl.duocuc.aulaviva.domain.usecase.AnalizarPdfUseCase
+import cl.duocuc.aulaviva.domain.usecase.CrearResumenEstudioUseCase
+import cl.duocuc.aulaviva.domain.usecase.EstructurarClaseUseCase
+import cl.duocuc.aulaviva.domain.usecase.EnviarMensajeChatUseCase
+import cl.duocuc.aulaviva.domain.usecase.ExplicarConceptosUseCase
+import cl.duocuc.aulaviva.domain.usecase.GenerarActividadesInteractivasUseCase
+import cl.duocuc.aulaviva.domain.usecase.GenerarEjerciciosUseCase
+import cl.duocuc.aulaviva.domain.usecase.GenerarGuiaUseCase
+import cl.duocuc.aulaviva.domain.usecase.GenerarIdeasUseCase
+import cl.duocuc.aulaviva.domain.usecase.ResumirContenidoPdfUseCase
+import cl.duocuc.aulaviva.domain.usecase.SugerirActividadesUseCase
+import cl.duocuc.aulaviva.domain.usecase.IniciarChatUseCase
 
 /**
  * ViewModel wrapper para lógica de IA.
  * Centraliza llamadas a `IARepository` y expone resultados como LiveData<Result<*>>
  */
 class IAViewModel(application: Application) : AndroidViewModel(application) {
-
     private val iaRepository: IIARepository = RepositoryProvider.provideIARepository(application)
     // Storage repository for IA-related file access if needed
     private val storageRepository: IStorageRepository = RepositoryProvider.provideStorageRepository(application)
+
+    // UseCases (created lazily here to preserve default ViewModel construction via RepositoryProvider)
+    private val generarIdeasUseCase by lazy { GenerarIdeasUseCase(iaRepository) }
+    private val sugerirActividadesUseCase by lazy { SugerirActividadesUseCase(iaRepository) }
+    private val estructurarClaseUseCase by lazy { EstructurarClaseUseCase(iaRepository) }
+    private val analizarPdfUseCase by lazy { AnalizarPdfUseCase(iaRepository) }
+    private val resumirContenidoPdfUseCase by lazy { ResumirContenidoPdfUseCase(iaRepository) }
+    private val generarGuiaUseCase by lazy { GenerarGuiaUseCase(iaRepository) }
+    private val generarActividadesInteractivasUseCase by lazy { GenerarActividadesInteractivasUseCase(iaRepository) }
+    private val explicarConceptosUseCase by lazy { ExplicarConceptosUseCase(iaRepository) }
+    private val generarEjerciciosUseCase by lazy { GenerarEjerciciosUseCase(iaRepository) }
+    private val crearResumenEstudioUseCase by lazy { CrearResumenEstudioUseCase(iaRepository) }
+    private val iniciarChatUseCase by lazy { IniciarChatUseCase(iaRepository) }
+    private val enviarMensajeChatUseCase by lazy { EnviarMensajeChatUseCase(iaRepository) }
 
     fun iniciarChatConContexto(
         nombreClase: String,
@@ -26,7 +51,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
         respuestaInicial: String
     ): LiveData<Result<Unit>> = liveData(Dispatchers.IO) {
         try {
-            iaRepository.iniciarChatConContexto(nombreClase, descripcion, pdfUrl, respuestaInicial)
+            iniciarChatUseCase(nombreClase, descripcion, pdfUrl, respuestaInicial)
             emit(Result.success(Unit))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -35,7 +60,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
 
     fun enviarMensajeChat(mensaje: String): LiveData<Result<String>> = liveData(Dispatchers.IO) {
         try {
-            val respuesta = iaRepository.enviarMensajeChat(mensaje)
+            val respuesta = enviarMensajeChatUseCase(mensaje)
             emit(Result.success(respuesta))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -44,7 +69,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
 
     fun generarIdeasParaClase(nombre: String, descripcion: String, pdfUrl: String?): LiveData<Result<String>> = liveData(Dispatchers.IO) {
         try {
-            val r = iaRepository.generarIdeasParaClase(nombre, descripcion, pdfUrl)
+            val r = generarIdeasUseCase(nombre, descripcion, pdfUrl)
             emit(Result.success(r))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -53,7 +78,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
 
     fun sugerirActividades(nombre: String, descripcion: String, pdfUrl: String?): LiveData<Result<String>> = liveData(Dispatchers.IO) {
         try {
-            val r = iaRepository.sugerirActividades(nombre, descripcion, pdfUrl)
+            val r = sugerirActividadesUseCase(nombre, descripcion, pdfUrl)
             emit(Result.success(r))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -62,7 +87,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
 
     fun estructurarClasePorTiempo(nombre: String, descripcion: String, duracion: String, pdfUrl: String?): LiveData<Result<String>> = liveData(Dispatchers.IO) {
         try {
-            val r = iaRepository.estructurarClasePorTiempo(nombre, descripcion, duracion, pdfUrl)
+            val r = estructurarClaseUseCase(nombre, descripcion, duracion, pdfUrl)
             emit(Result.success(r))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -71,7 +96,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
 
     fun analizarPdfConIA(nombre: String, pdfUrl: String?): LiveData<Result<String>> = liveData(Dispatchers.IO) {
         try {
-            val r = iaRepository.analizarPdfConIA(nombre, pdfUrl)
+            val r = analizarPdfUseCase(nombre, pdfUrl)
             emit(Result.success(r))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -80,7 +105,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
 
     fun resumirContenidoPdf(nombre: String, descripcion: String, archivoNombre: String): LiveData<Result<String>> = liveData(Dispatchers.IO) {
         try {
-            val r = iaRepository.resumirContenidoPdf(nombre, descripcion, archivoNombre)
+            val r = resumirContenidoPdfUseCase(nombre, descripcion, archivoNombre)
             emit(Result.success(r))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -89,7 +114,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
 
     fun generarGuiaPresentacion(nombre: String, descripcion: String, pdfUrl: String?): LiveData<Result<String>> = liveData(Dispatchers.IO) {
         try {
-            val r = iaRepository.generarGuiaPresentacion(nombre, descripcion, pdfUrl)
+            val r = generarGuiaUseCase(nombre, descripcion, pdfUrl)
             emit(Result.success(r))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -98,7 +123,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
 
     fun generarActividadesInteractivas(nombre: String, descripcion: String, archivoNombre: String): LiveData<Result<String>> = liveData(Dispatchers.IO) {
         try {
-            val r = iaRepository.generarActividadesInteractivas(nombre, descripcion, archivoNombre)
+            val r = generarActividadesInteractivasUseCase(nombre, descripcion, archivoNombre)
             emit(Result.success(r))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -107,7 +132,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
 
     fun explicarConceptosParaAlumno(nombre: String, descripcion: String, archivoNombre: String): LiveData<Result<String>> = liveData(Dispatchers.IO) {
         try {
-            val r = iaRepository.explicarConceptosParaAlumno(nombre, descripcion, archivoNombre)
+            val r = explicarConceptosUseCase(nombre, descripcion, archivoNombre)
             emit(Result.success(r))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -116,7 +141,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
 
     fun generarEjerciciosParaAlumno(nombre: String, descripcion: String, pdfUrl: String?): LiveData<Result<String>> = liveData(Dispatchers.IO) {
         try {
-            val r = iaRepository.generarEjerciciosParaAlumno(nombre, descripcion, pdfUrl)
+            val r = generarEjerciciosUseCase(nombre, descripcion, pdfUrl)
             emit(Result.success(r))
         } catch (e: Exception) {
             emit(Result.failure(e))
@@ -125,7 +150,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
 
     fun crearResumenEstudioParaAlumno(nombre: String, descripcion: String, archivoNombre: String): LiveData<Result<String>> = liveData(Dispatchers.IO) {
         try {
-            val r = iaRepository.crearResumenEstudioParaAlumno(nombre, descripcion, archivoNombre)
+            val r = crearResumenEstudioUseCase(nombre, descripcion, archivoNombre)
             emit(Result.success(r))
         } catch (e: Exception) {
             emit(Result.failure(e))
