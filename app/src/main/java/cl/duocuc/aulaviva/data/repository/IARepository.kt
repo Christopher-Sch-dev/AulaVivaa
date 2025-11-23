@@ -17,6 +17,9 @@ import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import cl.duocuc.aulaviva.data.local.AppDatabase
+import cl.duocuc.aulaviva.data.local.ChatMessageEntity
+import cl.duocuc.aulaviva.data.local.ChatSessionEntity
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -54,6 +57,10 @@ class IARepository(private val context: Context) : IIARepository {
     }
 
     private var chatSession: com.google.ai.client.generativeai.Chat? = null
+    // Persistencia local de sesiones de chat
+    private val db by lazy { AppDatabase.getDatabase(context) }
+    private val chatDao by lazy { db.chatDao() }
+    private var currentSessionId: Long? = null
 
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -324,27 +331,77 @@ class IARepository(private val context: Context) : IIARepository {
     override suspend fun iniciarChatConContexto(nombreClase: String, descripcion: String, pdfUrl: String?, respuestaInicial: String) {
         withContext(Dispatchers.IO) {
             try {
-                val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
-                val promptInicial = """
-                    CONTEXTO DE LA CLASE:
-                    Clase: $nombreClase
-                    Descripción: $descripcion
-                """.trimIndent()
-                val contenidoUsuario = if (!pdfUrl.isNullOrEmpty()) {
-                    val pdfFile = descargarPDFATempFile(pdfUrl)
-                    if (pdfFile.length() <= 20_000_000L) {
-                        val pdfBytes = pdfFile.readBytes()
-                        content("user") { text(promptInicial); blob("application/pdf", pdfBytes) }
-                    } else {
-                        val chunks = extractTextChunksFromPdf(pdfFile)
-                        val compressed = compressChunksForSingleCall(chunks)
-                        content("user") { text(promptInicial + "\n\nCONTENIDO_COMPRIMIDO:\n" + compressed) }
+                // Intentar restaurar sesión existente para la misma clase
+                val existing = chatDao.getLatestSessionForClass(nombreClase)
+                if (existing != null) {
+                    currentSessionId = existing.id
+                    val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
+                    // Si ya existe un análisis guardado, lo añadimos como mensaje de sistema para dar contexto
+                    existing.analysisText?.let { anal -> historial.add(content("system") { text("ANALYSIS:\n" + anal) }) }
+                    val messages = chatDao.getMessagesForSession(existing.id)
+                    for (m in messages) {
+                        if (m.sender == "user") historial.add(content("user") { text(m.message) })
+                        else historial.add(content("model") { text(m.message) })
                     }
-                } else content("user") { text(promptInicial) }
-                historial.add(contenidoUsuario)
-                historial.add(content("model") { text(respuestaInicial) })
-                chatSession = googleAiModel.startChat(history = historial)
-                Log.d(TAG, "✅ [CHAT] Sesión iniciada con ${historial.size} mensajes")
+                    chatSession = googleAiModel.startChat(history = historial)
+                    Log.d(TAG, "✅ [CHAT] Sesión restaurada desde BD con ${messages.size} mensajes")
+                } else {
+                    val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
+                    val promptInicial = """
+                        CONTEXTO DE LA CLASE:
+                        Clase: $nombreClase
+                        Descripción: $descripcion
+                    """.trimIndent()
+
+                    val contenidoUsuario = if (!pdfUrl.isNullOrEmpty()) {
+                        val pdfFile = descargarPDFATempFile(pdfUrl)
+                        if (pdfFile.length() <= 20_000_000L) {
+                            val pdfBytes = pdfFile.readBytes()
+                            content("user") { text(promptInicial); blob("application/pdf", pdfBytes) }
+                        } else {
+                            val chunks = extractTextChunksFromPdf(pdfFile)
+                            val compressed = compressChunksForSingleCall(chunks)
+                            content("user") { text(promptInicial + "\n\nCONTENIDO_COMPRIMIDO:\n" + compressed) }
+                        }
+                    } else content("user") { text(promptInicial) }
+
+                    // Guardar nueva sesión en BD
+                    val sessionId = chatDao.insertSession(
+                        ChatSessionEntity(
+                            nombreClase = nombreClase,
+                            descripcion = descripcion,
+                            pdfUrl = pdfUrl
+                        )
+                    )
+                    currentSessionId = sessionId
+
+                    // Si hay PDF, intentar analizar y guardar el análisis en la sesión
+                    if (!pdfUrl.isNullOrEmpty()) {
+                        try {
+                            val analysis = analizarPDFInteligente(pdfUrl, "Analiza el PDF y entrega un informe pedagógico para la clase: $nombreClase")
+                            val updated = chatDao.getLatestSessionForClass(nombreClase)?.copy().apply {
+                                // safe update: getLatestSessionForClass should return the same inserted session
+                            }
+                            // actualizar la sesión con el análisis
+                            val sessionToUpdate = ChatSessionEntity(id = sessionId, nombreClase = nombreClase, descripcion = descripcion, pdfUrl = pdfUrl, analysisText = analysis, startedAt = System.currentTimeMillis(), lastActivityAt = System.currentTimeMillis())
+                            chatDao.updateSession(sessionToUpdate)
+                            // Persistir el análisis como mensaje AI para contexto histórico
+                            chatDao.insertMessage(ChatMessageEntity(sessionId = sessionId, sender = "ai", message = analysis))
+                        } catch (e: Exception) {
+                            Log.w(TAG, "⚠️ Error analizando PDF al iniciar chat: ${e.message}")
+                        }
+                    }
+
+                    // Persistir el mensaje inicial de contexto del usuario
+                    historial.add(contenidoUsuario)
+                    chatDao.insertMessage(ChatMessageEntity(sessionId = sessionId, sender = "user", message = promptInicial))
+                    // Añadir la respuesta inicial provista por la app como mensaje del modelo
+                    historial.add(content("model") { text(respuestaInicial) })
+                    chatDao.insertMessage(ChatMessageEntity(sessionId = sessionId, sender = "ai", message = respuestaInicial))
+
+                    chatSession = googleAiModel.startChat(history = historial)
+                    Log.d(TAG, "✅ [CHAT] Nueva sesión iniciada y persistida con id=$sessionId")
+                }
             } catch (e: Exception) { Log.e(TAG, "❌ [CHAT] Error iniciando: ${e.message}"); chatSession = null }
         }
     }
@@ -352,8 +409,23 @@ class IARepository(private val context: Context) : IIARepository {
     override suspend fun enviarMensajeChat(mensaje: String): String {
         return withContext(Dispatchers.IO) {
             if (chatSession != null) {
-                try { val response = chatSession!!.sendMessage(mensaje); return@withContext response.text ?: "Sin respuesta de la IA" }
-                catch (e: Exception) { Log.e(TAG, "❌ [CHAT] Error: ${e.message}"); throw e }
+                try {
+                    // Persistir mensaje del usuario en BD si existe sesión
+                    currentSessionId?.let { sid -> chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "user", message = mensaje)) }
+                    val response = chatSession!!.sendMessage(mensaje)
+                    val texto = response.text ?: "Sin respuesta de la IA"
+                    // Persistir respuesta de la IA
+                    currentSessionId?.let { sid ->
+                        chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = texto))
+                        // actualizar lastActivityAt en la sesión
+                        val sess = chatDao.getSessionById(sid)
+                        if (sess != null) {
+                            val updated = sess.copy(lastActivityAt = System.currentTimeMillis())
+                            chatDao.updateSession(updated)
+                        }
+                    }
+                    return@withContext texto
+                } catch (e: Exception) { Log.e(TAG, "❌ [CHAT] Error: ${e.message}"); throw e }
             } else { Log.w(TAG, "⚠️ [CHAT] No hay sesión activa, fallback stateless"); return@withContext llamarGemini(mensaje) }
         }
     }
