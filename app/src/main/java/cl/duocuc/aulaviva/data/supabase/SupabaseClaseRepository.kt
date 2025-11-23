@@ -7,7 +7,7 @@ import cl.duocuc.aulaviva.data.local.ClaseDao
 import cl.duocuc.aulaviva.data.local.ClaseEntity
 import cl.duocuc.aulaviva.data.model.Clase
 import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.storage.storage
+import cl.duocuc.aulaviva.data.repository.StorageRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -275,40 +275,12 @@ class SupabaseClaseRepository(private val claseDao: ClaseDao) {
         pdfUri: Uri,
         nombreArchivo: String
     ): Result<String> = withContext(Dispatchers.IO) {
+        // Delegar la subida a `StorageRepository` para centralizar la lógica de Storage
         try {
-            val supabase = SupabaseClientProvider.getClient()
-            val uidDocente = SupabaseAuthManager.getCurrentUserId()
-                ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
-
-            // Leer contenido del PDF
-            val inputStream = context.contentResolver.openInputStream(pdfUri)
-                ?: return@withContext Result.failure(Exception("No se puede leer el archivo PDF"))
-
-            val pdfBytes = inputStream.readBytes()
-            inputStream.close()
-
-            val timestamp = System.currentTimeMillis()
-            val rutaPdf = "clases/$uidDocente/${timestamp}_$nombreArchivo"
-
-            Log.d("SupabaseRepo", "📤 Subiendo PDF: $rutaPdf (${pdfBytes.size / 1024} KB)")
-
-            // Subir a Storage
-            supabase.storage
-                .from("clases")
-                .upload(rutaPdf, pdfBytes, upsert = false)
-
-            // Obtener URL pública
-            val urlPublica = supabase.storage
-                .from("clases")
-                .publicUrl(rutaPdf)
-
-            Log.d("SupabaseRepo", "✅ PDF subido exitosamente")
-            Log.d("SupabaseRepo", "🔗 URL: $urlPublica")
-
-            Result.success(urlPublica)
-
+            val storageRepo = StorageRepository(context)
+            return@withContext storageRepo.subirPdf(pdfUri, nombreArchivo)
         } catch (e: Exception) {
-            Log.e("SupabaseRepo", "❌ Error subiendo PDF", e)
+            Log.e("SupabaseRepo", "❌ Error delegando subida a StorageRepository", e)
             Result.failure(Exception("Error al subir PDF: ${e.message}"))
         }
     }
