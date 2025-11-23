@@ -341,15 +341,25 @@ class IARepository(private val context: Context) : IIARepository {
 
     override suspend fun generarIdeasParaClase(nombreClase: String, descripcion: String, pdfUrl: String?): String {
         return try {
-            val contexto = if (!pdfUrl.isNullOrEmpty()) "\n📎 Material de apoyo disponible" else ""
+            val (title, author, analysis) = ensureAnalysisAndMetadata(nombreClase, pdfUrl)
+            val contextHeader = buildString {
+                append("DETALLES DEL PDF ANALIZADO:\n")
+                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
+                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
+                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
+            }
             val prompt = """
-                Eres un consultor en innovación educativa. Clase: $nombreClase
-                Descripción: $descripcion$contexto
+                $contextHeader
+                Eres un consultor en innovación educativa.
+                Clase: $nombreClase
+                Descripción: $descripcion
 
                 Genera 4 ideas prácticas para trabajo en clase, con objetivo pedagógico y pasos.
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            "$resultado\n\n(Generado por Gemini)"
+            // persistir respuesta si hay sesión
+            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
         } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
     }
 
@@ -372,36 +382,102 @@ class IARepository(private val context: Context) : IIARepository {
     }
 
     override suspend fun generarGuiaPresentacion(nombre: String, descripcion: String, pdfUrl: String?): String {
-        return generarIdeasParaClase(nombre, descripcion, pdfUrl)
+        return try {
+            val (title, author, analysis) = ensureAnalysisAndMetadata(nombre, pdfUrl)
+            val contextHeader = buildString {
+                append("DETALLES DEL PDF ANALIZADO:\n")
+                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
+                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
+                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
+            }
+            val prompt = """
+                $contextHeader
+                Genera una guía de presentación clara y ordenada para la clase $nombre.
+                Descripción: $descripcion
+            """.trimIndent()
+            val resultado = llamarGemini(prompt)
+            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+        } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
     }
 
     override suspend fun generarEjerciciosParaAlumno(nombre: String, descripcion: String, pdfUrl: String?): String {
-        return generarActividadesInteractivas(nombre, descripcion, pdfUrl)
+        return try {
+            val (title, author, analysis) = ensureAnalysisAndMetadata(nombre, pdfUrl)
+            val contextHeader = buildString {
+                append("DETALLES DEL PDF ANALIZADO:\n")
+                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
+                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
+                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
+            }
+            val prompt = """
+                $contextHeader
+                Genera ejercicios para alumnos relacionados a $nombre.
+                Descripción: $descripcion
+            """.trimIndent()
+            val resultado = llamarGemini(prompt)
+            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+        } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
     }
 
     override suspend fun crearResumenEstudioParaAlumno(nombre: String, descripcion: String, archivoNombre: String): String {
-        return generarIdeasParaClase(nombre, descripcion, archivoNombre)
+        return try {
+            val (title, author, analysis) = ensureAnalysisAndMetadata(nombre, archivoNombre)
+            val contextHeader = buildString {
+                append("DETALLES DEL PDF ANALIZADO:\n")
+                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
+                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
+                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
+            }
+            val prompt = """
+                $contextHeader
+                Crea un resumen de estudio para alumnos basado en el material de la clase $nombre.
+                Descripción: $descripcion
+            """.trimIndent()
+            val resultado = llamarGemini(prompt)
+            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+        } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
     }
 
     override suspend fun generarActividadesInteractivas(nombreClase: String, descripcion: String, nombrePdf: String?): String {
         return try {
-            val contexto = if (!nombrePdf.isNullOrEmpty()) "\n📎 Material: $nombrePdf" else ""
+            val (title, author, analysis) = ensureAnalysisAndMetadata(nombreClase, nombrePdf)
+            val contextHeader = buildString {
+                append("DETALLES DEL PDF ANALIZADO:\n")
+                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
+                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
+                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
+            }
             val prompt = """
-                Diseña 3 actividades interactivas para la clase $nombreClase. Descripción: $descripcion$contexto
+                $contextHeader
+                Diseña 3 actividades interactivas para la clase $nombreClase.
+                Descripción: $descripcion
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            "$resultado\n\n(Generado por Gemini)"
+            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
         } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
     }
 
     override suspend fun explicarConceptosParaAlumno(nombreClase: String, descripcion: String, nombrePdf: String?): String {
         return try {
-            val contexto = if (!nombrePdf.isNullOrEmpty()) "\n📄 Material: $nombrePdf" else ""
+            val (title, author, analysis) = ensureAnalysisAndMetadata(nombreClase, nombrePdf)
+            val contextHeader = buildString {
+                append("DETALLES DEL PDF ANALIZADO:\n")
+                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
+                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
+                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
+            }
             val prompt = """
-                Eres un tutor. Explica en lenguaje simple los conceptos principales de $nombreClase. Descripción: $descripcion$contexto
+                $contextHeader
+                Eres un tutor. Explica en lenguaje simple los conceptos principales de $nombreClase.
+                Descripción: $descripcion
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            "$resultado\n\n(Generado por Gemini)"
+            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
         } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
     }
 
