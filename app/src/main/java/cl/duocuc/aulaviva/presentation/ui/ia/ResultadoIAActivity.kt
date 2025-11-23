@@ -44,6 +44,7 @@ class ResultadoIAActivity : BaseActivity() {
     private var nombreClase = ""
     private var descripcionClase = ""
     private var pdfUrl = ""
+    private var currentSessionId: Long? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -102,6 +103,25 @@ class ResultadoIAActivity : BaseActivity() {
             // Podemos loguear errores si aparecen, pero no bloqueamos la UI
             if (result.isFailure) {
                 android.util.Log.w("ResultadoIA", "Error iniciando chat: ${result.exceptionOrNull()?.message}")
+            }
+        }
+
+        // Obtener la sesión creada o restaurada y guardar su id para poder cerrarla al salir
+        iaViewModel.obtenerUltimaSesion(nombreClase).observe(this) { res ->
+            if (res.isSuccess) {
+                val s = res.getOrNull()
+                currentSessionId = s?.id
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Al salir del apartado resultado cerramos la sesión temporal de chat
+        currentSessionId?.let { id ->
+            iaViewModel.cerrarSesion(id).observe(this) { r ->
+                if (r.isSuccess) android.util.Log.d("ResultadoIA", "Sesión $id cerrada")
+                else android.util.Log.w("ResultadoIA", "Error cerrando sesión $id: ${r.exceptionOrNull()?.message}")
             }
         }
     }

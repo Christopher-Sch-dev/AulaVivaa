@@ -462,4 +462,22 @@ class IARepository(private val context: Context) : IIARepository {
         return analysis
     }
 
+    override suspend fun cerrarSesion(sessionId: Long) {
+        withContext(Dispatchers.IO) {
+            try {
+                // borrar mensajes asociados y la sesión
+                chatDao.clearMessagesForSession(sessionId)
+                chatDao.deleteSessionById(sessionId)
+                // si la sesión en memoria coincide, limpiarla
+                if (currentSessionId == sessionId) {
+                    chatSession = null
+                    currentSessionId = null
+                }
+                Log.d(TAG, "✅ [CHAT] Sesión $sessionId cerrada y limpiada")
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ [CHAT] Error cerrando sesión $sessionId: ${e.message}")
+            }
+        }
+    }
+
 }

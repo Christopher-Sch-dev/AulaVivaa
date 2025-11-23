@@ -45,6 +45,7 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
     private val iniciarChatUseCase by lazy { IniciarChatUseCase(iaRepository) }
     private val enviarMensajeChatUseCase by lazy { EnviarMensajeChatUseCase(iaRepository) }
     private val reanalizarPdfUseCase by lazy { ReanalizarPdfUseCase(iaRepository) }
+    private val cerrarSesionUseCase by lazy { cl.duocuc.aulaviva.domain.usecase.CerrarSesionUseCase(iaRepository) }
 
     // Lectura de sesiones/mensajes
     fun obtenerUltimaSesion(nombreClase: String) = liveData(Dispatchers.IO) {
@@ -65,6 +66,13 @@ class IAViewModel(application: Application) : AndroidViewModel(application) {
         try {
             val r = reanalizarPdfUseCase(sessionId, pdfUrl)
             emit(Result.success(r))
+        } catch (e: Exception) { emit(Result.failure(e)) }
+    }
+
+    fun cerrarSesion(sessionId: Long) = liveData(Dispatchers.IO) {
+        try {
+            cerrarSesionUseCase(sessionId)
+            emit(Result.success(Unit))
         } catch (e: Exception) { emit(Result.failure(e)) }
     }
 

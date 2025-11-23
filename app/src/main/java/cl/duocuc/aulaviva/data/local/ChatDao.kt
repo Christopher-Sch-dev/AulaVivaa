@@ -23,6 +23,9 @@ interface ChatDao {
     @Query("SELECT * FROM chat_sessions WHERE id = :id LIMIT 1")
     suspend fun getSessionById(id: Long): ChatSessionEntity?
 
+    @Query("DELETE FROM chat_sessions WHERE id = :id")
+    suspend fun deleteSessionById(id: Long)
+
     @Query("SELECT * FROM chat_messages WHERE session_id = :sessionId ORDER BY created_at ASC")
     suspend fun getMessagesForSession(sessionId: Long): List<ChatMessageEntity>
 

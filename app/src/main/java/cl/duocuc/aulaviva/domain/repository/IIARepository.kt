@@ -17,4 +17,5 @@ interface IIARepository {
     suspend fun obtenerUltimaSesionParaClase(nombreClase: String): cl.duocuc.aulaviva.domain.model.ChatSession?
     suspend fun obtenerMensajesDeSesion(sessionId: Long): List<cl.duocuc.aulaviva.domain.model.ChatMessage>
     suspend fun reanalizarPdfParaSesion(sessionId: Long, pdfUrl: String?): String
+    suspend fun cerrarSesion(sessionId: Long)
 }
