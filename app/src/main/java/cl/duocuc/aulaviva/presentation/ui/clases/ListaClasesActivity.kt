@@ -207,7 +207,10 @@ class ListaClasesActivity : BaseActivity() {
                 btnGuardar.isEnabled = false
 
                 // Observadores locales para cerrar diálogo y restaurar estado
-                val successObserver = androidx.lifecycle.Observer<String?> { message ->
+                var successObserver: androidx.lifecycle.Observer<String?>? = null
+                var errorObserver: androidx.lifecycle.Observer<String?>? = null
+
+                successObserver = androidx.lifecycle.Observer<String?> { message ->
                     if (message != null) {
                         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
@@ -217,24 +220,24 @@ class ListaClasesActivity : BaseActivity() {
                         tempPdfName = ""
                         viewModel.sincronizarConSupabase()
                         viewModel.clearMessages()
-                        viewModel.operationSuccess.removeObserver(successObserver)
-                        viewModel.error.removeObserver(errorObserver)
+                        successObserver?.let { viewModel.operationSuccess.removeObserver(it) }
+                        errorObserver?.let { viewModel.error.removeObserver(it) }
                     }
                 }
 
-                val errorObserver = androidx.lifecycle.Observer<String?> { err ->
+                errorObserver = androidx.lifecycle.Observer<String?> { err ->
                     err?.let {
                         Toast.makeText(this, it, Toast.LENGTH_LONG).show()
                         isSaving = false
                         btnGuardar.isEnabled = true
                         viewModel.clearMessages()
-                        viewModel.operationSuccess.removeObserver(successObserver)
-                        viewModel.error.removeObserver(errorObserver)
+                        successObserver?.let { viewModel.operationSuccess.removeObserver(it) }
+                        errorObserver?.let { viewModel.error.removeObserver(it) }
                     }
                 }
 
-                viewModel.operationSuccess.observe(this, successObserver)
-                viewModel.error.observe(this, errorObserver)
+                viewModel.operationSuccess.observe(this, successObserver!!)
+                viewModel.error.observe(this, errorObserver!!)
 
                 // Delegar la subida/creación al ViewModel
                 if (tempPdfUri.isNotEmpty()) {
@@ -357,7 +360,10 @@ class ListaClasesActivity : BaseActivity() {
                 )
 
                 // Observadores locales para cerrar diálogo y restaurar estado
-                val successObserver = androidx.lifecycle.Observer<String?> { message ->
+                var successObserver: androidx.lifecycle.Observer<String?>? = null
+                var errorObserver: androidx.lifecycle.Observer<String?>? = null
+
+                successObserver = androidx.lifecycle.Observer<String?> { message ->
                     if (message != null) {
                         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
@@ -367,24 +373,24 @@ class ListaClasesActivity : BaseActivity() {
                         tempPdfName = ""
                         viewModel.sincronizarConSupabase()
                         viewModel.clearMessages()
-                        viewModel.operationSuccess.removeObserver(successObserver)
-                        viewModel.error.removeObserver(errorObserver)
+                        successObserver?.let { viewModel.operationSuccess.removeObserver(it) }
+                        errorObserver?.let { viewModel.error.removeObserver(it) }
                     }
                 }
 
-                val errorObserver = androidx.lifecycle.Observer<String?> { err ->
+                errorObserver = androidx.lifecycle.Observer<String?> { err ->
                     err?.let {
                         Toast.makeText(this, it, Toast.LENGTH_LONG).show()
                         isSaving = false
                         btnGuardar.isEnabled = true
                         viewModel.clearMessages()
-                        viewModel.operationSuccess.removeObserver(successObserver)
-                        viewModel.error.removeObserver(errorObserver)
+                        successObserver?.let { viewModel.operationSuccess.removeObserver(it) }
+                        errorObserver?.let { viewModel.error.removeObserver(it) }
                     }
                 }
 
-                viewModel.operationSuccess.observe(this, successObserver)
-                viewModel.error.observe(this, errorObserver)
+                viewModel.operationSuccess.observe(this, successObserver!!)
+                viewModel.error.observe(this, errorObserver!!)
 
                 // Si tempPdfUri parece ser un content URI se sube primero, si es URL pública entonces se usa directamente
                 if (tempPdfUri.startsWith("content://") || tempPdfUri.startsWith("file://")) {
