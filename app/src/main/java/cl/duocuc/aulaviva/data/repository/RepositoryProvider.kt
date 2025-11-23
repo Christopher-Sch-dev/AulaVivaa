@@ -34,4 +34,8 @@ object RepositoryProvider {
     fun provideIARepository(application: Application): cl.duocuc.aulaviva.data.repository.IARepository {
         return cl.duocuc.aulaviva.data.repository.IARepository(application.applicationContext)
     }
+
+    fun provideAuthRepository(): cl.duocuc.aulaviva.data.repository.AuthRepository {
+        return cl.duocuc.aulaviva.data.repository.AuthRepository()
+    }
 }

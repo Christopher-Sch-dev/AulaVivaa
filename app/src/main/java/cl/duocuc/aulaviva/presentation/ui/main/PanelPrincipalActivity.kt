@@ -54,6 +54,22 @@ class PanelPrincipalActivity : BaseActivity() {
             // Si necesitas hacer algo extra con el código, hacerlo aquí
         })
 
+        // Observadores para info del usuario y logout
+        viewModel.userEmail.observe(this, Observer { email ->
+            val displayName = email?.substringBefore("@") ?: "Usuario"
+            val emoji = "👨‍🏫"
+            binding.bienvenidaTextView.text = "$emoji Bienvenido Profesor $displayName"
+        })
+
+        viewModel.logoutEvent.observe(this, Observer { loggedOut ->
+            if (loggedOut == true) {
+                val intent = Intent(this@PanelPrincipalActivity, LoginActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+            }
+        })
+
         // Inicializo el helper de notificaciones (RECURSO NATIVO #1)
         notificationHelper = NotificationHelper(this)
 
@@ -67,28 +83,10 @@ class PanelPrincipalActivity : BaseActivity() {
      * Muestra el rol (docente/alumno) y adapta las opciones disponibles.
      */
     private fun cargarDatosUsuario() {
-        val uid = SupabaseAuthManager.getCurrentUserId()
-        val email = SupabaseAuthManager.getCurrentUserEmail()
-
-        if (uid == null || email == null) {
-            Log.e("PanelPrincipal", "❌ Usuario no autenticado")
-            Toast.makeText(this, "Error: Usuario no autenticado", Toast.LENGTH_LONG).show()
-            // Redirigir al login
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
-            return
-        }
-
-        Log.d("PanelPrincipal", "✅ Usuario cargado: $email")
-
-        // Por defecto, todos los usuarios registrados son docentes
+        // Pedimos al ViewModel que cargue/prepare la info si corresponde
+        // (PanelPrincipalViewModel inicializa user info en su init)
+        // Por defecto, rol actual seguirá como "docente" hasta que se implemente fetch de rol.
         rolActual = "docente"
-
-        val emoji = "👨‍🏫"
-        val nombreCorto = email.substringBefore("@")
-        val mensaje = "Bienvenido Profesor $nombreCorto"
-
-        binding.bienvenidaTextView.text = "$emoji $mensaje"
     }
 
     /**

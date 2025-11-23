@@ -9,12 +9,24 @@ import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.data.repository.AsignaturasRepository
 import cl.duocuc.aulaviva.data.repository.ClaseRepository
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
+import cl.duocuc.aulaviva.data.repository.AuthRepository
 import cl.duocuc.aulaviva.utils.IdUtils
 import kotlinx.coroutines.launch
 
 class PanelPrincipalViewModel(application: Application) : AndroidViewModel(application) {
 
     private val app = application
+
+    private val authRepository: AuthRepository = RepositoryProvider.provideAuthRepository()
+
+    private val _userEmail = MutableLiveData<String?>()
+    val userEmail: LiveData<String?> = _userEmail
+
+    private val _userId = MutableLiveData<String?>()
+    val userId: LiveData<String?> = _userId
+
+    private val _logoutEvent = MutableLiveData<Boolean>()
+    val logoutEvent: LiveData<Boolean> = _logoutEvent
 
     private val _toastMessage = MutableLiveData<String?>()
     val toastMessage: LiveData<String?> = _toastMessage
@@ -51,7 +63,7 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
                     asignaturaId = asignaturaCreada.id,
                     archivoPdfUrl = "https://kotlinlang.org/docs/kotlin-reference.pdf",
                     archivoPdfNombre = "Kotlin_Reference_Demo.pdf",
-                    creador = cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager.getCurrentUserId() ?: ""
+                    creador = authRepository.getCurrentUserId() ?: ""
                 )
 
                 clasesRepo.crearClaseAsync(
@@ -70,5 +82,17 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
                 _toastMessage.postValue("❌ Error al crear demo: ${e.message}")
             }
         }
+    }
+
+    init {
+        // Inicializar user info desde el repositorio de auth
+        _userEmail.value = authRepository.getCurrentUserEmail()
+        _userId.value = authRepository.getCurrentUserId()
+    }
+
+    fun logout() {
+        // Delegar logout al repositorio y notificar a la Activity
+        authRepository.logout()
+        _logoutEvent.postValue(true)
     }
 }
