@@ -50,8 +50,8 @@ class ResultadoIAActivity : BaseActivity() {
 
         // Edge-to-edge: aplicado automáticamente por BaseActivity
 
-        // Inicializar repositorio IA
-        iaRepository = IARepository(this)
+        // Inicializar repositorio IA con applicationContext para evitar fugas de Activity
+        iaRepository = IARepository(applicationContext)
 
         // Configurar Markwon para renderizar Markdown
         markwon = Markwon.builder(this)

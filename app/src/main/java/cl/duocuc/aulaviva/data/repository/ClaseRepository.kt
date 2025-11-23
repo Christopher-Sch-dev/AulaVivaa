@@ -35,7 +35,8 @@ class ClaseRepository(context: Context) {
     private val uid: String get() = SupabaseAuthManager.getCurrentUserId() ?: ""
 
     // Referencia al DAO de Room (BD local)
-    private val claseDao: ClaseDao = AppDatabase.getDatabase(context).claseDao()
+    private val db = AppDatabase.getDatabase(context.applicationContext)
+    private val claseDao: ClaseDao = db.claseDao()
 
     // Referencia al repository de Supabase
     private val supabaseRepo = SupabaseClaseRepository(claseDao)
