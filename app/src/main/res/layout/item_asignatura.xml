@@ -38,13 +38,13 @@
             android:textColor="#666666"
             android:textSize="14sp" />
 
-        <!-- Código de acceso -->
+        <!-- Código de acceso (con icono inline) -->
         <TextView
             android:id="@+id/textViewCodigo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Código: POO2025-A1B2"
+            android:text="📋 Código: POO2025-A1B2"
             android:maxLines="1"
             android:ellipsize="end"
             android:textColor="#2C2C2C"
@@ -113,7 +113,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="40dp"
                     android:layout_marginEnd="8dp"
-                    android:text="📋 Copiar Código"
+                    android:minWidth="0dp"
+                    android:includeFontPadding="false"
+                    android:text="Copiar-Codigo"
                     android:textAllCaps="false"
                     android:textColor="#2E7D32"
                     android:textSize="12sp"
