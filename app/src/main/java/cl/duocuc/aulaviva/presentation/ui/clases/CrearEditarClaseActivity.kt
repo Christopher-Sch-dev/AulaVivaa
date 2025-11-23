@@ -11,7 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.databinding.ActivityCrearEditarClaseBinding
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
-import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
+// Auth via ViewModels/Repositories (no direct Supabase calls from Activity)
 import com.google.android.material.datepicker.MaterialDatePicker
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers

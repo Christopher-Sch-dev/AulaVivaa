@@ -10,7 +10,7 @@ import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import cl.duocuc.aulaviva.databinding.ActivityPanelAlumnoBinding
-import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
+// Auth access moved to `AlumnoViewModel` (via AuthRepository)
 import cl.duocuc.aulaviva.presentation.activity.AlumnoClasesActivity
 import cl.duocuc.aulaviva.presentation.ui.auth.LoginActivity
 import cl.duocuc.aulaviva.presentation.adapter.AsignaturaAlumnoAdapter
@@ -68,7 +68,8 @@ class PanelAlumnoActivity : BaseActivity() {
         }
 
         binding.fabLogout.setOnClickListener {
-            cerrarSesion()
+            // Delegar logout al ViewModel para respetar MVVM
+            viewModel.logout()
         }
     }
 
@@ -163,15 +164,25 @@ class PanelAlumnoActivity : BaseActivity() {
             .setMessage("¿Estás seguro que quieres salir de Aula Viva?")
             .setPositiveButton("Sí, salir") { _, _ ->
                 lifecycleScope.launch {
-                    SupabaseAuthManager.logout()
-                    val intent = Intent(this@PanelAlumnoActivity, LoginActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
-                    finish()
+                    // Ahora el logout se maneja desde el ViewModel/Repo. Dejamos este flujo solo por compatibilidad.
+                    viewModel.logout()
                 }
             }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Observar evento de logout desde el ViewModel
+        viewModel.logoutEvent.observe(this) { loggedOut ->
+            if (loggedOut == true) {
+                val intent = Intent(this@PanelAlumnoActivity, LoginActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+            }
+        }
     }
 
     override fun onResume() {

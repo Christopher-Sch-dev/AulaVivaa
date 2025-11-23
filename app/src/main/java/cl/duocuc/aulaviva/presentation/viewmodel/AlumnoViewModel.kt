@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.data.repository.AlumnoRepository
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
+import cl.duocuc.aulaviva.data.repository.AuthRepository
 import kotlinx.coroutines.launch
 
 /**
@@ -19,6 +20,10 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
 
     // Repository
     private val repository: AlumnoRepository = RepositoryProvider.provideAlumnoRepository(application)
+    private val authRepository: AuthRepository = RepositoryProvider.provideAuthRepository()
+
+    private val _logoutEvent = MutableLiveData<Boolean>()
+    val logoutEvent: LiveData<Boolean> = _logoutEvent
 
     // LiveData para asignaturas inscritas (automática desde Room)
     val asignaturasInscritas: LiveData<List<Asignatura>> = repository.obtenerAsignaturasInscritas().asLiveData()
@@ -111,6 +116,11 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
 
             _isLoading.value = false
         }
+    }
+
+    fun logout() {
+        authRepository.logout()
+        _logoutEvent.postValue(true)
     }
 
     /**

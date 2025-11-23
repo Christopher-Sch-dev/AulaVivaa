@@ -12,7 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
+// Auth access now via PanelPrincipalViewModel (AuthRepository)
 import cl.duocuc.aulaviva.databinding.ActivityPanelPrincipalBinding
 import cl.duocuc.aulaviva.presentation.ui.auth.LoginActivity
 import cl.duocuc.aulaviva.utils.NotificationHelper
@@ -119,8 +119,8 @@ class PanelPrincipalActivity : BaseActivity() {
      * Envía una notificación de bienvenida personalizada
      */
     private fun enviarNotificacionBienvenida() {
-        val email = SupabaseAuthManager.getCurrentUserEmail() ?: "Usuario"
-        val nombre = email.substringBefore("@")  // Extraigo nombre del email
+        val email = viewModel.userEmail.value ?: "Usuario"
+        val nombre = email.substringBefore("@")
         notificationHelper.enviarNotificacionBienvenida(nombre)
     }
 
@@ -162,14 +162,8 @@ class PanelPrincipalActivity : BaseActivity() {
                 .setTitle("Cerrar sesión")
                 .setMessage("¿Estás seguro que quieres salir de Aula Viva?")
                 .setPositiveButton("Sí, salir") { _, _ ->
-                    lifecycleScope.launch {
-                        SupabaseAuthManager.logout()
-                        val intent = Intent(this@PanelPrincipalActivity, LoginActivity::class.java)
-                        intent.flags =
-                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        startActivity(intent)
-                        finish()
-                    }
+                    // Delegar logout al ViewModel (AuthRepository)
+                    viewModel.logout()
                 }
                 .setNegativeButton("Cancelar", null)
                 .show()

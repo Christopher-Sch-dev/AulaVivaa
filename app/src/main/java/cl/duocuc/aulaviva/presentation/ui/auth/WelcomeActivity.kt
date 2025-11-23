@@ -38,19 +38,7 @@ class WelcomeActivity : BaseActivity() {
      * DESHABILITADO: No auto-login para evitar usuarios sin rol
      * Forzar login manual cada vez para verificar rol en tabla usuarios
      */
-    /*
-    private fun checkIfUserIsLoggedIn() {
-        if (SupabaseAuthManager.isLoggedIn()) {
-            val intent = Intent(
-                this,
-                cl.duocuc.aulaviva.presentation.ui.main.PanelPrincipalActivity::class.java
-            )
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            startActivity(intent)
-            finish()
-        }
-    }
-    */
+    // Auto-login deshabilitado; el flujo de login se gestiona desde el ViewModel/Repo si se activa.
 
     private fun setupListeners() {
         // Botón "Iniciar Sesión" - Va a LoginActivity
