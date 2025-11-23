@@ -9,10 +9,11 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.activity.viewModels
 import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.data.model.Clase
-import cl.duocuc.aulaviva.data.repository.ClaseRepository
 import cl.duocuc.aulaviva.data.repository.IARepository
+import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -20,7 +21,7 @@ import kotlinx.coroutines.withContext
 class DetalleClaseActivity : BaseActivity() {
 
     private lateinit var iaRepository: IARepository
-    private lateinit var claseRepository: ClaseRepository
+    private val claseViewModel: ClaseViewModel by viewModels()
     private var claseActual: Clase? = null
     private var esAlumno: Boolean = false  // Flag para determinar si es alumno
 
@@ -28,8 +29,7 @@ class DetalleClaseActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_detalle_clase)
 
-        iaRepository = IARepository(this)
-        claseRepository = ClaseRepository(this)
+        iaRepository = IARepository(applicationContext)
 
         // Obtener flag ES_ALUMNO del intent
         esAlumno = intent.getBooleanExtra("ES_ALUMNO", false)
@@ -49,7 +49,7 @@ class DetalleClaseActivity : BaseActivity() {
 
     private fun cargarDatosClase(claseId: String) {
         lifecycleScope.launch {
-            val clase = claseRepository.obtenerClasePorId(claseId)
+            val clase = claseViewModel.obtenerClasePorId(claseId)
             if (clase != null) {
                 claseActual = clase
                 mostrarDatos(clase)
