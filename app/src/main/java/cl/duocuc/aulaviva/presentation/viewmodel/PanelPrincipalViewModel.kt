@@ -5,11 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.data.repository.AsignaturasRepository
 import cl.duocuc.aulaviva.data.repository.ClaseRepository
-import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.utils.IdUtils
 import kotlinx.coroutines.launch
 
@@ -29,14 +28,8 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
     fun crearAsignaturaYClaseDemo() {
         viewModelScope.launch {
             try {
-                val db = AppDatabase.getDatabase(app)
-                val asignaturasRepo = AsignaturasRepository(
-                    db.asignaturaDao(),
-                    db.alumnoAsignaturaDao(),
-                    SupabaseAsignaturaRepository(db.asignaturaDao(), db.alumnoAsignaturaDao())
-                )
-
-                val clasesRepo = ClaseRepository(app)
+                val asignaturasRepo = RepositoryProvider.provideAsignaturasRepository(app)
+                val clasesRepo = RepositoryProvider.provideClaseRepository(app)
 
                 val resultAsignatura = asignaturasRepo.crearAsignatura(
                     nombre = "Programación Móvil DEMO",

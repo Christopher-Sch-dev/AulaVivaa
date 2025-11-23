@@ -2,6 +2,7 @@ package cl.duocuc.aulaviva.data.repository
 
 import android.util.Log
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaDao
+import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
 import cl.duocuc.aulaviva.data.local.AsignaturaDao
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
@@ -149,5 +150,12 @@ class AsignaturasRepository(
                 updatedAt = it.updatedAt
             )
         }
+    }
+
+    /**
+     * Expone las inscripciones (AlumnoAsignaturaEntity) como Flow para la UI (docente).
+     */
+    fun obtenerInscritosFlow(asignaturaId: String): Flow<List<AlumnoAsignaturaEntity>> {
+        return alumnoAsignaturaDao.obtenerInscripcionesPorAsignatura(asignaturaId)
     }
 }

@@ -6,10 +6,9 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.data.repository.AlumnoRepository
-import cl.duocuc.aulaviva.data.supabase.SupabaseAlumnoRepository
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import kotlinx.coroutines.launch
 
 /**
@@ -19,15 +18,7 @@ import kotlinx.coroutines.launch
 class AlumnoViewModel(application: Application) : AndroidViewModel(application) {
 
     // Repository
-    private val database = AppDatabase.getDatabase(application)
-    private val repository = AlumnoRepository(
-        alumnoAsignaturaDao = database.alumnoAsignaturaDao(),
-        asignaturaDao = database.asignaturaDao(),
-        supabaseRepository = SupabaseAlumnoRepository(
-            alumnoAsignaturaDao = database.alumnoAsignaturaDao(),
-            asignaturaDao = database.asignaturaDao()
-        )
-    )
+    private val repository: AlumnoRepository = RepositoryProvider.provideAlumnoRepository(application)
 
     // LiveData para asignaturas inscritas (automática desde Room)
     val asignaturasInscritas: LiveData<List<Asignatura>> = repository.obtenerAsignaturasInscritas().asLiveData()

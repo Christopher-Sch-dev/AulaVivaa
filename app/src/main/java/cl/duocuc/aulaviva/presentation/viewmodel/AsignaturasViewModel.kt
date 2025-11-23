@@ -6,7 +6,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import cl.duocuc.aulaviva.data.local.AppDatabase
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.data.repository.AsignaturasRepository
 import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
@@ -20,15 +20,7 @@ import cl.duocuc.aulaviva.data.repository.ClaseRepository
 class AsignaturasViewModel(application: Application) : AndroidViewModel(application) {
 
     // Repository
-    private val database = AppDatabase.getDatabase(application)
-    private val repository = AsignaturasRepository(
-        asignaturaDao = database.asignaturaDao(),
-        alumnoAsignaturaDao = database.alumnoAsignaturaDao(),
-        supabaseRepository = SupabaseAsignaturaRepository(
-            asignaturaDao = database.asignaturaDao(),
-            alumnoAsignaturaDao = database.alumnoAsignaturaDao()
-        )
-    )
+    private val repository: AsignaturasRepository = RepositoryProvider.provideAsignaturasRepository(application)
 
     // LiveData para la lista de asignaturas (automática desde Room)
     val asignaturas: LiveData<List<Asignatura>> = repository.obtenerAsignaturasDocente().asLiveData()
@@ -52,7 +44,7 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     // ClaseRepository para operaciones relacionadas con clases (ej.: verificar existencia)
-    private val claseRepository = ClaseRepository(application)
+    private val claseRepository = RepositoryProvider.provideClaseRepository(application)
 
     /**
      * Verifica si una asignatura tiene clases (delegado al ClaseRepository).

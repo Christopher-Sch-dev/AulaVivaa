@@ -5,9 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.repository.AsignaturasRepository
-import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import kotlinx.coroutines.launch
 import androidx.lifecycle.asLiveData
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
@@ -18,15 +17,7 @@ import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
  */
 class InscritosViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val database = AppDatabase.getDatabase(application)
-    private val repository = AsignaturasRepository(
-        asignaturaDao = database.asignaturaDao(),
-        alumnoAsignaturaDao = database.alumnoAsignaturaDao(),
-        supabaseRepository = SupabaseAsignaturaRepository(
-            asignaturaDao = database.asignaturaDao(),
-            alumnoAsignaturaDao = database.alumnoAsignaturaDao()
-        )
-    )
+    private val repository: AsignaturasRepository = RepositoryProvider.provideAsignaturasRepository(application)
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
@@ -60,5 +51,5 @@ class InscritosViewModel(application: Application) : AndroidViewModel(applicatio
      * Esto evita que la Activity acceda directamente a `AppDatabase`.
      */
     fun obtenerInscritosLive(asignaturaId: String) =
-        database.alumnoAsignaturaDao().obtenerInscripcionesPorAsignatura(asignaturaId).asLiveData()
+        repository.obtenerInscritosFlow(asignaturaId).asLiveData()
 }
