@@ -262,6 +262,83 @@ class IARepository(private val context: Context) : IIARepository {
         return if (b.length > maxChars) b.toString().take(maxChars) else b.toString()
     }
 
+    // --- Helpers para contexto de PDF y metadata ---
+    private suspend fun extractPdfMetadata(pdfUrl: String?): Pair<String, String> {
+        if (pdfUrl.isNullOrEmpty()) return Pair("", "")
+        return try {
+            val pdfFile = descargarPDFATempFile(pdfUrl)
+            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfFile, MemoryUsageSetting.setupTempFileOnly())
+            val info = document.documentInformation
+            val title = info.title ?: ""
+            val author = info.author ?: ""
+            document.close()
+            Pair(title, author)
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ [PDF] No metadata: ${e.message}")
+            Pair("", "")
+        }
+    }
+
+    private suspend fun ensureAnalysisAndMetadata(nombreClase: String, pdfUrl: String?): Triple<String, String, String?> {
+        // devuelve (title, author, analysisSummary)
+        var title = ""
+        var author = ""
+        var analysis: String? = null
+
+        // 1) intentar obtener sesión existente
+        try {
+            val existing = if (nombreClase.isNotBlank()) chatDao.getLatestSessionForClass(nombreClase) else null
+            if (existing != null) {
+                title = ""
+                author = ""
+                analysis = existing.analysisText
+                // si no hay metadata pero existe pdfUrl en la sesión, extraer metadata
+                if (existing.pdfUrl != null) {
+                    val meta = extractPdfMetadata(existing.pdfUrl)
+                    title = meta.first
+                    author = meta.second
+                }
+                return Triple(title, author, analysis)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ [CHAT] Error consultando sesión: ${e.message}")
+        }
+
+        // 2) si no hay sesión pero hay pdfUrl, extraer metadata y (opcional) hacer un análisis rápido
+        if (!pdfUrl.isNullOrEmpty()) {
+            val meta = extractPdfMetadata(pdfUrl)
+            title = meta.first
+            author = meta.second
+            try {
+                // análisis rápido y breve (timeout corto)
+                val shortPrompt = "Resume brevemente los puntos clave del PDF para uso pedagógico (máx 3 líneas)."
+                val resumen = try {
+                    withTimeout(30_000L) { analizarPDFInteligente(pdfUrl, shortPrompt) }
+                } catch (e: Exception) {
+                    Log.w(TAG, "⚠️ [ANALYSIS] No quick analysis: ${e.message}"); null
+                }
+                if (!resumen.isNullOrBlank()) {
+                    analysis = resumen
+                    // crear sesión temporal para almacenar análisis
+                    try {
+                        val sessionId = chatDao.insertSession(
+                            ChatSessionEntity(
+                                nombreClase = nombreClase,
+                                descripcion = "",
+                                pdfUrl = pdfUrl,
+                                analysisText = analysis
+                            )
+                        )
+                        currentSessionId = sessionId
+                        chatDao.insertMessage(ChatMessageEntity(sessionId = sessionId, sender = "ai", message = analysis))
+                    } catch (e: Exception) { Log.w(TAG, "⚠️ [CHAT] Error guardando análisis: ${e.message}") }
+                }
+            } catch (e: Exception) { Log.w(TAG, "⚠️ [ANALYSIS] Error: ${e.message}") }
+        }
+
+        return Triple(title, author, analysis)
+    }
+
     override suspend fun generarIdeasParaClase(nombreClase: String, descripcion: String, pdfUrl: String?): String {
         return try {
             val contexto = if (!pdfUrl.isNullOrEmpty()) "\n📎 Material de apoyo disponible" else ""
