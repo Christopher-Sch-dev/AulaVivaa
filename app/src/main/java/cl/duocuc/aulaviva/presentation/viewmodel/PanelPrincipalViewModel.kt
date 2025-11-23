@@ -95,7 +95,13 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
 
     fun logout() {
         // Delegar logout al repositorio y notificar a la Activity
-        authRepository.logout()
-        _logoutEvent.postValue(true)
+        viewModelScope.launch {
+            try {
+                authRepository.logout()
+            } catch (_: Exception) {
+                // ignore errors during logout
+            }
+            _logoutEvent.postValue(true)
+        }
     }
 }

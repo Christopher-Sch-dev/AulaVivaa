@@ -122,8 +122,14 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun logout() {
-        authRepository.logout()
-        _logoutEvent.postValue(true)
+        viewModelScope.launch {
+            try {
+                authRepository.logout()
+            } catch (_: Exception) {
+                // ignore
+            }
+            _logoutEvent.postValue(true)
+        }
     }
 
     /**

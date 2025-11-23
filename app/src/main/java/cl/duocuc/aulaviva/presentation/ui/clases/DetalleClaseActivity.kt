@@ -425,30 +425,26 @@ class DetalleClaseActivity : BaseActivity() {
             "📖 Creando resumen...",
             "Tu tutor IA está organizando el contenido para ti"
         )
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val live = iaViewModel.crearResumenEstudioParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfNombre)
-                live.observe(this@DetalleClaseActivity) { result ->
-                    loading.dismiss()
-                    if (result.isSuccess) {
-                        mostrarResultadoIA(
-                            titulo = "📖 Tu resumen de estudio",
-                            contenido = result.getOrNull() ?: "",
-                            tipoConsulta = "ALUMNO_RESUMEN",
-                            nombreClase = clase.nombre,
-                            descripcionClase = clase.descripcion,
-                            pdfUrl = clase.archivoPdfUrl
-                        )
-                    } else {
-                        Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    loading.dismiss()
-                    Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
+        try {
+            val live = iaViewModel.crearResumenEstudioParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfNombre)
+            live.observe(this@DetalleClaseActivity) { result ->
+                loading.dismiss()
+                if (result.isSuccess) {
+                    mostrarResultadoIA(
+                        titulo = "📖 Tu resumen de estudio",
+                        contenido = result.getOrNull() ?: "",
+                        tipoConsulta = "ALUMNO_RESUMEN",
+                        nombreClase = clase.nombre,
+                        descripcionClase = clase.descripcion,
+                        pdfUrl = clase.archivoPdfUrl
+                    )
+                } else {
+                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
                 }
             }
+        } catch (e: Exception) {
+            loading.dismiss()
+            Toast.makeText(this@DetalleClaseActivity, e.message, Toast.LENGTH_SHORT).show()
         }
     }
 }
