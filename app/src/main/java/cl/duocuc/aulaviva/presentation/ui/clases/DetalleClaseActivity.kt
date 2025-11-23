@@ -7,7 +7,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.data.model.Clase
@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class DetalleClaseActivity : AppCompatActivity() {
+class DetalleClaseActivity : BaseActivity() {
 
     private lateinit var iaRepository: IARepository
     private lateinit var claseRepository: ClaseRepository
@@ -43,6 +43,8 @@ class DetalleClaseActivity : AppCompatActivity() {
 
         cargarDatosClase(claseId)
         setupListeners()
+
+        // Edge-to-edge: aplicado automáticamente por BaseActivity
     }
 
     private fun cargarDatosClase(claseId: String) {

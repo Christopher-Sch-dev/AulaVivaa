@@ -9,10 +9,11 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import cl.duocuc.aulaviva.databinding.ActivityDocenteAsignaturasBinding
+// applyEdgeToEdge ahora gestionado por BaseActivity
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.adapter.AsignaturaAdapter
 import cl.duocuc.aulaviva.presentation.dialog.CrearAsignaturaDialog
@@ -25,7 +26,7 @@ import kotlinx.coroutines.launch
  * Activity para gestionar las asignaturas del docente.
  * Permite crear, ver clases, visualizar códigos de acceso y eliminar asignaturas.
  */
-class DocenteAsignaturasActivity : AppCompatActivity() {
+class DocenteAsignaturasActivity : BaseActivity() {
 
     private lateinit var binding: ActivityDocenteAsignaturasBinding
     private val viewModel: AsignaturasViewModel by viewModels()

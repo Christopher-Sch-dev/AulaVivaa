@@ -6,9 +6,10 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import cl.duocuc.aulaviva.databinding.ActivityDocenteClasesBinding
+// applyEdgeToEdge ahora gestionado por BaseActivity
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.adapter.ClaseAdapter
 import cl.duocuc.aulaviva.presentation.ui.clases.DetalleClaseActivity
@@ -18,7 +19,7 @@ import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
  * Activity para docentes: ver y gestionar clases de una asignatura específica.
  * Permite crear, editar y eliminar clases dentro de una asignatura.
  */
-class DocenteClasesActivity : AppCompatActivity() {
+class DocenteClasesActivity : BaseActivity() {
 
     private lateinit var binding: ActivityDocenteClasesBinding
     private val viewModel: ClaseViewModel by viewModels()

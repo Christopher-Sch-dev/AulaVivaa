@@ -6,7 +6,7 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.databinding.ActivityCrearEditarClaseBinding
 import cl.duocuc.aulaviva.data.model.Clase
@@ -28,7 +28,7 @@ import java.util.UUID
  * Activity simple para crear o editar una clase.
  * Recibe asignaturaId obligatorio del intent.
  */
-class CrearEditarClaseActivity : AppCompatActivity() {
+class CrearEditarClaseActivity : BaseActivity() {
 
     private lateinit var binding: ActivityCrearEditarClaseBinding
     private val viewModel: ClaseViewModel by viewModels()
@@ -55,6 +55,8 @@ class CrearEditarClaseActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCrearEditarClaseBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Edge-to-edge: aplicado automáticamente por BaseActivity
 
         // Obtener datos del intent
         asignaturaId = intent.getStringExtra("ASIGNATURA_ID") ?: ""

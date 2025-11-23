@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.cardview.widget.CardView
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
@@ -27,7 +27,7 @@ import kotlinx.coroutines.withContext
  * 3. Cada mensaje mantiene el contexto anterior
  * 4. Los mensajes se muestran en formato chat (usuario vs IA)
  */
-class ResultadoIAActivity : AppCompatActivity() {
+class ResultadoIAActivity : BaseActivity() {
 
     private lateinit var binding: ActivityResultadoIaChatBinding
     private lateinit var iaRepository: IARepository
@@ -47,6 +47,8 @@ class ResultadoIAActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityResultadoIaChatBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Edge-to-edge: aplicado automáticamente por BaseActivity
 
         // Inicializar repositorio IA
         iaRepository = IARepository(this)

@@ -4,10 +4,11 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.lifecycle.asLiveData
 import androidx.recyclerview.widget.LinearLayoutManager
 import cl.duocuc.aulaviva.databinding.ActivityInscritosBinding
+// applyEdgeToEdge aplicado desde BaseActivity
 import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
 import cl.duocuc.aulaviva.presentation.viewmodel.InscritosViewModel
@@ -16,8 +17,7 @@ import cl.duocuc.aulaviva.presentation.viewmodel.InscritosViewModel
  * Activity para ver los alumnos inscritos en una asignatura.
  * Solo accesible para docentes.
  */
-class InscritosActivity : AppCompatActivity() {
-
+class InscritosActivity : BaseActivity() {
     private lateinit var binding: ActivityInscritosBinding
     private val viewModel: InscritosViewModel by viewModels()
     private lateinit var adapter: InscritosAdapter
@@ -28,6 +28,8 @@ class InscritosActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityInscritosBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Edge-to-edge aplicado automáticamente por BaseActivity
 
         // Obtener asignatura del intent
         asignaturaId = intent.getStringExtra("ASIGNATURA_ID") ?: ""

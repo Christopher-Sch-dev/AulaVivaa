@@ -4,9 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import cl.duocuc.aulaviva.databinding.ActivityAlumnoClasesBinding
+// applyEdgeToEdge ahora gestionado por BaseActivity
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.adapter.ClaseAdapter
 import cl.duocuc.aulaviva.presentation.ui.clases.DetalleClaseActivity
@@ -16,7 +17,7 @@ import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
  * Activity para alumnos: ver clases de una asignatura (READ-ONLY).
  * No permite editar/eliminar, solo visualizar y usar funciones IA.
  */
-class AlumnoClasesActivity : AppCompatActivity() {
+class AlumnoClasesActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAlumnoClasesBinding
     private val viewModel: ClaseViewModel by viewModels()

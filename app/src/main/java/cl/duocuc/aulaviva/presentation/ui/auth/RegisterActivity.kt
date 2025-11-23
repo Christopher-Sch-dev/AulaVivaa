@@ -5,12 +5,12 @@ import android.os.Bundle
 import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.databinding.ActivityRegisterBinding
 import cl.duocuc.aulaviva.presentation.viewmodel.AuthViewModel
 
-class RegisterActivity : AppCompatActivity() {
+class RegisterActivity : BaseActivity() {
 
     private lateinit var binding: ActivityRegisterBinding
     private val viewModel: AuthViewModel by viewModels()

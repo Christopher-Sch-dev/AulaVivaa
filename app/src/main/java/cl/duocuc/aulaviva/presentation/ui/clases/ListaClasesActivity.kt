@@ -10,7 +10,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -27,9 +27,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
+// applyEdgeToEdge ahora se maneja desde BaseActivity
 
-class ListaClasesActivity : AppCompatActivity() {
-
+class ListaClasesActivity : BaseActivity() {
     private val viewModel: ClaseViewModel by viewModels()
     private lateinit var adapter: ClaseAdapter
 
@@ -65,6 +65,8 @@ class ListaClasesActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_lista_clases)
+
+        // Edge-to-edge aplicado automáticamente por BaseActivity
 
         setupRecyclerView()
         setupObservers()

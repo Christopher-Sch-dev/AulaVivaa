@@ -9,7 +9,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
@@ -18,7 +18,7 @@ import cl.duocuc.aulaviva.presentation.ui.auth.LoginActivity
 import cl.duocuc.aulaviva.utils.NotificationHelper
 import kotlinx.coroutines.launch
 
-class PanelPrincipalActivity : AppCompatActivity() {
+class PanelPrincipalActivity : BaseActivity() {
 
     private lateinit var binding: ActivityPanelPrincipalBinding
     private lateinit var notificationHelper: NotificationHelper

@@ -5,9 +5,10 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import cl.duocuc.aulaviva.databinding.ActivityAlumnoAsignaturasBinding
+// applyEdgeToEdge aplicado desde BaseActivity
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.adapter.AlumnoAsignaturaAdapter
 import cl.duocuc.aulaviva.presentation.dialog.IngresarCodigoDialog
@@ -17,7 +18,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 /**
  * Activity para alumnos: ver asignaturas inscritas y agregar nuevas con código.
  */
-class AlumnoAsignaturasActivity : AppCompatActivity() {
+class AlumnoAsignaturasActivity : BaseActivity() {
 
     private lateinit var binding: ActivityAlumnoAsignaturasBinding
     private val viewModel: AlumnoViewModel by viewModels()
@@ -27,6 +28,8 @@ class AlumnoAsignaturasActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityAlumnoAsignaturasBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Edge-to-edge aplicado automáticamente por BaseActivity
 
         setupToolbar()
         setupRecyclerView()

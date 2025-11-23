@@ -3,7 +3,7 @@ package cl.duocuc.aulaviva.presentation.ui.auth
 import android.content.Intent
 import android.os.Bundle
 import android.view.animation.AnimationUtils
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.databinding.ActivityWelcomeBinding
 
@@ -18,7 +18,7 @@ import cl.duocuc.aulaviva.databinding.ActivityWelcomeBinding
  * Si el usuario ya tiene una sesión activa en Supabase,
  * esta pantalla se salta automáticamente y va directo al Panel Principal.
  */
-class WelcomeActivity : AppCompatActivity() {
+class WelcomeActivity : BaseActivity() {
 
     private lateinit var binding: ActivityWelcomeBinding
 

@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.view.animation.AnimationUtils
 import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.data.repository.AuthRepository
@@ -15,7 +15,7 @@ import cl.duocuc.aulaviva.presentation.ui.main.PanelPrincipalActivity
 import cl.duocuc.aulaviva.presentation.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
-class LoginActivity : AppCompatActivity() {
+class LoginActivity : BaseActivity() {
 
     // ViewBinding para acceso seguro a las vistas
     private lateinit var binding: ActivityLoginBinding
