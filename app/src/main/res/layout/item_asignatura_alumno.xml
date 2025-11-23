@@ -19,6 +19,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Nombre de la Asignatura"
+            android:maxLines="2"
+            android:ellipsize="end"
             android:textColor="#2C3E50"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -29,6 +31,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="Descripción de la asignatura"
+            android:maxLines="2"
+            android:ellipsize="end"
             android:textColor="#7F8C8D"
             android:textSize="14sp" />
 

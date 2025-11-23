@@ -76,16 +76,19 @@
         android:textSize="11sp"
         android:textStyle="italic" />
 
-    <!-- Botón copiar -->
+    <!-- Botón copiar: ancho adaptativo y centrado -->
     <Button
         android:id="@+id/buttonCopiar"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
         android:backgroundTint="#6D5ACF"
         android:text="📋 Copiar Código"
         android:textAllCaps="false"
         android:textColor="@android:color/white"
-        android:textSize="16sp"
+        android:textSize="15sp"
         android:textStyle="bold" />
 
     <!-- Nota -->
