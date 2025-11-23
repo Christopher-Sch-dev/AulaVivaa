@@ -11,16 +11,16 @@ import cl.duocuc.aulaviva.data.remote.Part
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import java.io.File
-import java.io.FileOutputStream
-import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.File
+import java.io.FileOutputStream
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 
@@ -220,7 +220,8 @@ class IARepository(private val application: Application) {
                 googleAiModel.generateContent(contenidoMultimodal)
             }
 
-            val textoRespuesta = response.text ?: throw Exception("Respuesta vacía de Google AI SDK")
+            val textoRespuesta =
+                response.text ?: throw Exception("Respuesta vacía de Google AI SDK")
 
             Log.d(TAG, "✅ [Google AI] Respuesta recibida: ${textoRespuesta.length} caracteres")
             Log.d(TAG, "✅ [Google AI] Primeros 150 chars: ${textoRespuesta.take(150)}...")
@@ -228,7 +229,10 @@ class IARepository(private val application: Application) {
             return textoRespuesta
         } else {
             // Si es muy grande, evitar cargar en memoria y usar extracción por chunks vía PDFBox
-            Log.w(TAG, "⚠️ [Google AI] PDF >20MB, usando pipeline de extracción por chunks y síntesis con Gemini")
+            Log.w(
+                TAG,
+                "⚠️ [Google AI] PDF >20MB, usando pipeline de extracción por chunks y síntesis con Gemini"
+            )
             val chunks = extractTextChunksFromPdf(pdfFile)
             // 1) Resumir cada chunk con Gemini para reducir tokens
             val summaries = mutableListOf<String>()
@@ -273,38 +277,24 @@ class IARepository(private val application: Application) {
      * Este método se usa cuando Firebase falla (red, timeout, límite API).
      * Extrae texto localmente y lo envía a Gemini vía Retrofit.
      *
-     * Limitaciones:
-     * - No lee PDFs escaneados (requiere texto extraíble)
-     * - No parsea tablas complejas ni gráficos
-     * - Funciona OFFLINE (ventaja para fallback)
-     *
-     * @param pdfUrl URL del PDF
-     * @param prompt Instrucción para la IA
-     * @return Respuesta de Gemini basada en texto extraído
-     */
-    private suspend fun analizarConPDFBox(pdfUrl: String, prompt: String): String {
-        Log.d(TAG, "📄 [PDFBox] Iniciando extracción de texto local...")
-        // 1. Descargar PDF a archivo temporal (streaming)
-        val pdfFile = descargarPDFATempFile(pdfUrl)
-        Log.d(TAG, "📄 [PDFBox] PDF descargado a archivo temporal: ${pdfFile.length()} bytes")
+        } else {
+            // Si es muy grande, evitar múltiples llamadas externas: extraer texto en disco y comprimir localmente
+            Log.w(TAG, "⚠️ [Google AI] PDF >20MB, extrayendo texto y comprimiendo localmente antes de llamar a Gemini")
+            val chunks = extractTextChunksFromPdf(pdfFile)
+            val compressed = compressChunksForSingleCall(chunks)
 
-        // 2. Abrir documento usando configuración de uso de memoria en disco
-        val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfFile, MemoryUsageSetting.setupTempFileOnly())
-        val totalPaginas = document.numberOfPages
-        Log.d(TAG, "📄 [PDFBox] Total páginas: $totalPaginas")
+            val finalPrompt = """
+                ${prompt}
 
-        // 3. Extraer texto por chunks de páginas para evitar tener todo en memoria
-        val chunks = mutableListOf<String>()
-        val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
-        val pagesPerChunk = 5 // conservador: 5 páginas por chunk
-        var page = 1
-        while (page <= totalPaginas) {
-            stripper.startPage = page
-            stripper.endPage = (page + pagesPerChunk - 1).coerceAtMost(totalPaginas)
-            val chunkText = stripper.getText(document)
-            Log.d(TAG, "📄 [PDFBox] Chunk páginas ${stripper.startPage}-${stripper.endPage}: ${chunkText.length} chars")
-            chunks.add(chunkText)
-            page += pagesPerChunk
+                A continuación se presenta una representación comprimida del contenido del PDF (resúmenes y muestras representativas). Usa esto como contexto para analizar el documento completo y generar la respuesta solicitada.
+
+                CONTENIDO COMPRIMIDO:
+                $compressed
+
+                IMPORTANTE: Basar la respuesta en el contenido provisto y mencionar detalles específicos cuando posible.
+            """.trimIndent()
+
+            return llamarGemini(finalPrompt)
         }
 
         document.close()
@@ -315,7 +305,10 @@ class IARepository(private val application: Application) {
 
         return if (totalChars < 30_000) {
             val textoPdf = chunks.joinToString("\n\n")
-            Log.d(TAG, "📄 [PDFBox] Texto extraído pequeño, enviando completo (${textoPdf.length} chars)")
+            Log.d(
+                TAG,
+                "📄 [PDFBox] Texto extraído pequeño, enviando completo (${textoPdf.length} chars)"
+            )
             val promptCompleto = """
                 $prompt
 
@@ -338,36 +331,17 @@ class IARepository(private val application: Application) {
             Log.d(TAG, "✅ [PDFBox] Respuesta recibida: ${respuesta.length} caracteres")
             respuesta
         } else {
-            Log.d(TAG, "📄 [PDFBox] Texto grande, resumiendo chunks y sintetizando con Gemini...")
-            val summaries = mutableListOf<String>()
-            for ((index, chunk) in chunks.withIndex()) {
-                val chunkPrompt = """
-                    ${prompt}
-
-                    ---
-                    PARTE ${index + 1}/${chunks.size} DEL PDF:
-                    ${chunk.take(30_000)}
-                    ---
-                    Instrucción: Resume los puntos clave y extrae conceptos específicos de esta parte. Responde en español.
-                """.trimIndent()
-
-                try {
-                    val s = llamarGemini(chunkPrompt)
-                    summaries.add(s)
-                } catch (e: Exception) {
-                    Log.w(TAG, "⚠️ [PDFBox] Error resumiendo chunk ${index + 1}: ${e.message}")
-                    summaries.add("[Error resumiendo chunk ${index + 1}: ${e.message}]")
-                }
-            }
-
-            val combined = summaries.joinToString("\n\n---\n\n")
+            Log.d(TAG, "📄 [PDFBox] Texto grande, comprimiendo localmente antes de llamar a Gemini...")
+            val compressed = compressChunksForSingleCall(chunks)
             val finalPrompt = """
                 ${prompt}
 
-                He recibido el PDF en partes y he resumido cada sección. A continuación están los resúmenes parciales:
-                $combined
+                A continuación se presenta una representación comprimida del contenido del PDF (resúmenes y muestras representativas). Usa esto como contexto para analizar el documento completo y generar la respuesta solicitada.
 
-                INSTRUCCIÓN FINAL: A partir de los resúmenes parciales, genera un análisis coherente del PDF completo, mencionando conceptos y detalles específicos.
+                CONTENIDO COMPRIMIDO:
+                $compressed
+
+                INSTRUCCIÓN FINAL: A partir del contenido comprimido, genera un análisis coherente del PDF completo, mencionando conceptos y detalles específicos.
             """.trimIndent()
 
             return llamarGemini(finalPrompt)
@@ -447,7 +421,10 @@ class IARepository(private val application: Application) {
     private fun extractTextChunksFromPdf(file: File, pagesPerChunk: Int = 5): List<String> {
         val out = mutableListOf<String>()
         try {
-            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(file, MemoryUsageSetting.setupTempFileOnly())
+            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
+                file,
+                MemoryUsageSetting.setupTempFileOnly()
+            )
             val totalPaginas = document.numberOfPages
             val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
             var page = 1
@@ -464,6 +441,34 @@ class IARepository(private val application: Application) {
             // fallback vacío
         }
         return out
+    }
+
+    /**
+     * Comprime una lista de chunks en una representación reducida adecuada para
+     * enviarse en una única llamada a Gemini. Selecciona muestras de cada chunk
+     * y limita el tamaño total a `maxChars`.
+     */
+    private fun compressChunksForSingleCall(chunks: List<String>, maxChars: Int = 40_000): String {
+        if (chunks.isEmpty()) return ""
+        val builder = StringBuilder()
+        for ((index, chunk) in chunks.withIndex()) {
+            if (builder.length >= maxChars) break
+            val head = chunk.take(1500)
+            builder.append("-- PARTE ${index + 1} --\n")
+            builder.append(head)
+            builder.append("\n\n")
+        }
+        // Añadir muestras tail si hay espacio
+        var i = 0
+        while (builder.length < maxChars && i < chunks.size) {
+            val tail = chunks[i].takeLast(500)
+            builder.append("-- MUESTRA ${i + 1} (tail) --\n")
+            builder.append(tail)
+            builder.append("\n\n")
+            i++
+        }
+        if (builder.length > maxChars) return builder.toString().take(maxChars)
+        return builder.toString()
     }
 
     /**
@@ -1377,11 +1382,22 @@ class IARepository(private val application: Application) {
                 """.trimIndent()
 
                 val contenidoUsuario = if (!pdfUrl.isNullOrEmpty()) {
-                    Log.d(TAG, "💬 [CHAT] Descargando PDF para inyectar en memoria...")
-                    val pdfBytes = descargarPDF(pdfUrl)
-                    content("user") {
-                        text(promptInicial)
-                        blob("application/pdf", pdfBytes)
+                    Log.d(TAG, "💬 [CHAT] Descargando PDF para inyectar en memoria (streaming)...")
+                    // Descargar a archivo temporal para decidir estrategia
+                    val pdfFile = descargarPDFATempFile(pdfUrl)
+                    if (pdfFile.length() <= 20_000_000L) {
+                        val pdfBytes = pdfFile.readBytes()
+                        content("user") {
+                            text(promptInicial)
+                            blob("application/pdf", pdfBytes)
+                        }
+                    } else {
+                        // Si es >20MB, comprimir localmente y enviar texto representativo
+                        val chunks = extractTextChunksFromPdf(pdfFile)
+                        val compressed = compressChunksForSingleCall(chunks)
+                        content("user") {
+                            text(promptInicial + "\n\nCONTENIDO_COMPRIMIDO:\n" + compressed)
+                        }
                     }
                 } else {
                     content("user") { text(promptInicial) }
