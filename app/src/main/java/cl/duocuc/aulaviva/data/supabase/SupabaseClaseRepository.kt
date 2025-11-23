@@ -116,6 +116,48 @@ class SupabaseClaseRepository(private val claseDao: ClaseDao) {
     }
 
     /**
+     * Obtener clases filtradas por `asignatura_id` (útil para alumnos).
+     * Descarga solo las clases de la asignatura y las persiste en Room sin tocar otras entradas.
+     */
+    suspend fun obtenerClasesPorAsignatura(asignaturaId: String): Result<List<Clase>> = withContext(Dispatchers.IO) {
+        try {
+            val supabase = SupabaseClientProvider.getClient()
+
+            Log.d("SupabaseRepo", "🔍 Obteniendo clases de asignatura: $asignaturaId")
+
+            val response = supabase.from("clases")
+                .select {
+                    filter {
+                        eq("asignatura_id", asignaturaId)
+                    }
+                }
+                .decodeList<ClaseDTO>()
+
+            val clases = response.map { it.toClase() }
+
+            // Insertar/actualizar sólo las clases de esta asignatura
+            if (clases.isNotEmpty()) {
+                claseDao.insertarVarias(clases.map { it.toEntity() })
+            } else {
+                Log.w("SupabaseRepo", "⚠️ No se encontraron clases para asignatura: $asignaturaId")
+            }
+
+            Result.success(clases)
+        } catch (e: Exception) {
+            Log.e("SupabaseRepo", "❌ Error obteniendo clases por asignatura", e)
+            // Fallback: devolver las clases locales de esa asignatura
+            return@withContext try {
+                val locales = claseDao.obtenerClasesPorAsignaturaDirecto(asignaturaId).map { it.toClase() }
+                Log.w("SupabaseRepo", "⚠️ Usando cache local para asignatura $asignaturaId: ${locales.size} clases")
+                Result.success(locales)
+            } catch (localError: Exception) {
+                Log.e("SupabaseRepo", "❌ Error fallback locales por asignatura", localError)
+                Result.failure(Exception("Error al obtener clases por asignatura: ${e.message}"))
+            }
+        }
+    }
+
+    /**
      * Obtener clase por ID.
      */
     suspend fun obtenerClasePorId(claseId: String): Result<Clase> = withContext(Dispatchers.IO) {

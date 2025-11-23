@@ -215,6 +215,26 @@ class ClaseRepository(context: Context) {
     }
 
     /**
+     * Sincroniza (descarga) clases para una asignatura específica.
+     * Esto evita tocar otras clases locales y es seguro para vistas de alumnos.
+     */
+    suspend fun sincronizarClasesPorAsignatura(asignaturaId: String) {
+        try {
+            val result = supabaseRepo.obtenerClasesPorAsignatura(asignaturaId)
+            result.fold(
+                onSuccess = {
+                    Log.d("ClaseRepository", "✅ Sincronizadas ${it.size} clases para asignatura $asignaturaId")
+                },
+                onFailure = { error ->
+                    Log.e("ClaseRepository", "❌ Error sincronizando clases por asignatura", error)
+                }
+            )
+        } catch (e: Exception) {
+            Log.e("ClaseRepository", "❌ Excepción sincronizando por asignatura", e)
+        }
+    }
+
+    /**
      * Crea una nueva clase.
      */
     suspend fun crearClase(

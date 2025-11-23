@@ -38,6 +38,10 @@ class AlumnoClasesActivity : BaseActivity() {
         setupRecyclerView()
         setupSwipeRefresh()
         observeViewModel()
+        // Sincronizar solo las clases de esta asignatura (más seguro y rápido)
+        if (asignaturaId.isNotEmpty()) {
+            viewModel.sincronizarClasesPorAsignatura(asignaturaId)
+        }
     }
 
     private fun setupToolbar() {
@@ -68,8 +72,8 @@ class AlumnoClasesActivity : BaseActivity() {
 
     private fun setupSwipeRefresh() {
         binding.swipeRefresh.setOnRefreshListener {
-            // Recargar clases desde la nube
-            viewModel.sincronizarConSupabase()
+            // Recargar solo las clases de la asignatura para no afectar otras entradas locales
+            viewModel.sincronizarClasesPorAsignatura(asignaturaId)
         }
     }
 

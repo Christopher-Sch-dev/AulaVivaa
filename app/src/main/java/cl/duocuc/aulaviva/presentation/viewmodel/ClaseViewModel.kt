@@ -57,6 +57,23 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * Sincroniza sólo las clases de una asignatura (útil para alumnos).
+     */
+    fun sincronizarClasesPorAsignatura(asignaturaId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                repository.sincronizarClasesPorAsignatura(asignaturaId)
+            } catch (e: Exception) {
+                _error.value = e.message
+                android.util.Log.e("ClaseVM", "❌ Error sincronizando por asignatura", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
      * Crea una nueva clase.
      * Se guarda primero en Room (instantáneo) y luego intenta subir a Supabase.
      */
