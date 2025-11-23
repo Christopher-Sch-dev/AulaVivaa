@@ -5,8 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import cl.duocuc.aulaviva.data.repository.AsignaturasRepository
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
+import cl.duocuc.aulaviva.domain.repository.IAsignaturasRepository
 import kotlinx.coroutines.launch
 import androidx.lifecycle.asLiveData
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
@@ -17,7 +17,7 @@ import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
  */
 class InscritosViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: AsignaturasRepository = RepositoryProvider.provideAsignaturasRepository(application)
+    private val repository: IAsignaturasRepository = RepositoryProvider.provideAsignaturasRepository(application)
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading

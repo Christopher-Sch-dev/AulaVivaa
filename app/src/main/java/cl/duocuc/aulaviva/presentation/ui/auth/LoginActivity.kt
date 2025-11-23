@@ -8,7 +8,8 @@ import androidx.activity.viewModels
 import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.R
-import cl.duocuc.aulaviva.data.repository.AuthRepository
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
 import cl.duocuc.aulaviva.databinding.ActivityLoginBinding
 import cl.duocuc.aulaviva.presentation.ui.main.PanelAlumnoActivity
 import cl.duocuc.aulaviva.presentation.ui.main.PanelPrincipalActivity
@@ -24,7 +25,7 @@ class LoginActivity : BaseActivity() {
     private val viewModel: AuthViewModel by viewModels()
 
     // Repository para consultar rol
-    private val authRepository = cl.duocuc.aulaviva.data.repository.RepositoryProvider.provideAuthRepository()
+    private val authRepository: IAuthRepository = RepositoryProvider.provideAuthRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

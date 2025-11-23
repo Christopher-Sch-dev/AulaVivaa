@@ -1,5 +1,7 @@
 package cl.duocuc.aulaviva.data.repository
 
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
+
 import android.util.Log
 import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
 import kotlinx.coroutines.CoroutineScope
@@ -13,30 +15,30 @@ import kotlinx.coroutines.withContext
  *
  * Adaptador entre Activities y SupabaseAuthManager.
  */
-class AuthRepository {
+class AuthRepository : IAuthRepository {
 
     private val usuarioRepository = UsuarioRepository()
 
     /**
      * Obtener UID del usuario actual.
      */
-    fun getCurrentUserId(): String? = SupabaseAuthManager.getCurrentUserId()
+    override fun getCurrentUserId(): String? = SupabaseAuthManager.getCurrentUserId()
 
     /**
      * Obtener email del usuario actual.
      */
-    fun getCurrentUserEmail(): String? = SupabaseAuthManager.getCurrentUserEmail()
+    override fun getCurrentUserEmail(): String? = SupabaseAuthManager.getCurrentUserEmail()
 
     /**
      * Verificar si hay sesión activa.
      */
-    fun isLoggedIn(): Boolean = SupabaseAuthManager.isLoggedIn()
+    override fun isLoggedIn(): Boolean = SupabaseAuthManager.isLoggedIn()
 
     /**
      * Login con email y password.
      * Usa callbacks para mantener compatibilidad con Activities existentes.
      */
-    suspend fun login(email: String, password: String): Result<String> {
+    override suspend fun login(email: String, password: String): Result<String> {
         return try {
             withContext(Dispatchers.IO) {
                 SupabaseAuthManager.login(email, password)
@@ -51,7 +53,7 @@ class AuthRepository {
      * Registro de nuevo usuario.
      * Guarda el usuario en Auth y sus datos en tabla usuarios.
      */
-    suspend fun register(email: String, password: String, rol: String = "docente"): Result<Unit> {
+    override suspend fun register(email: String, password: String, rol: String): Result<Unit> {
         return try {
             val resultAuth = withContext(Dispatchers.IO) {
                 SupabaseAuthManager.register(email, password)
@@ -92,7 +94,7 @@ class AuthRepository {
     /**
      * Obtener rol del usuario actual.
      */
-    suspend fun obtenerRolUsuario(): Result<String> = withContext(Dispatchers.IO) {
+    override suspend fun obtenerRolUsuario(): Result<String> = withContext(Dispatchers.IO) {
         try {
             val uid = SupabaseAuthManager.getCurrentUserId()
                 ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
@@ -114,7 +116,7 @@ class AuthRepository {
     /**
      * Cerrar sesión.
      */
-    suspend fun logout() {
+    override suspend fun logout() {
         withContext(Dispatchers.IO) {
             SupabaseAuthManager.logout()
         }

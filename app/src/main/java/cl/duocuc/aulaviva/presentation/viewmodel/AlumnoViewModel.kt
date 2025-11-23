@@ -7,10 +7,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import cl.duocuc.aulaviva.data.model.Asignatura
-import cl.duocuc.aulaviva.data.repository.AlumnoRepository
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
-import cl.duocuc.aulaviva.data.repository.AuthRepository
-import cl.duocuc.aulaviva.data.repository.StorageRepository
+import cl.duocuc.aulaviva.domain.repository.IAlumnoRepository
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
+import cl.duocuc.aulaviva.domain.repository.IStorageRepository
 import kotlinx.coroutines.launch
 
 /**
@@ -20,10 +20,10 @@ import kotlinx.coroutines.launch
 class AlumnoViewModel(application: Application) : AndroidViewModel(application) {
 
     // Repository
-    private val repository: AlumnoRepository = RepositoryProvider.provideAlumnoRepository(application)
-    private val authRepository: AuthRepository = RepositoryProvider.provideAuthRepository()
+    private val repository: IAlumnoRepository = RepositoryProvider.provideAlumnoRepository(application)
+    private val authRepository: IAuthRepository = RepositoryProvider.provideAuthRepository()
     // Centralized storage repo (for future uploads/downloads)
-    private val storageRepository: StorageRepository = RepositoryProvider.provideStorageRepository(application)
+    private val storageRepository: IStorageRepository = RepositoryProvider.provideStorageRepository(application)
 
     private val _logoutEvent = MutableLiveData<Boolean>()
     val logoutEvent: LiveData<Boolean> = _logoutEvent

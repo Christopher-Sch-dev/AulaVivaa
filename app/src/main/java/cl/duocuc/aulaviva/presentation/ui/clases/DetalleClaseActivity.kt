@@ -12,7 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.activity.viewModels
 import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.data.model.Clase
-import cl.duocuc.aulaviva.data.repository.IARepository
+// IA repository accessed through IAViewModel; import removed
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

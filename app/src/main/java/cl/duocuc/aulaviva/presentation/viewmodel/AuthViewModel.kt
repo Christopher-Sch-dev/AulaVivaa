@@ -5,8 +5,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import cl.duocuc.aulaviva.data.repository.AuthRepository
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
 
 /**
  * ViewModel para manejar la lógica de autenticación
@@ -14,7 +14,7 @@ import cl.duocuc.aulaviva.data.repository.RepositoryProvider
  */
 class AuthViewModel : ViewModel() {
 
-    private val repository: AuthRepository = RepositoryProvider.provideAuthRepository()
+    private val repository: IAuthRepository = RepositoryProvider.provideAuthRepository()
 
     // LiveData para el estado de carga
     private val _isLoading = MutableLiveData<Boolean>()

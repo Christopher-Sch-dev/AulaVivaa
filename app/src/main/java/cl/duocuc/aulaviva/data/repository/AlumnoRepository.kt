@@ -1,5 +1,7 @@
 package cl.duocuc.aulaviva.data.repository
 
+import cl.duocuc.aulaviva.domain.repository.IAlumnoRepository
+
 import android.util.Log
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaDao
 import cl.duocuc.aulaviva.data.local.AsignaturaDao
@@ -17,12 +19,12 @@ class AlumnoRepository(
     private val alumnoAsignaturaDao: AlumnoAsignaturaDao,
     private val asignaturaDao: AsignaturaDao,
     private val supabaseRepository: SupabaseAlumnoRepository
-) {
+) : IAlumnoRepository {
 
     /**
      * Obtiene asignaturas inscritas del alumno actual (Flow para LiveData).
      */
-    fun obtenerAsignaturasInscritas(): Flow<List<Asignatura>> {
+    override fun obtenerAsignaturasInscritas(): Flow<List<Asignatura>> {
         val alumnoId = SupabaseAuthManager.getCurrentUserId() ?: ""
 
         // Obtener IDs de inscripciones desde Room
@@ -55,7 +57,7 @@ class AlumnoRepository(
     /**
      * Sincroniza asignaturas inscritas desde Supabase.
      */
-    suspend fun sincronizarAsignaturasInscritas(): Result<Unit> {
+    override suspend fun sincronizarAsignaturasInscritas(): Result<Unit> {
         val alumnoId = SupabaseAuthManager.getCurrentUserId()
             ?: return Result.failure(Exception("Usuario no autenticado"))
 
@@ -73,7 +75,7 @@ class AlumnoRepository(
     /**
      * Inscribe al alumno en una asignatura usando código.
      */
-    suspend fun inscribirConCodigo(codigo: String): Result<Asignatura> {
+    override suspend fun inscribirConCodigo(codigo: String): Result<Asignatura> {
         if (codigo.isBlank()) {
             return Result.failure(Exception("El código no puede estar vacío"))
         }
@@ -85,7 +87,7 @@ class AlumnoRepository(
     /**
      * Darse de baja de una asignatura.
      */
-    suspend fun darDeBaja(asignaturaId: String): Result<Unit> {
+    override suspend fun darDeBaja(asignaturaId: String): Result<Unit> {
         val alumnoId = SupabaseAuthManager.getCurrentUserId()
             ?: return Result.failure(Exception("Usuario no autenticado"))
 
@@ -96,7 +98,7 @@ class AlumnoRepository(
     /**
      * Verifica si el alumno está inscrito en una asignatura.
      */
-    suspend fun estaInscrito(asignaturaId: String): Boolean {
+    override suspend fun estaInscrito(asignaturaId: String): Boolean {
         val alumnoId = SupabaseAuthManager.getCurrentUserId() ?: return false
         val inscripcion = alumnoAsignaturaDao.obtenerInscripcion(alumnoId, asignaturaId)
         return inscripcion != null && inscripcion.estado == "activo"
@@ -105,7 +107,7 @@ class AlumnoRepository(
     /**
      * Obtiene una asignatura específica por ID (desde Room).
      */
-    suspend fun obtenerAsignaturaPorId(asignaturaId: String): Asignatura? {
+    override suspend fun obtenerAsignaturaPorId(asignaturaId: String): Asignatura? {
         val entity = asignaturaDao.obtenerAsignaturaPorId(asignaturaId)
         return entity?.let {
             Asignatura(

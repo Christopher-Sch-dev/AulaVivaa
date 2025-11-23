@@ -8,10 +8,10 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.data.model.Asignatura
-import cl.duocuc.aulaviva.data.repository.AsignaturasRepository
+import cl.duocuc.aulaviva.domain.repository.IAsignaturasRepository
 import kotlinx.coroutines.launch
-import cl.duocuc.aulaviva.data.repository.ClaseRepository
-import cl.duocuc.aulaviva.data.repository.StorageRepository
+import cl.duocuc.aulaviva.domain.repository.IClaseRepository
+import cl.duocuc.aulaviva.domain.repository.IStorageRepository
 
 /**
  * ViewModel para gestión de asignaturas (DOCENTES).
@@ -20,7 +20,7 @@ import cl.duocuc.aulaviva.data.repository.StorageRepository
 class AsignaturasViewModel(application: Application) : AndroidViewModel(application) {
 
     // Repository
-    private val repository: AsignaturasRepository = RepositoryProvider.provideAsignaturasRepository(application)
+    private val repository: IAsignaturasRepository = RepositoryProvider.provideAsignaturasRepository(application)
 
     // LiveData para la lista de asignaturas (automática desde Room)
     val asignaturas: LiveData<List<Asignatura>> = repository.obtenerAsignaturasDocente().asLiveData()
@@ -44,9 +44,9 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     // ClaseRepository para operaciones relacionadas con clases (ej.: verificar existencia)
-    private val claseRepository = RepositoryProvider.provideClaseRepository(application)
+    private val claseRepository: IClaseRepository = RepositoryProvider.provideClaseRepository(application)
     // Storage repo for any future file operations related to asignaturas/classes
-    private val storageRepository: StorageRepository = RepositoryProvider.provideStorageRepository(application)
+    private val storageRepository: IStorageRepository = RepositoryProvider.provideStorageRepository(application)
 
     /**
      * Verifica si una asignatura tiene clases (delegado al ClaseRepository).

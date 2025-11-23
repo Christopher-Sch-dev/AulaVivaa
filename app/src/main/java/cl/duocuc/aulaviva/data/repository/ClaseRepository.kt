@@ -1,5 +1,7 @@
 package cl.duocuc.aulaviva.data.repository
 
+import cl.duocuc.aulaviva.domain.repository.IClaseRepository
+
 import android.app.Application
 import android.net.Uri
 import android.util.Log
@@ -30,7 +32,7 @@ import kotlinx.coroutines.withContext
  * - Si no hay internet, guardo en Room con sincronizado=false
  * - Cuando vuelve internet, subo lo pendiente
  */
-class ClaseRepository(private val application: Application) {
+class ClaseRepository(private val application: Application) : IClaseRepository {
 
     private val uid: String get() = SupabaseAuthManager.getCurrentUserId() ?: ""
 
@@ -62,7 +64,7 @@ class ClaseRepository(private val application: Application) {
      * Obtiene las clases del usuario desde Room (local).
      * Flow emite automáticamente cuando los datos cambian.
      */
-    fun obtenerClasesLocal(): Flow<List<Clase>> {
+    override fun obtenerClasesLocal(): Flow<List<Clase>> {
         return claseDao.obtenerClasesPorUsuario(uid).map { entities ->
             entities.map { entity ->
                 Clase(
@@ -82,7 +84,7 @@ class ClaseRepository(private val application: Application) {
     /**
      * Obtiene clases de una asignatura específica (Flow para LiveData).
      */
-    fun obtenerClasesPorAsignatura(asignaturaId: String): Flow<List<Clase>> {
+    override fun obtenerClasesPorAsignatura(asignaturaId: String): Flow<List<Clase>> {
         return claseDao.obtenerClasesPorAsignatura(asignaturaId).map { entities ->
             entities.map { entity ->
                 Clase(
@@ -102,7 +104,7 @@ class ClaseRepository(private val application: Application) {
     /**
      * Obtiene clases de múltiples asignaturas (para alumnos inscritos).
      */
-    fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): Flow<List<Clase>> {
+    override fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): Flow<List<Clase>> {
         if (asignaturasIds.isEmpty()) {
             return kotlinx.coroutines.flow.flowOf(emptyList())
         }
@@ -126,7 +128,7 @@ class ClaseRepository(private val application: Application) {
     /**
      * Obtiene una clase específica por ID desde Room.
      */
-    suspend fun obtenerClasePorId(claseId: String): Clase? {
+    override suspend fun obtenerClasePorId(claseId: String): Clase? {
         return try {
             val entity = claseDao.obtenerClasePorId(claseId)
             if (entity != null) {
@@ -149,7 +151,7 @@ class ClaseRepository(private val application: Application) {
     /**
      * Sincroniza clases desde Supabase a Room.
      */
-    suspend fun sincronizarDesdeSupabase() {
+    override suspend fun sincronizarDesdeSupabase() {
         try {
             // PASO 1: Subir clases pendientes desde Room a Supabase
             val clasesNoSincronizadas = claseDao.obtenerNoSincronizadas()
@@ -219,7 +221,7 @@ class ClaseRepository(private val application: Application) {
      * Sincroniza (descarga) clases para una asignatura específica.
      * Esto evita tocar otras clases locales y es seguro para vistas de alumnos.
      */
-    suspend fun sincronizarClasesPorAsignatura(asignaturaId: String) {
+    override suspend fun sincronizarClasesPorAsignatura(asignaturaId: String) {
         try {
             val result = supabaseRepo.obtenerClasesPorAsignatura(asignaturaId)
             result.fold(
@@ -238,7 +240,7 @@ class ClaseRepository(private val application: Application) {
     /**
      * Crea una nueva clase.
      */
-    suspend fun crearClase(
+    override suspend fun crearClase(
         clase: Clase,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
@@ -288,7 +290,7 @@ class ClaseRepository(private val application: Application) {
     /**
      * Wrapper no-suspend para crearClase
      */
-    fun crearClaseAsync(
+    override fun crearClaseAsync(
         clase: Clase,
         onSuccess: () -> Unit,
         onError: (String) -> Unit,
@@ -302,7 +304,7 @@ class ClaseRepository(private val application: Application) {
     /**
      * Actualiza una clase existente.
      */
-    suspend fun actualizarClase(
+    override suspend fun actualizarClase(
         claseId: String,
         nombre: String,
         descripcion: String,
@@ -365,7 +367,7 @@ class ClaseRepository(private val application: Application) {
     /**
      * Método sobrecargado para actualizar clase usando objeto Clase
      */
-    suspend fun actualizarClase(clase: Clase) {
+    override suspend fun actualizarClase(clase: Clase) {
         try {
             val result = supabaseRepo.actualizarClase(clase)
             result.fold(
@@ -400,7 +402,7 @@ class ClaseRepository(private val application: Application) {
     /**
      * Elimina una clase.
      */
-    suspend fun eliminarClase(
+    override suspend fun eliminarClase(
         claseId: String,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
@@ -429,7 +431,7 @@ class ClaseRepository(private val application: Application) {
     /**
      * Método sobrecargado para eliminar clase usando solo el ID
      */
-    suspend fun eliminarClase(claseId: String) {
+    override suspend fun eliminarClase(claseId: String) {
         try {
             val result = supabaseRepo.eliminarClase(claseId)
             result.fold(
@@ -450,7 +452,7 @@ class ClaseRepository(private val application: Application) {
     /**
      * Limpia todas las clases locales (útil al cerrar sesión)
      */
-    suspend fun limpiarLocal() {
+    override suspend fun limpiarLocal() {
         claseDao.eliminarTodas()
     }
 
@@ -526,7 +528,7 @@ class ClaseRepository(private val application: Application) {
      * Comprueba si una asignatura tiene clases asociadas.
      * Retorna `true` si existe al menos una clase para la asignatura.
      */
-    suspend fun tieneClases(asignaturaId: String): Boolean {
+    override suspend fun tieneClases(asignaturaId: String): Boolean {
         return try {
             val clases = claseDao.obtenerClasesPorAsignaturaDirecto(asignaturaId)
             clases.isNotEmpty()

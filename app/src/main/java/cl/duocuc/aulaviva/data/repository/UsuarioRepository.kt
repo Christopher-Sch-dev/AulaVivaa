@@ -1,5 +1,7 @@
 package cl.duocuc.aulaviva.data.repository
 
+import cl.duocuc.aulaviva.domain.repository.IUsuarioRepository
+
 import android.util.Log
 import cl.duocuc.aulaviva.data.supabase.SupabaseClientProvider
 import io.github.jan.supabase.postgrest.from
@@ -11,12 +13,12 @@ import kotlinx.serialization.Serializable
  * Repository para manejar la tabla `usuarios` en Supabase.
  * Gestiona datos adicionales del usuario (rol, nombre, etc.)
  */
-class UsuarioRepository {
+class UsuarioRepository : IUsuarioRepository {
 
     /**
      * Guardar datos del usuario en tabla usuarios.
      */
-    suspend fun guardarUsuario(
+    override suspend fun guardarUsuario(
         uid: String,
         email: String,
         rol: String
@@ -47,7 +49,7 @@ class UsuarioRepository {
     /**
      * Obtener datos del usuario desde tabla usuarios.
      */
-    suspend fun obtenerUsuario(uid: String): Result<UsuarioDTO> = withContext(Dispatchers.IO) {
+    override suspend fun obtenerUsuario(uid: String): Result<UsuarioDTO> = withContext(Dispatchers.IO) {
         try {
             val supabase = SupabaseClientProvider.getClient()
 
@@ -73,7 +75,7 @@ class UsuarioRepository {
     /**
      * Actualizar rol del usuario.
      */
-    suspend fun actualizarRol(uid: String, nuevoRol: String): Result<Unit> =
+    override suspend fun actualizarRol(uid: String, nuevoRol: String): Result<Unit> =
         withContext(Dispatchers.IO) {
             try {
                 val supabase = SupabaseClientProvider.getClient()

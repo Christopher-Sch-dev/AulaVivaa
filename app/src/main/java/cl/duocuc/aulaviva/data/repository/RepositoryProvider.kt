@@ -3,30 +3,36 @@ package cl.duocuc.aulaviva.data.repository
 import android.app.Application
 import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
+import cl.duocuc.aulaviva.domain.repository.IAsignaturasRepository
+import cl.duocuc.aulaviva.domain.repository.IAlumnoRepository
+import cl.duocuc.aulaviva.domain.repository.IClaseRepository
+import cl.duocuc.aulaviva.domain.repository.IStorageRepository
+import cl.duocuc.aulaviva.domain.repository.IIARepository
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
 
 object RepositoryProvider {
     // Simple memoization of repositories per process to avoid repeated instantiation.
     // Using the Application instance as the canonical scope (single app process).
     @Volatile
-    private var asignaturasRepository: AsignaturasRepository? = null
+    private var asignaturasRepository: IAsignaturasRepository? = null
 
     @Volatile
-    private var alumnoRepository: AlumnoRepository? = null
+    private var alumnoRepository: IAlumnoRepository? = null
 
     @Volatile
-    private var claseRepository: ClaseRepository? = null
+    private var claseRepository: IClaseRepository? = null
 
     @Volatile
-    private var storageRepository: StorageRepository? = null
+    private var storageRepository: IStorageRepository? = null
 
     @Volatile
-    private var iaRepository: cl.duocuc.aulaviva.data.repository.IARepository? = null
+    private var iaRepository: IIARepository? = null
 
     @Volatile
-    private var authRepository: cl.duocuc.aulaviva.data.repository.AuthRepository? = null
+    private var authRepository: IAuthRepository? = null
 
     @Synchronized
-    fun provideAsignaturasRepository(application: Application): AsignaturasRepository {
+    fun provideAsignaturasRepository(application: Application): IAsignaturasRepository {
         return asignaturasRepository ?: run {
             val db = AppDatabase.getDatabase(application)
             val repo = AsignaturasRepository(
@@ -40,7 +46,7 @@ object RepositoryProvider {
     }
 
     @Synchronized
-    fun provideAlumnoRepository(application: Application): AlumnoRepository {
+    fun provideAlumnoRepository(application: Application): IAlumnoRepository {
         return alumnoRepository ?: run {
             val db = AppDatabase.getDatabase(application)
             val repo = AlumnoRepository(
@@ -54,7 +60,7 @@ object RepositoryProvider {
     }
 
     @Synchronized
-    fun provideClaseRepository(application: Application): ClaseRepository {
+    fun provideClaseRepository(application: Application): IClaseRepository {
         return claseRepository ?: run {
             val repo = ClaseRepository(application)
             claseRepository = repo
@@ -63,7 +69,7 @@ object RepositoryProvider {
     }
 
     @Synchronized
-    fun provideStorageRepository(application: Application): StorageRepository {
+    fun provideStorageRepository(application: Application): IStorageRepository {
         return storageRepository ?: run {
             val repo = StorageRepository(application)
             storageRepository = repo
@@ -72,7 +78,7 @@ object RepositoryProvider {
     }
 
     @Synchronized
-    fun provideIARepository(application: Application): cl.duocuc.aulaviva.data.repository.IARepository {
+    fun provideIARepository(application: Application): IIARepository {
         return iaRepository ?: run {
             val repo = cl.duocuc.aulaviva.data.repository.IARepository(application)
             iaRepository = repo
@@ -81,7 +87,7 @@ object RepositoryProvider {
     }
 
     @Synchronized
-    fun provideAuthRepository(): cl.duocuc.aulaviva.data.repository.AuthRepository {
+    fun provideAuthRepository(): IAuthRepository {
         return authRepository ?: run {
             val repo = cl.duocuc.aulaviva.data.repository.AuthRepository()
             authRepository = repo

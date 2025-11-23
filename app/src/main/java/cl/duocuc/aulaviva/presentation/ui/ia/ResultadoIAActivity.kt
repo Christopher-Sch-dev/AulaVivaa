@@ -12,7 +12,7 @@ import androidx.cardview.widget.CardView
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.databinding.ActivityResultadoIaChatBinding
-import cl.duocuc.aulaviva.data.repository.IARepository
+// IA repository accessed through IAViewModel; import removed
 import io.noties.markwon.Markwon
 import androidx.activity.viewModels
 import kotlinx.coroutines.Dispatchers

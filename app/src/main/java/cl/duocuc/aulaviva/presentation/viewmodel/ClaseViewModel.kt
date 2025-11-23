@@ -7,10 +7,14 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import cl.duocuc.aulaviva.data.model.Clase
-import cl.duocuc.aulaviva.data.repository.ClaseRepository
-import cl.duocuc.aulaviva.data.repository.StorageRepository
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
-import cl.duocuc.aulaviva.data.repository.AuthRepository
+import cl.duocuc.aulaviva.domain.repository.IClaseRepository
+import cl.duocuc.aulaviva.domain.repository.IStorageRepository
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
+import cl.duocuc.aulaviva.domain.usecase.CrearClaseUseCase
+import cl.duocuc.aulaviva.domain.usecase.ObtenerClasesUseCase
+import cl.duocuc.aulaviva.domain.usecase.SincronizarClasesUseCase
+import cl.duocuc.aulaviva.domain.usecase.EliminarClaseUseCase
 import android.net.Uri
 import kotlinx.coroutines.launch
 
@@ -23,14 +27,20 @@ import kotlinx.coroutines.launch
  */
 class ClaseViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: ClaseRepository = RepositoryProvider.provideClaseRepository(application)
-    private val storageRepository: StorageRepository = RepositoryProvider.provideStorageRepository(application)
-    private val authRepository: AuthRepository = RepositoryProvider.provideAuthRepository()
+    private val repository: IClaseRepository = RepositoryProvider.provideClaseRepository(application)
+    private val storageRepository: IStorageRepository = RepositoryProvider.provideStorageRepository(application)
+    private val authRepository: IAuthRepository = RepositoryProvider.provideAuthRepository()
     private val uid: String = authRepository.getCurrentUserId() ?: ""
+
+    // UseCases (incremental migration)
+    private val obtenerClasesUseCase = ObtenerClasesUseCase(repository)
+    private val sincronizarClasesUseCase = SincronizarClasesUseCase(repository)
+    private val crearClaseUseCase = CrearClaseUseCase(repository)
+    private val eliminarClaseUseCase = EliminarClaseUseCase(repository)
 
     // LiveData que lee directamente de Room usando Flow.
     // Cada vez que Room cambia, la UI se actualiza automáticamente.
-    val clases: LiveData<List<Clase>> = repository.obtenerClasesLocal().asLiveData()
+    val clases: LiveData<List<Clase>> = obtenerClasesUseCase().asLiveData()
 
     // LiveData para el estado de carga
     private val _isLoading = MutableLiveData<Boolean>()
@@ -52,7 +62,7 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                repository.sincronizarDesdeSupabase()  // Usa Supabase
+                sincronizarClasesUseCase()  // Usa Supabase vía UseCase
                 _isLoading.value = false
             } catch (_: Exception) {
                 _isLoading.value = false
@@ -68,7 +78,7 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                repository.sincronizarClasesPorAsignatura(asignaturaId)
+                sincronizarClasesUseCase.invokePorAsignatura(asignaturaId)
             } catch (e: Exception) {
                 _error.value = e.message
                 android.util.Log.e("ClaseVM", "❌ Error sincronizando por asignatura", e)
@@ -119,8 +129,8 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         viewModelScope.launch {
-            repository.crearClase(
-                clase = nuevaClase,
+            crearClaseUseCase(
+                nuevaClase,
                 onSuccess = {
                     _isLoading.value = false
                     _operationSuccess.value = "Clase creada exitosamente"
@@ -183,17 +193,13 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
         _isLoading.value = true
 
         viewModelScope.launch {
-            repository.eliminarClase(
-                claseId = claseId,
-                onSuccess = {
-                    _isLoading.value = false
-                    _operationSuccess.value = "Clase eliminada"
-                },
-                onError = { errorMsg ->
-                    _isLoading.value = false
-                    _error.value = errorMsg
-                }
-            )
+            eliminarClaseUseCase(claseId, onSuccess = {
+                _isLoading.value = false
+                _operationSuccess.value = "Clase eliminada"
+            }, onError = { errorMsg ->
+                _isLoading.value = false
+                _error.value = errorMsg
+            })
         }
     }
 
@@ -299,7 +305,7 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
      * @return LiveData con la lista de clases de la asignatura
      */
     fun obtenerClasesPorAsignatura(asignaturaId: String): LiveData<List<Clase>> {
-        return repository.obtenerClasesPorAsignatura(asignaturaId).asLiveData()
+        return obtenerClasesUseCase(asignaturaId).asLiveData()
     }
 
     /**
@@ -309,7 +315,7 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
      * @return LiveData con la lista de clases de todas las asignaturas
      */
     fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): LiveData<List<Clase>> {
-        return repository.obtenerClasesPorAsignaturas(asignaturasIds).asLiveData()
+        return obtenerClasesUseCase(asignaturasIds).asLiveData()
     }
 
     /**

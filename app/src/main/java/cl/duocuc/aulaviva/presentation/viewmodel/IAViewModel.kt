@@ -5,9 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.liveData
 import kotlinx.coroutines.Dispatchers
-import cl.duocuc.aulaviva.data.repository.IARepository
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
-import cl.duocuc.aulaviva.data.repository.StorageRepository
+import cl.duocuc.aulaviva.domain.repository.IIARepository
+import cl.duocuc.aulaviva.domain.repository.IStorageRepository
 
 /**
  * ViewModel wrapper para lógica de IA.
@@ -15,9 +15,9 @@ import cl.duocuc.aulaviva.data.repository.StorageRepository
  */
 class IAViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val iaRepository: IARepository = RepositoryProvider.provideIARepository(application)
+    private val iaRepository: IIARepository = RepositoryProvider.provideIARepository(application)
     // Storage repository for IA-related file access if needed
-    private val storageRepository: StorageRepository = RepositoryProvider.provideStorageRepository(application)
+    private val storageRepository: IStorageRepository = RepositoryProvider.provideStorageRepository(application)
 
     fun iniciarChatConContexto(
         nombreClase: String,

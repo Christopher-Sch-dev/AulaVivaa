@@ -1,5 +1,7 @@
 package cl.duocuc.aulaviva.data.repository
 
+import cl.duocuc.aulaviva.domain.repository.IStorageRepository
+
 import android.app.Application
 import android.net.Uri
 import cl.duocuc.aulaviva.data.supabase.SupabaseClientProvider
@@ -13,14 +15,14 @@ import android.util.Log
  * Encapsula operaciones de Storage (subir/descargar) usando Supabase.
  * Recibe `Application` y usa su `applicationContext` para evitar fugas de Activity.
  */
-class StorageRepository(private val application: Application) {
+class StorageRepository(private val application: Application) : IStorageRepository {
 
     private val appContext = application.applicationContext
 
     /**
      * Sube un PDF desde un `Uri` y retorna la URL pública en caso de éxito.
      */
-    suspend fun subirPdf(uri: Uri, nombreArchivo: String): Result<String> {
+    override suspend fun subirPdf(uri: Uri, nombreArchivo: String): Result<String> {
         return try {
             val supabase = SupabaseClientProvider.getClient()
 
