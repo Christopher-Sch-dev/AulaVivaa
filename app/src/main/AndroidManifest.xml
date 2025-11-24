@@ -43,22 +43,35 @@
         <activity
             android:name=".presentation.ui.main.PanelAlumnoActivity"
             android:exported="false" />
+
+        <!-- Pantalla de bienvenida Compose - Punto de entrada de la app -->
         <activity
-            android:name=".presentation.ui.auth.RegisterActivity"
-            android:exported="false" />
-        <activity
-            android:name=".presentation.ui.auth.LoginActivity"
-            android:exported="false" />
-        <!-- Pantalla de bienvenida - Punto de entrada de la app -->
-        <activity
-            android:name=".presentation.ui.auth.WelcomeActivity"
-            android:exported="true">
+            android:name=".presentation.ui.auth.compose.WelcomeActivityCompose"
+            android:exported="true"
+            android:theme="@style/Theme.AulaViva">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- LoginActivity Compose -->
+        <activity
+            android:name=".presentation.ui.auth.compose.LoginActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- RegisterActivity Compose -->
+        <activity
+            android:name=".presentation.ui.auth.compose.RegisterActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- PanelPrincipalActivity Compose -->
+        <activity
+            android:name=".presentation.ui.main.compose.PanelPrincipalActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
         <activity
             android:name=".presentation.ui.ia.ResultadoIAActivity"
             android:exported="false" />

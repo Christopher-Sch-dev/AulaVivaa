@@ -1,7 +1,7 @@
 # 🎯 PROMPT ENGINEERING PROFESIONAL - AulaViva IA
 
-**Fecha:** Noviembre 24, 2025  
-**Commit:** 92e8383  
+**Fecha:** Noviembre 24, 2025
+**Commit:** 92e8383
 **Branch:** dev-chris
 
 ---
@@ -55,7 +55,7 @@ Eres un consultor. Genera 4 ideas para clase. Responde en español.
 ### **3. Resumir Contenido PDF** ⭐ *MUY IMPORTANTE*
 `resumirContenidoPdf()`
 
-**Problema reportado:** 
+**Problema reportado:**
 > "no esta resumiendo, mas bien, esta analizando y descomprimiendo cada seccion, lo cual esta bien, pero igual el mensaje se agranda"
 
 **Antes:**
@@ -180,15 +180,15 @@ Genera ejercicios para alumnos relacionados a [tema].
 **Ahora:**
 - ✅ ROL: Creador de ejercicios didácticos
 - ✅ **PROGRESIÓN DE DIFICULTAD:**
-  
+
   **NIVEL BÁSICO (Comprensión):**
   - Ejercicio 1: Completar espacios
   - Ejercicio 2: Verdadero/Falso (5 items)
-  
+
   **NIVEL INTERMEDIO (Aplicación):**
   - Ejercicio 3: Relacionar conceptos
   - Ejercicio 4: Situación práctica (problema real)
-  
+
   **NIVEL AVANZADO (Análisis/Síntesis):**
   - Ejercicio 5: Caso de estudio complejo
   - Ejercicio 6: Pregunta abierta reflexiva

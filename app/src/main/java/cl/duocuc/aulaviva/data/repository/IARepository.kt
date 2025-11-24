@@ -277,7 +277,7 @@ class IARepository(private val context: Context) : IIARepository {
                         - Enfoque práctico para uso docente
                         - Identificación de valor pedagógico real
                     """.trimIndent()
-                    
+
                     analizarPDFInteligente(pdfUrl, prompt)
                 }
             }
@@ -821,24 +821,24 @@ class IARepository(private val context: Context) : IIARepository {
                 Genera un resumen CONCISO Y EJECUTIVO del PDF para la clase "$nombre". Este resumen será usado por docentes para toma rápida de decisiones.
 
                 FORMATO REQUERIDO (MÁXIMO 400 PALABRAS):
-                
+
                 **📚 Resumen Ejecutivo**
-                
+
                 **Tema principal:**
                 [1-2 líneas]
-                
+
                 **Conceptos clave:**
                 • [Concepto 1 + breve explicación]
                 • [Concepto 2 + breve explicación]
                 • [Concepto 3 + breve explicación]
                 • [Concepto 4 + breve explicación]
-                
+
                 **Estructura del documento:**
                 [2-3 líneas describiendo cómo está organizado]
-                
+
                 **Aplicabilidad pedagógica:**
                 [2-3 líneas sobre cómo usar este material en clase]
-                
+
                 **Nivel de complejidad:**
                 [Básico/Intermedio/Avanzado + justificación en 1 línea]
 
@@ -863,7 +863,7 @@ class IARepository(private val context: Context) : IIARepository {
     ): String {
         return try {
             val contextoPdf = prepararContextoPdf(pdfUrl)
-            
+
             val prompt = """
                 $contextoPdf
 
@@ -937,7 +937,7 @@ class IARepository(private val context: Context) : IIARepository {
     ): String {
         return try {
             val contextoPdf = prepararContextoPdf(pdfUrl)
-            
+
             val prompt = """
                 $contextoPdf
 
@@ -961,7 +961,7 @@ class IARepository(private val context: Context) : IIARepository {
 
                 **Ejercicio 1: Completar**
                 [Texto con espacios en blanco basado en el PDF]
-                
+
                 Palabras clave: [lista de palabras]
 
                 **Ejercicio 2: Verdadero o Falso**
@@ -983,7 +983,7 @@ class IARepository(private val context: Context) : IIARepository {
 
                 **Ejercicio 4: Situación Práctica**
                 [Plantear un problema/situación real donde se apliquen los conceptos del PDF]
-                
+
                 Preguntas:
                 a) [Pregunta de análisis]
                 b) [Pregunta de aplicación]
@@ -995,7 +995,7 @@ class IARepository(private val context: Context) : IIARepository {
 
                 **Ejercicio 5: Caso de Estudio**
                 [Descripción de un caso complejo que requiera integrar varios conceptos del PDF]
-                
+
                 Tareas:
                 1. [Analizar aspecto X]
                 2. [Proponer solución para Y]
@@ -1043,7 +1043,7 @@ class IARepository(private val context: Context) : IIARepository {
     ): String {
         return try {
             val contextoPdf = prepararContextoPdf(pdfUrl)
-            
+
             val prompt = """
                 $contextoPdf
 
@@ -1169,7 +1169,7 @@ class IARepository(private val context: Context) : IIARepository {
     ): String {
         return try {
             val contextoPdf = prepararContextoPdf(pdfUrl)
-            
+
             val prompt = """
                 $contextoPdf
 
@@ -1186,30 +1186,30 @@ class IARepository(private val context: Context) : IIARepository {
                 FORMATO REQUERIDO para cada actividad:
 
                 **🎮 Actividad [N]: [Nombre atractivo]**
-                
+
                 **Tipo:** [Individual/Parejas/Grupos/Plenaria]
-                
+
                 **Objetivos de aprendizaje:**
                 • [Objetivo cognitivo]
                 • [Objetivo procedimental]
-                
+
                 **Contenido del PDF aplicado:**
                 [Concepto/sección específica que se trabaja]
-                
+
                 **Dinámica paso a paso:**
                 1. [Instrucción clara para estudiantes]
                 2. [Siguiente paso]
                 3. [Siguiente paso]
                 4. [Cierre/socialización]
-                
+
                 **Materiales necesarios:**
                 • [Lista específica y realista]
-                
+
                 **Tiempo:** [X minutos]
-                
+
                 **Variante/Adaptación:**
                 [Cómo modificar si el grupo es más grande/pequeño o tiene otro nivel]
-                
+
                 **Evaluación formativa:**
                 [Cómo verificar que se logró el aprendizaje]
 
@@ -1241,7 +1241,7 @@ class IARepository(private val context: Context) : IIARepository {
     ): String {
         return try {
             val contextoPdf = prepararContextoPdf(pdfUrl)
-            
+
             val prompt = """
                 $contextoPdf
 
@@ -1269,16 +1269,16 @@ class IARepository(private val context: Context) : IIARepository {
                 **Conceptos Principales:**
 
                 **1️⃣ [Nombre del Concepto]**
-                
+
                 **¿Qué es?**
                 [Definición simple, sin tecnicismos innecesarios]
-                
+
                 **¿Cómo funciona?**
                 [Explicación paso a paso o proceso]
-                
+
                 **Ejemplo del día a día:**
                 [Situación cotidiana que ilustre el concepto]
-                
+
                 **💡 Para recordar:**
                 [Tip o frase clave para memorizar]
 
