@@ -46,6 +46,15 @@
             </set>
           </value>
         </entry>
+        <entry key="1b2e1066-54d5-41ff-8cde-9737c3857667">
+          <value>
+            <set>
+              <option value="c1df091e-49ae-47f4-abc9-4a47507e4d3d" />
+              <option value="7c6d884c-2357-4dfa-9e6e-9359d64c4b2e" />
+              <option value="b3686b76-5e39-4111-882c-f0c62e54dd71" />
+            </set>
+          </value>
+        </entry>
         <entry key="27843963-4e30-420e-b960-d859fd5c38ae">
           <value>
             <set>
@@ -266,6 +275,13 @@
       <entry key="1b2e1066-54d5-41ff-8cde-9737c3857667">
         <set>
           <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/clases/DetalleClaseActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/ui/ia/ResultadoIAActivity.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/domain/repository/IIARepository.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/domain/usecase/ResumirContenidoPdfUseCase.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/domain/usecase/GenerarActividadesInteractivasUseCase.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/domain/usecase/CrearResumenEstudioUseCase.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/presentation/viewmodel/IAViewModel.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/IARepository.kt" />
         </set>
       </entry>
       <entry key="27843963-4e30-420e-b960-d859fd5c38ae" />

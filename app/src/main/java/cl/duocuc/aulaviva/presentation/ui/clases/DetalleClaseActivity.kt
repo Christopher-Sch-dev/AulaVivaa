@@ -78,9 +78,13 @@ class DetalleClaseActivity : BaseActivity() {
         val textNombrePdf = findViewById<TextView>(R.id.textNombrePdf)
         val btnAnalizarPdf = findViewById<Button>(R.id.btnAnalizarPdf)
 
-        if (clase.archivoPdfNombre.isNotEmpty()) {
+        // Mostrar la tarjeta de PDF si existe una URL válida; mostrar el nombre si está disponible
+        if (!clase.archivoPdfUrl.isNullOrEmpty()) {
+            // Hay una URL válida para descargar/abrir el PDF
             cardPdf?.visibility = View.VISIBLE
-            textNombrePdf?.text = clase.archivoPdfNombre
+            // Mostrar el nombre del archivo si está disponible, si no mostrar la URL truncada
+            textNombrePdf?.text =
+                if (clase.archivoPdfNombre.isNotEmpty()) clase.archivoPdfNombre else clase.archivoPdfUrl
             // Ocultar botón "Analizar PDF" si es alumno
             btnAnalizarPdf?.visibility = if (esAlumno) View.GONE else View.VISIBLE
         } else {
