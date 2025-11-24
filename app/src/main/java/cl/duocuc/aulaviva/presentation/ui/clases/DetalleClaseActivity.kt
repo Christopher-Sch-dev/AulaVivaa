@@ -1,24 +1,27 @@
 package cl.duocuc.aulaviva.presentation.ui.clases
 
+// IA repository accessed through IAViewModel; import removed
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
-import cl.duocuc.aulaviva.presentation.base.BaseActivity
-import androidx.lifecycle.lifecycleScope
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.R
 import cl.duocuc.aulaviva.data.model.Clase
-// IA repository accessed through IAViewModel; import removed
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class DetalleClaseActivity : BaseActivity() {
+
+    private val TAG = "DetalleClaseActivity"
 
     private val iaViewModel: cl.duocuc.aulaviva.presentation.viewmodel.IAViewModel by viewModels()
     private val claseViewModel: ClaseViewModel by viewModels()
@@ -170,7 +173,8 @@ class DetalleClaseActivity : BaseActivity() {
         val loading =
             mostrarDialogoCarga("💡 Generando ideas...", "La IA está trabajando, por favor espera")
         // Delegar a IAViewModel y observar resultado
-        val live = iaViewModel.generarIdeasParaClase(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
+        val live =
+            iaViewModel.generarIdeasParaClase(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
         live.observe(this) { result ->
             loading.dismiss()
             if (result.isSuccess) {
@@ -184,7 +188,11 @@ class DetalleClaseActivity : BaseActivity() {
                     pdfUrl = clase.archivoPdfUrl
                 )
             } else {
-                Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this@DetalleClaseActivity,
+                    result.exceptionOrNull()?.message,
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
@@ -196,7 +204,8 @@ class DetalleClaseActivity : BaseActivity() {
             "La IA está trabajando, por favor espera"
         )
         try {
-            val live = iaViewModel.sugerirActividades(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
+            val live =
+                iaViewModel.sugerirActividades(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
             live.observe(this@DetalleClaseActivity) { result ->
                 loading.dismiss()
                 if (result.isSuccess) {
@@ -209,7 +218,11 @@ class DetalleClaseActivity : BaseActivity() {
                         pdfUrl = clase.archivoPdfUrl
                     )
                 } else {
-                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@DetalleClaseActivity,
+                        result.exceptionOrNull()?.message,
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         } catch (e: Exception) {
@@ -230,13 +243,25 @@ class DetalleClaseActivity : BaseActivity() {
                     "La IA está trabajando, por favor espera"
                 )
                 try {
-                    val live = iaViewModel.estructurarClasePorTiempo(clase.nombre, clase.descripcion, duracion, clase.archivoPdfUrl)
+                    val live = iaViewModel.estructurarClasePorTiempo(
+                        clase.nombre,
+                        clase.descripcion,
+                        duracion,
+                        clase.archivoPdfUrl
+                    )
                     live.observe(this@DetalleClaseActivity) { result ->
                         loading.dismiss()
                         if (result.isSuccess) {
-                            mostrarResultadoIA("⏱️ Estructura de $duracion", result.getOrNull() ?: "")
+                            mostrarResultadoIA(
+                                "⏱️ Estructura de $duracion",
+                                result.getOrNull() ?: ""
+                            )
                         } else {
-                            Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this@DetalleClaseActivity,
+                                result.exceptionOrNull()?.message,
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 } catch (e: Exception) {
@@ -259,7 +284,11 @@ class DetalleClaseActivity : BaseActivity() {
                 if (result.isSuccess) {
                     mostrarResultadoIA("📄 Análisis del material PDF", result.getOrNull() ?: "")
                 } else {
-                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@DetalleClaseActivity,
+                        result.exceptionOrNull()?.message,
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         } catch (e: Exception) {
@@ -275,13 +304,26 @@ class DetalleClaseActivity : BaseActivity() {
             "La IA está trabajando, por favor espera"
         )
         try {
-            val live = iaViewModel.resumirContenidoPdf(clase.nombre, clase.descripcion, clase.archivoPdfNombre ?: "Material educativo")
+            Log.d(
+                TAG,
+                "[IA] resumirContenidoPdf invoked for class=${clase.nombre} pdfUrl=${clase.archivoPdfUrl}"
+            )
+            // Enviar siempre la URL del PDF para que el repositorio pueda descargarlo y analizarlo
+            val live = iaViewModel.resumirContenidoPdf(
+                clase.nombre,
+                clase.descripcion,
+                clase.archivoPdfUrl ?: "Material educativo"
+            )
             live.observe(this@DetalleClaseActivity) { result ->
                 loading.dismiss()
                 if (result.isSuccess) {
                     mostrarResultadoIA("📝 Resumen del contenido", result.getOrNull() ?: "")
                 } else {
-                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@DetalleClaseActivity,
+                        result.exceptionOrNull()?.message,
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         } catch (e: Exception) {
@@ -298,13 +340,21 @@ class DetalleClaseActivity : BaseActivity() {
                 "La IA está trabajando, por favor espera"
             )
         try {
-            val live = iaViewModel.generarGuiaPresentacion(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
+            val live = iaViewModel.generarGuiaPresentacion(
+                clase.nombre,
+                clase.descripcion,
+                clase.archivoPdfUrl
+            )
             live.observe(this@DetalleClaseActivity) { result ->
                 loading.dismiss()
                 if (result.isSuccess) {
                     mostrarResultadoIA("🎤 Guía de Presentación", result.getOrNull() ?: "")
                 } else {
-                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@DetalleClaseActivity,
+                        result.exceptionOrNull()?.message,
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         } catch (e: Exception) {
@@ -321,13 +371,26 @@ class DetalleClaseActivity : BaseActivity() {
                 "La IA está trabajando, por favor espera"
             )
         try {
-            val live = iaViewModel.generarActividadesInteractivas(clase.nombre, clase.descripcion, clase.archivoPdfNombre)
+            Log.d(
+                TAG,
+                "[IA] generarActividadesInteractivas invoked for class=${clase.nombre} pdfUrl=${clase.archivoPdfUrl}"
+            )
+            // Pasar la URL del PDF (archivoPdfUrl) para permitir descarga y análisis
+            val live = iaViewModel.generarActividadesInteractivas(
+                clase.nombre,
+                clase.descripcion,
+                clase.archivoPdfUrl
+            )
             live.observe(this@DetalleClaseActivity) { result ->
                 loading.dismiss()
                 if (result.isSuccess) {
                     mostrarResultadoIA("🎮 Actividades Interactivas", result.getOrNull() ?: "")
                 } else {
-                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@DetalleClaseActivity,
+                        result.exceptionOrNull()?.message,
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         } catch (e: Exception) {
@@ -368,7 +431,16 @@ class DetalleClaseActivity : BaseActivity() {
             "Tu tutor IA está preparando la explicación"
         )
         try {
-            val live = iaViewModel.explicarConceptosParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfNombre)
+            Log.d(
+                TAG,
+                "[IA] explicarConceptosParaAlumno invoked for class=${clase.nombre} pdfUrl=${clase.archivoPdfUrl}"
+            )
+            // Usar la URL del PDF para que la IA pueda acceder al material
+            val live = iaViewModel.explicarConceptosParaAlumno(
+                clase.nombre,
+                clase.descripcion,
+                clase.archivoPdfUrl
+            )
             live.observe(this@DetalleClaseActivity) { result ->
                 loading.dismiss()
                 if (result.isSuccess) {
@@ -381,7 +453,11 @@ class DetalleClaseActivity : BaseActivity() {
                         pdfUrl = clase.archivoPdfUrl
                     )
                 } else {
-                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@DetalleClaseActivity,
+                        result.exceptionOrNull()?.message,
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         } catch (e: Exception) {
@@ -397,7 +473,11 @@ class DetalleClaseActivity : BaseActivity() {
             "Tu tutor IA está diseñando ejercicios de práctica"
         )
         try {
-            val live = iaViewModel.generarEjerciciosParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfUrl)
+            val live = iaViewModel.generarEjerciciosParaAlumno(
+                clase.nombre,
+                clase.descripcion,
+                clase.archivoPdfUrl
+            )
             live.observe(this@DetalleClaseActivity) { result ->
                 loading.dismiss()
                 if (result.isSuccess) {
@@ -410,7 +490,11 @@ class DetalleClaseActivity : BaseActivity() {
                         pdfUrl = clase.archivoPdfUrl
                     )
                 } else {
-                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@DetalleClaseActivity,
+                        result.exceptionOrNull()?.message,
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         } catch (e: Exception) {
@@ -426,7 +510,16 @@ class DetalleClaseActivity : BaseActivity() {
             "Tu tutor IA está organizando el contenido para ti"
         )
         try {
-            val live = iaViewModel.crearResumenEstudioParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfNombre)
+            Log.d(
+                TAG,
+                "[IA] crearResumenEstudioParaAlumno invoked for class=${clase.nombre} pdfUrl=${clase.archivoPdfUrl}"
+            )
+            // Enviar la URL del PDF para que la IA pueda analizar el contenido original
+            val live = iaViewModel.crearResumenEstudioParaAlumno(
+                clase.nombre,
+                clase.descripcion,
+                clase.archivoPdfUrl
+            )
             live.observe(this@DetalleClaseActivity) { result ->
                 loading.dismiss()
                 if (result.isSuccess) {
@@ -439,7 +532,11 @@ class DetalleClaseActivity : BaseActivity() {
                         pdfUrl = clase.archivoPdfUrl
                     )
                 } else {
-                    Toast.makeText(this@DetalleClaseActivity, result.exceptionOrNull()?.message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@DetalleClaseActivity,
+                        result.exceptionOrNull()?.message,
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         } catch (e: Exception) {
