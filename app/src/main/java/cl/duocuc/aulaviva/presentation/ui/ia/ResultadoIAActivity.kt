@@ -1,24 +1,21 @@
 package cl.duocuc.aulaviva.presentation.ui.ia
 
+// IA repository accessed through IAViewModel; import removed
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
+import android.util.Log
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import cl.duocuc.aulaviva.presentation.base.BaseActivity
+import androidx.activity.viewModels
 import androidx.cardview.widget.CardView
 import androidx.core.widget.addTextChangedListener
-import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.databinding.ActivityResultadoIaChatBinding
-// IA repository accessed through IAViewModel; import removed
-import io.noties.markwon.Markwon
-import androidx.activity.viewModels
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import cl.duocuc.aulaviva.presentation.base.BaseActivity
 import cl.duocuc.aulaviva.presentation.viewmodel.IAViewModel
+import io.noties.markwon.Markwon
 
 /**
  * ✨ NUEVA FUNCIÓN: Interfaz tipo chat para resultados de IA
@@ -102,7 +99,10 @@ class ResultadoIAActivity : BaseActivity() {
         ).observe(this) { result ->
             // Podemos loguear errores si aparecen, pero no bloqueamos la UI
             if (result.isFailure) {
-                android.util.Log.w("ResultadoIA", "Error iniciando chat: ${result.exceptionOrNull()?.message}")
+                android.util.Log.w(
+                    "ResultadoIA",
+                    "Error iniciando chat: ${result.exceptionOrNull()?.message}"
+                )
             }
         }
 
@@ -121,7 +121,26 @@ class ResultadoIAActivity : BaseActivity() {
         currentSessionId?.let { id ->
             iaViewModel.cerrarSesion(id).observe(this) { r ->
                 if (r.isSuccess) android.util.Log.d("ResultadoIA", "Sesión $id cerrada")
-                else android.util.Log.w("ResultadoIA", "Error cerrando sesión $id: ${r.exceptionOrNull()?.message}")
+                else android.util.Log.w(
+                    "ResultadoIA",
+                    "Error cerrando sesión $id: ${r.exceptionOrNull()?.message}"
+                )
+            }
+        }
+    }
+
+    // Cerrar sesión automáticamente cuando se agoten los mensajes permitidos
+    private fun intentarCerrarSesionSiAgotada() {
+        if (mensajesRestantes <= 0) {
+            currentSessionId?.let { id ->
+                Log.d("ResultadoIA", "Mensajes agotados, cerrando sesión $id")
+                iaViewModel.cerrarSesion(id).observe(this) { r ->
+                    if (r.isSuccess) Log.d("ResultadoIA", "Sesión $id cerrada automáticamente")
+                    else Log.w(
+                        "ResultadoIA",
+                        "Error cerrando sesión $id: ${r.exceptionOrNull()?.message}"
+                    )
+                }
             }
         }
     }
@@ -193,6 +212,8 @@ class ResultadoIAActivity : BaseActivity() {
                         "⚠️ Has alcanzado el límite de mensajes para esta consulta",
                         Toast.LENGTH_LONG
                     ).show()
+                    // Intentar cerrar la sesión porque el chat es temporal
+                    intentarCerrarSesionSiAgotada()
                 }
             } else {
                 val ex = result.exceptionOrNull()

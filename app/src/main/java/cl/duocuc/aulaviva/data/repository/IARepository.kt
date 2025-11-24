@@ -1,15 +1,17 @@
 package cl.duocuc.aulaviva.data.repository
 
-import cl.duocuc.aulaviva.domain.repository.IIARepository
-
 import android.content.Context
 import android.util.Log
 import cl.duocuc.aulaviva.BuildConfig
+import cl.duocuc.aulaviva.data.local.AppDatabase
+import cl.duocuc.aulaviva.data.local.ChatMessageEntity
+import cl.duocuc.aulaviva.data.local.ChatSessionEntity
 import cl.duocuc.aulaviva.data.remote.Content
 import cl.duocuc.aulaviva.data.remote.GeminiApiService
 import cl.duocuc.aulaviva.data.remote.GeminiRequest
 import cl.duocuc.aulaviva.data.remote.GenerationConfig
 import cl.duocuc.aulaviva.data.remote.Part
+import cl.duocuc.aulaviva.domain.repository.IIARepository
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
@@ -17,9 +19,6 @@ import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import cl.duocuc.aulaviva.data.local.AppDatabase
-import cl.duocuc.aulaviva.data.local.ChatMessageEntity
-import cl.duocuc.aulaviva.data.local.ChatSessionEntity
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -57,6 +56,7 @@ class IARepository(private val context: Context) : IIARepository {
     }
 
     private var chatSession: com.google.ai.client.generativeai.Chat? = null
+
     // Persistencia local de sesiones de chat
     private val db by lazy { AppDatabase.getDatabase(context) }
     private val chatDao by lazy { db.chatDao() }
@@ -66,7 +66,9 @@ class IARepository(private val context: Context) : IIARepository {
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
-        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        })
         .build()
 
     private val retrofit = Retrofit.Builder()
@@ -102,7 +104,8 @@ class IARepository(private val context: Context) : IIARepository {
                         )
                         val response = geminiService.generateContent(GEMINI_API_KEY, request)
                         if (response.isSuccessful) {
-                            val text = response.body()?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                            val text =
+                                response.body()?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
                             if (!text.isNullOrBlank()) return@withTimeout text
                             throw Exception("Respuesta vacía de Gemini")
                         } else {
@@ -111,11 +114,22 @@ class IARepository(private val context: Context) : IIARepository {
                     } catch (e: Exception) {
                         ultimoError = e
                         intento++
-                        if (intento < maxIntentos && (e is SocketTimeoutException || e.message?.contains("HTTP 503") == true || e.message?.contains("HTTP 504") == true || e.message?.contains("vacía") == true)) {
-                            try { Thread.sleep(800L * intento) } catch (_: InterruptedException) {}
+                        if (intento < maxIntentos && (e is SocketTimeoutException || e.message?.contains(
+                                "HTTP 503"
+                            ) == true || e.message?.contains("HTTP 504") == true || e.message?.contains(
+                                "vacía"
+                            ) == true)
+                        ) {
+                            try {
+                                Thread.sleep(800L * intento)
+                            } catch (_: InterruptedException) {
+                            }
                             continue
                         } else if (intento < maxIntentos) {
-                            try { Thread.sleep(400L) } catch (_: InterruptedException) {}
+                            try {
+                                Thread.sleep(400L)
+                            } catch (_: InterruptedException) {
+                            }
                             continue
                         } else {
                             throw Exception("Error Gemini: ${e.message}")
@@ -130,27 +144,32 @@ class IARepository(private val context: Context) : IIARepository {
     override suspend fun analizarPdfConIA(nombreClase: String, pdfUrl: String?): String {
         return try {
             if (pdfUrl.isNullOrEmpty()) return "⚠️ No se proporcionó URL del PDF"
-            analizarPDFInteligente(pdfUrl, "Analiza el PDF y entrega un informe pedagógico para la clase: $nombreClase")
+            analizarPDFInteligente(
+                pdfUrl,
+                "Analiza el PDF y entrega un informe pedagógico para la clase: $nombreClase"
+            )
         } catch (e: Exception) {
             "⚠️ Error analizando PDF: ${e.message ?: "Desconocido"}"
         }
     }
 
-    private suspend fun analizarPDFInteligente(pdfUrl: String, prompt: String): String = withContext(Dispatchers.IO) {
-        try {
-            analizarConGoogleAI(pdfUrl, prompt)
-        } catch (e: Exception) {
-            Log.w(TAG, "⚠️ Google AI falló: ${e.message}, usando PDFBox fallback")
-            analizarConPDFBox(pdfUrl, prompt)
+    private suspend fun analizarPDFInteligente(pdfUrl: String, prompt: String): String =
+        withContext(Dispatchers.IO) {
+            try {
+                analizarConGoogleAI(pdfUrl, prompt)
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ Google AI falló: ${e.message}, usando PDFBox fallback")
+                analizarConPDFBox(pdfUrl, prompt)
+            }
         }
-    }
 
     private suspend fun analizarConGoogleAI(pdfUrl: String, prompt: String): String {
         val pdfFile = descargarPDFATempFile(pdfUrl)
         if (pdfFile.length() <= 20_000_000L) {
             val pdfBytes = pdfFile.readBytes()
             val contenidoMultimodal = content { text(prompt); blob("application/pdf", pdfBytes) }
-            val response = withTimeout(90_000) { googleAiModel.generateContent(contenidoMultimodal) }
+            val response =
+                withTimeout(90_000) { googleAiModel.generateContent(contenidoMultimodal) }
             return response.text ?: throw Exception("Respuesta vacía de Google AI SDK")
         } else {
             val chunks = extractTextChunksFromPdf(pdfFile)
@@ -165,7 +184,14 @@ class IARepository(private val context: Context) : IIARepository {
 
                     Instrucción: Resume los puntos clave y extrae conceptos específicos de esta parte. Responde en español.
                 """.trimIndent()
-                try { summaries.add(llamarGemini(chunkPrompt)) } catch (e: Exception) { Log.w(TAG, "⚠️ Error resumiendo chunk ${index + 1}: ${e.message}"); summaries.add("[Error resumiendo chunk ${index + 1}: ${e.message}]") }
+                try {
+                    summaries.add(llamarGemini(chunkPrompt))
+                } catch (e: Exception) {
+                    Log.w(
+                        TAG,
+                        "⚠️ Error resumiendo chunk ${index + 1}: ${e.message}"
+                    ); summaries.add("[Error resumiendo chunk ${index + 1}: ${e.message}]")
+                }
             }
             val combined = summaries.joinToString("\n\n---\n\n")
             val finalPrompt = """
@@ -215,20 +241,26 @@ class IARepository(private val context: Context) : IIARepository {
     }
 
     private suspend fun descargarPDFATempFile(url: String): File = withContext(Dispatchers.IO) {
-        val client = OkHttpClient.Builder().connectTimeout(60, TimeUnit.SECONDS).readTimeout(120, TimeUnit.SECONDS).build()
+        val client = OkHttpClient.Builder().connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS).build()
         val request = okhttp3.Request.Builder().url(url).get().build()
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) throw java.io.IOException("HTTP ${'$'}{response.code}")
         val body = response.body ?: throw java.io.IOException("Body vacío")
         val tempFile = File.createTempFile("aulaviva_pdf_", ".pdf", context.cacheDir)
-        FileOutputStream(tempFile).use { out -> body.byteStream().use { input -> input.copyTo(out) } }
+        FileOutputStream(tempFile).use { out ->
+            body.byteStream().use { input -> input.copyTo(out) }
+        }
         tempFile
     }
 
     private fun extractTextChunksFromPdf(file: File, pagesPerChunk: Int = 5): List<String> {
         val out = mutableListOf<String>()
         try {
-            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(file, MemoryUsageSetting.setupTempFileOnly())
+            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
+                file,
+                MemoryUsageSetting.setupTempFileOnly()
+            )
             val total = document.numberOfPages
             val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
             var page = 1
@@ -239,7 +271,9 @@ class IARepository(private val context: Context) : IIARepository {
                 page += pagesPerChunk
             }
             document.close()
-        } catch (e: Exception) { Log.w(TAG, "⚠️ [PDFBox] Error extrayendo: ${e.message}") }
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ [PDFBox] Error extrayendo: ${e.message}")
+        }
         return out
     }
 
@@ -267,7 +301,10 @@ class IARepository(private val context: Context) : IIARepository {
         if (pdfUrl.isNullOrEmpty()) return Pair("", "")
         return try {
             val pdfFile = descargarPDFATempFile(pdfUrl)
-            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfFile, MemoryUsageSetting.setupTempFileOnly())
+            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
+                pdfFile,
+                MemoryUsageSetting.setupTempFileOnly()
+            )
             val info = document.documentInformation
             val title = info.title ?: ""
             val author = info.author ?: ""
@@ -279,7 +316,10 @@ class IARepository(private val context: Context) : IIARepository {
         }
     }
 
-    private suspend fun ensureAnalysisAndMetadata(nombreClase: String, pdfUrl: String?): Triple<String, String, String?> {
+    private suspend fun ensureAnalysisAndMetadata(
+        nombreClase: String,
+        pdfUrl: String?
+    ): Triple<String, String, String?> {
         // devuelve (title, author, analysisSummary)
         var title = ""
         var author = ""
@@ -287,7 +327,8 @@ class IARepository(private val context: Context) : IIARepository {
 
         // 1) intentar obtener sesión existente
         try {
-            val existing = if (nombreClase.isNotBlank()) chatDao.getLatestSessionForClass(nombreClase) else null
+            val existing =
+                if (nombreClase.isNotBlank()) chatDao.getLatestSessionForClass(nombreClase) else null
             if (existing != null) {
                 title = ""
                 author = ""
@@ -311,7 +352,8 @@ class IARepository(private val context: Context) : IIARepository {
             author = meta.second
             try {
                 // análisis rápido y breve (timeout corto)
-                val shortPrompt = "Resume brevemente los puntos clave del PDF para uso pedagógico (máx 3 líneas)."
+                val shortPrompt =
+                    "Resume brevemente los puntos clave del PDF para uso pedagógico (máx 3 líneas)."
                 val resumen = try {
                     withTimeout(30_000L) { analizarPDFInteligente(pdfUrl, shortPrompt) }
                 } catch (e: Exception) {
@@ -330,16 +372,30 @@ class IARepository(private val context: Context) : IIARepository {
                             )
                         )
                         currentSessionId = sessionId
-                        chatDao.insertMessage(ChatMessageEntity(sessionId = sessionId, sender = "ai", message = analysis))
-                    } catch (e: Exception) { Log.w(TAG, "⚠️ [CHAT] Error guardando análisis: ${e.message}") }
+                        chatDao.insertMessage(
+                            ChatMessageEntity(
+                                sessionId = sessionId,
+                                sender = "ai",
+                                message = analysis
+                            )
+                        )
+                    } catch (e: Exception) {
+                        Log.w(TAG, "⚠️ [CHAT] Error guardando análisis: ${e.message}")
+                    }
                 }
-            } catch (e: Exception) { Log.w(TAG, "⚠️ [ANALYSIS] Error: ${e.message}") }
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ [ANALYSIS] Error: ${e.message}")
+            }
         }
 
         return Triple(title, author, analysis)
     }
 
-    override suspend fun generarIdeasParaClase(nombreClase: String, descripcion: String, pdfUrl: String?): String {
+    override suspend fun generarIdeasParaClase(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String?
+    ): String {
         return try {
             val (title, author, analysis) = ensureAnalysisAndMetadata(nombreClase, pdfUrl)
             val contextHeader = buildString {
@@ -358,30 +414,60 @@ class IARepository(private val context: Context) : IIARepository {
             """.trimIndent()
             val resultado = llamarGemini(prompt)
             // persistir respuesta si hay sesión
-            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            currentSessionId?.let { sid ->
+                try {
+                    chatDao.insertMessage(
+                        ChatMessageEntity(
+                            sessionId = sid,
+                            sender = "ai",
+                            message = resultado
+                        )
+                    )
+                } catch (_: Exception) {
+                }
+            }
             "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
-        } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
+        } catch (e: Exception) {
+            "⚠️ Error: ${e.message ?: "Desconocido"}"
+        }
     }
 
     // ----- Compatibility wrappers expected by callers (IAViewModel, Activities)
-    override suspend fun sugerirActividades(nombreClase: String, descripcion: String, pdfUrl: String?): String {
+    override suspend fun sugerirActividades(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String?
+    ): String {
         return generarActividadesInteractivas(nombreClase, descripcion, pdfUrl)
     }
 
-    override suspend fun estructurarClasePorTiempo(nombreClase: String, descripcion: String, duracion: String, pdfUrl: String?): String {
+    override suspend fun estructurarClasePorTiempo(
+        nombreClase: String,
+        descripcion: String,
+        duracion: String,
+        pdfUrl: String?
+    ): String {
         val promptExtra = "Duración: $duracion"
         return generarIdeasParaClase(nombreClase, "$descripcion\n$promptExtra", pdfUrl)
     }
 
-    override suspend fun resumirContenidoPdf(nombre: String, descripcion: String, archivoNombre: String): String {
+    override suspend fun resumirContenidoPdf(
+        nombre: String,
+        descripcion: String,
+        pdfUrl: String?
+    ): String {
         return try {
-            analizarPdfConIA(nombre, archivoNombre)
+            analizarPdfConIA(nombre, pdfUrl)
         } catch (e: Exception) {
             "⚠️ Resumen no disponible: ${e.message ?: "Desconocido"}"
         }
     }
 
-    override suspend fun generarGuiaPresentacion(nombre: String, descripcion: String, pdfUrl: String?): String {
+    override suspend fun generarGuiaPresentacion(
+        nombre: String,
+        descripcion: String,
+        pdfUrl: String?
+    ): String {
         return try {
             val (title, author, analysis) = ensureAnalysisAndMetadata(nombre, pdfUrl)
             val contextHeader = buildString {
@@ -396,12 +482,29 @@ class IARepository(private val context: Context) : IIARepository {
                 Descripción: $descripcion
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            currentSessionId?.let { sid ->
+                try {
+                    chatDao.insertMessage(
+                        ChatMessageEntity(
+                            sessionId = sid,
+                            sender = "ai",
+                            message = resultado
+                        )
+                    )
+                } catch (_: Exception) {
+                }
+            }
             "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
-        } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
+        } catch (e: Exception) {
+            "⚠️ Error: ${e.message ?: "Desconocido"}"
+        }
     }
 
-    override suspend fun generarEjerciciosParaAlumno(nombre: String, descripcion: String, pdfUrl: String?): String {
+    override suspend fun generarEjerciciosParaAlumno(
+        nombre: String,
+        descripcion: String,
+        pdfUrl: String?
+    ): String {
         return try {
             val (title, author, analysis) = ensureAnalysisAndMetadata(nombre, pdfUrl)
             val contextHeader = buildString {
@@ -416,14 +519,31 @@ class IARepository(private val context: Context) : IIARepository {
                 Descripción: $descripcion
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            currentSessionId?.let { sid ->
+                try {
+                    chatDao.insertMessage(
+                        ChatMessageEntity(
+                            sessionId = sid,
+                            sender = "ai",
+                            message = resultado
+                        )
+                    )
+                } catch (_: Exception) {
+                }
+            }
             "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
-        } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
+        } catch (e: Exception) {
+            "⚠️ Error: ${e.message ?: "Desconocido"}"
+        }
     }
 
-    override suspend fun crearResumenEstudioParaAlumno(nombre: String, descripcion: String, archivoNombre: String): String {
+    override suspend fun crearResumenEstudioParaAlumno(
+        nombre: String,
+        descripcion: String,
+        pdfUrl: String?
+    ): String {
         return try {
-            val (title, author, analysis) = ensureAnalysisAndMetadata(nombre, archivoNombre)
+            val (title, author, analysis) = ensureAnalysisAndMetadata(nombre, pdfUrl)
             val contextHeader = buildString {
                 append("DETALLES DEL PDF ANALIZADO:\n")
                 append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
@@ -436,14 +556,31 @@ class IARepository(private val context: Context) : IIARepository {
                 Descripción: $descripcion
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            currentSessionId?.let { sid ->
+                try {
+                    chatDao.insertMessage(
+                        ChatMessageEntity(
+                            sessionId = sid,
+                            sender = "ai",
+                            message = resultado
+                        )
+                    )
+                } catch (_: Exception) {
+                }
+            }
             "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
-        } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
+        } catch (e: Exception) {
+            "⚠️ Error: ${e.message ?: "Desconocido"}"
+        }
     }
 
-    override suspend fun generarActividadesInteractivas(nombreClase: String, descripcion: String, nombrePdf: String?): String {
+    override suspend fun generarActividadesInteractivas(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String?
+    ): String {
         return try {
-            val (title, author, analysis) = ensureAnalysisAndMetadata(nombreClase, nombrePdf)
+            val (title, author, analysis) = ensureAnalysisAndMetadata(nombreClase, pdfUrl)
             val contextHeader = buildString {
                 append("DETALLES DEL PDF ANALIZADO:\n")
                 append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
@@ -456,14 +593,31 @@ class IARepository(private val context: Context) : IIARepository {
                 Descripción: $descripcion
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            currentSessionId?.let { sid ->
+                try {
+                    chatDao.insertMessage(
+                        ChatMessageEntity(
+                            sessionId = sid,
+                            sender = "ai",
+                            message = resultado
+                        )
+                    )
+                } catch (_: Exception) {
+                }
+            }
             "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
-        } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
+        } catch (e: Exception) {
+            "⚠️ Error: ${e.message ?: "Desconocido"}"
+        }
     }
 
-    override suspend fun explicarConceptosParaAlumno(nombreClase: String, descripcion: String, nombrePdf: String?): String {
+    override suspend fun explicarConceptosParaAlumno(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String?
+    ): String {
         return try {
-            val (title, author, analysis) = ensureAnalysisAndMetadata(nombreClase, nombrePdf)
+            val (title, author, analysis) = ensureAnalysisAndMetadata(nombreClase, pdfUrl)
             val contextHeader = buildString {
                 append("DETALLES DEL PDF ANALIZADO:\n")
                 append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
@@ -476,12 +630,30 @@ class IARepository(private val context: Context) : IIARepository {
                 Descripción: $descripcion
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            currentSessionId?.let { sid -> try { chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = resultado)) } catch (_: Exception){} }
+            currentSessionId?.let { sid ->
+                try {
+                    chatDao.insertMessage(
+                        ChatMessageEntity(
+                            sessionId = sid,
+                            sender = "ai",
+                            message = resultado
+                        )
+                    )
+                } catch (_: Exception) {
+                }
+            }
             "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
-        } catch (e: Exception) { "⚠️ Error: ${e.message ?: "Desconocido"}" }
+        } catch (e: Exception) {
+            "⚠️ Error: ${e.message ?: "Desconocido"}"
+        }
     }
 
-    override suspend fun iniciarChatConContexto(nombreClase: String, descripcion: String, pdfUrl: String?, respuestaInicial: String) {
+    override suspend fun iniciarChatConContexto(
+        nombreClase: String,
+        descripcion: String,
+        pdfUrl: String?,
+        respuestaInicial: String
+    ) {
         withContext(Dispatchers.IO) {
             try {
                 // Intentar restaurar sesión existente para la misma clase
@@ -510,7 +682,12 @@ class IARepository(private val context: Context) : IIARepository {
                         val pdfFile = descargarPDFATempFile(pdfUrl)
                         if (pdfFile.length() <= 20_000_000L) {
                             val pdfBytes = pdfFile.readBytes()
-                            content("user") { text(promptInicial); blob("application/pdf", pdfBytes) }
+                            content("user") {
+                                text(promptInicial); blob(
+                                "application/pdf",
+                                pdfBytes
+                            )
+                            }
                         } else {
                             val chunks = extractTextChunksFromPdf(pdfFile)
                             val compressed = compressChunksForSingleCall(chunks)
@@ -531,15 +708,32 @@ class IARepository(private val context: Context) : IIARepository {
                     // Si hay PDF, intentar analizar y guardar el análisis en la sesión
                     if (!pdfUrl.isNullOrEmpty()) {
                         try {
-                            val analysis = analizarPDFInteligente(pdfUrl, "Analiza el PDF y entrega un informe pedagógico para la clase: $nombreClase")
-                            val updated = chatDao.getLatestSessionForClass(nombreClase)?.copy().apply {
+                            val analysis = analizarPDFInteligente(
+                                pdfUrl,
+                                "Analiza el PDF y entrega un informe pedagógico para la clase: $nombreClase"
+                            )
+                            chatDao.getLatestSessionForClass(nombreClase)?.copy().apply {
                                 // safe update: getLatestSessionForClass should return the same inserted session
                             }
                             // actualizar la sesión con el análisis
-                            val sessionToUpdate = ChatSessionEntity(id = sessionId, nombreClase = nombreClase, descripcion = descripcion, pdfUrl = pdfUrl, analysisText = analysis, startedAt = System.currentTimeMillis(), lastActivityAt = System.currentTimeMillis())
+                            val sessionToUpdate = ChatSessionEntity(
+                                id = sessionId,
+                                nombreClase = nombreClase,
+                                descripcion = descripcion,
+                                pdfUrl = pdfUrl,
+                                analysisText = analysis,
+                                startedAt = System.currentTimeMillis(),
+                                lastActivityAt = System.currentTimeMillis()
+                            )
                             chatDao.updateSession(sessionToUpdate)
                             // Persistir el análisis como mensaje AI para contexto histórico
-                            chatDao.insertMessage(ChatMessageEntity(sessionId = sessionId, sender = "ai", message = analysis))
+                            chatDao.insertMessage(
+                                ChatMessageEntity(
+                                    sessionId = sessionId,
+                                    sender = "ai",
+                                    message = analysis
+                                )
+                            )
                         } catch (e: Exception) {
                             Log.w(TAG, "⚠️ Error analizando PDF al iniciar chat: ${e.message}")
                         }
@@ -547,15 +741,29 @@ class IARepository(private val context: Context) : IIARepository {
 
                     // Persistir el mensaje inicial de contexto del usuario
                     historial.add(contenidoUsuario)
-                    chatDao.insertMessage(ChatMessageEntity(sessionId = sessionId, sender = "user", message = promptInicial))
+                    chatDao.insertMessage(
+                        ChatMessageEntity(
+                            sessionId = sessionId,
+                            sender = "user",
+                            message = promptInicial
+                        )
+                    )
                     // Añadir la respuesta inicial provista por la app como mensaje del modelo
                     historial.add(content("model") { text(respuestaInicial) })
-                    chatDao.insertMessage(ChatMessageEntity(sessionId = sessionId, sender = "ai", message = respuestaInicial))
+                    chatDao.insertMessage(
+                        ChatMessageEntity(
+                            sessionId = sessionId,
+                            sender = "ai",
+                            message = respuestaInicial
+                        )
+                    )
 
                     chatSession = googleAiModel.startChat(history = historial)
                     Log.d(TAG, "✅ [CHAT] Nueva sesión iniciada y persistida con id=$sessionId")
                 }
-            } catch (e: Exception) { Log.e(TAG, "❌ [CHAT] Error iniciando: ${e.message}"); chatSession = null }
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ [CHAT] Error iniciando: ${e.message}"); chatSession = null
+            }
         }
     }
 
@@ -564,12 +772,26 @@ class IARepository(private val context: Context) : IIARepository {
             if (chatSession != null) {
                 try {
                     // Persistir mensaje del usuario en BD si existe sesión
-                    currentSessionId?.let { sid -> chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "user", message = mensaje)) }
+                    currentSessionId?.let { sid ->
+                        chatDao.insertMessage(
+                            ChatMessageEntity(
+                                sessionId = sid,
+                                sender = "user",
+                                message = mensaje
+                            )
+                        )
+                    }
                     val response = chatSession!!.sendMessage(mensaje)
                     val texto = response.text ?: "Sin respuesta de la IA"
                     // Persistir respuesta de la IA
                     currentSessionId?.let { sid ->
-                        chatDao.insertMessage(ChatMessageEntity(sessionId = sid, sender = "ai", message = texto))
+                        chatDao.insertMessage(
+                            ChatMessageEntity(
+                                sessionId = sid,
+                                sender = "ai",
+                                message = texto
+                            )
+                        )
                         // actualizar lastActivityAt en la sesión
                         val sess = chatDao.getSessionById(sid)
                         if (sess != null) {
@@ -578,8 +800,15 @@ class IARepository(private val context: Context) : IIARepository {
                         }
                     }
                     return@withContext texto
-                } catch (e: Exception) { Log.e(TAG, "❌ [CHAT] Error: ${e.message}"); throw e }
-            } else { Log.w(TAG, "⚠️ [CHAT] No hay sesión activa, fallback stateless"); return@withContext llamarGemini(mensaje) }
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ [CHAT] Error: ${e.message}"); throw e
+                }
+            } else {
+                Log.w(
+                    TAG,
+                    "⚠️ [CHAT] No hay sesión activa, fallback stateless"
+                ); return@withContext llamarGemini(mensaje)
+            }
         }
     }
 
@@ -599,18 +828,34 @@ class IARepository(private val context: Context) : IIARepository {
 
     override suspend fun obtenerMensajesDeSesion(sessionId: Long): List<cl.duocuc.aulaviva.domain.model.ChatMessage> {
         val msgs = chatDao.getMessagesForSession(sessionId)
-        return msgs.map { m -> cl.duocuc.aulaviva.domain.model.ChatMessage(id = m.id, sessionId = m.sessionId, sender = m.sender, message = m.message, createdAt = m.createdAt) }
+        return msgs.map { m ->
+            cl.duocuc.aulaviva.domain.model.ChatMessage(
+                id = m.id,
+                sessionId = m.sessionId,
+                sender = m.sender,
+                message = m.message,
+                createdAt = m.createdAt
+            )
+        }
     }
 
     override suspend fun reanalizarPdfParaSesion(sessionId: Long, pdfUrl: String?): String {
         if (pdfUrl.isNullOrEmpty()) return "⚠️ No hay PDF para reanalizar"
-        val analysis = analizarPDFInteligente(pdfUrl, "Reanálisis solicitado para la sesión $sessionId")
+        val analysis =
+            analizarPDFInteligente(pdfUrl, "Reanálisis solicitado para la sesión $sessionId")
         // actualizar sesión con nuevo análisis
         val sess = chatDao.getSessionById(sessionId)
         if (sess != null) {
-            val updated = sess.copy(analysisText = analysis, lastActivityAt = System.currentTimeMillis())
+            val updated =
+                sess.copy(analysisText = analysis, lastActivityAt = System.currentTimeMillis())
             chatDao.updateSession(updated)
-            chatDao.insertMessage(ChatMessageEntity(sessionId = sessionId, sender = "ai", message = analysis))
+            chatDao.insertMessage(
+                ChatMessageEntity(
+                    sessionId = sessionId,
+                    sender = "ai",
+                    message = analysis
+                )
+            )
         }
         return analysis
     }

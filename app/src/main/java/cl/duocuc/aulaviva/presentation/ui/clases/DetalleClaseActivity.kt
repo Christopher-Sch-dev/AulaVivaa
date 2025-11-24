@@ -312,7 +312,7 @@ class DetalleClaseActivity : BaseActivity() {
             val live = iaViewModel.resumirContenidoPdf(
                 clase.nombre,
                 clase.descripcion,
-                clase.archivoPdfUrl ?: "Material educativo"
+                clase.archivoPdfUrl
             )
             live.observe(this@DetalleClaseActivity) { result ->
                 loading.dismiss()
