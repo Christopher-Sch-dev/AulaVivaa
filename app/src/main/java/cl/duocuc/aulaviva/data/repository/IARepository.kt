@@ -219,22 +219,70 @@ class IARepository(private val context: Context) : IIARepository {
     override suspend fun analizarPdfConIA(nombreClase: String, pdfUrl: String?): String {
         if (pdfUrl.isNullOrEmpty()) return "⚠️ No se proporcionó URL del PDF"
         return try {
-            // Limitar el trabajo total de análisis para evitar que la UI espere demasiado
-            try {
-                // devolvemos directamente el resultado del bloque con timeout
-                withTimeout(180_000L) {
-                    withContext(Dispatchers.IO) {
-                        analizarPDFInteligente(
-                            pdfUrl,
-                            "Analiza el PDF y entrega un informe pedagógico para la clase: $nombreClase"
-                        )
-                    }
+            withTimeout(180_000L) {
+                withContext(Dispatchers.IO) {
+                    val prompt = """
+                        ROL: Eres un analista de contenido educativo con experiencia en evaluación de materiales pedagógicos.
+
+                        TAREA:
+                        Analiza exhaustivamente este PDF para la clase "$nombreClase" y genera un informe pedagógico completo.
+
+                        FORMATO REQUERIDO:
+
+                        **📊 Informe Pedagógico Completo**
+
+                        **1. VISIÓN GENERAL**
+                        • Tema central del documento
+                        • Alcance y profundidad del contenido
+                        • Público objetivo identificado
+
+                        **2. ESTRUCTURA Y ORGANIZACIÓN**
+                        • Cómo está organizado el documento
+                        • Secciones principales y su secuencia lógica
+                        • Calidad de la progresión de contenidos
+
+                        **3. CONTENIDOS CLAVE**
+                        [Para cada concepto importante:]
+                        • **[Concepto]:** Explicación y ubicación en el PDF
+                        • **[Concepto]:** Explicación y ubicación en el PDF
+                        • **[Concepto]:** Explicación y ubicación en el PDF
+                        [Mínimo 5 conceptos]
+
+                        **4. FORTALEZAS PEDAGÓGICAS**
+                        • [Aspecto positivo 1]
+                        • [Aspecto positivo 2]
+                        • [Aspecto positivo 3]
+
+                        **5. OPORTUNIDADES DE MEJORA/COMPLEMENTO**
+                        • [Qué podría añadir el docente]
+                        • [Qué requiere explicación adicional]
+
+                        **6. APLICACIÓN EN CLASE**
+                        • **Para nivel básico:** [Recomendaciones]
+                        • **Para nivel intermedio:** [Recomendaciones]
+                        • **Para nivel avanzado:** [Recomendaciones]
+
+                        **7. RECURSOS COMPLEMENTARIOS SUGERIDOS**
+                        • [Tipo de material que complementaría este PDF]
+
+                        **8. EVALUACIÓN DEL MATERIAL**
+                        • Complejidad: [Básico/Intermedio/Avanzado]
+                        • Extensión: [Apropiada/Excesiva/Insuficiente]
+                        • Claridad: [Alta/Media/Baja]
+                        • Aplicabilidad: [Inmediata/Requiere adaptación]
+
+                        CRITERIOS:
+                        - Análisis objetivo y fundamentado
+                        - Referencias específicas al contenido del PDF
+                        - Enfoque práctico para uso docente
+                        - Identificación de valor pedagógico real
+                    """.trimIndent()
+                    
+                    analizarPDFInteligente(pdfUrl, prompt)
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "⚠️ análisis largo: ${e.message}")
-                "⚠️ Tiempo de análisis excedido o error: ${e.message ?: "Desconocido"}"
             }
         } catch (e: Exception) {
+            Log.e(TAG, "❌ Error en analizarPdfConIA: ${e.message}")
             "⚠️ Error analizando PDF: ${e.message ?: "Desconocido"}"
         }
     }
@@ -643,24 +691,40 @@ class IARepository(private val context: Context) : IIARepository {
         pdfUrl: String?
     ): String {
         return try {
-            // ✅ FIX: Preparar contexto completo del PDF
             val contextoPdf = prepararContextoPdf(pdfUrl)
 
             val prompt = """
                 $contextoPdf
 
-                Eres un consultor en innovación educativa.
-                Clase: $nombreClase
-                Descripción: $descripcion
+                ROL: Eres un consultor pedagógico especializado en innovación educativa, con experiencia en el sistema educativo chileno.
 
-                ${if (contextoPdf.isNotBlank()) "Basándote EN EL CONTENIDO DEL PDF mostrado arriba, g" else "G"}enera 4 ideas prácticas para trabajo en clase, con objetivo pedagógico y pasos. Responde en español.
+                CONTEXTO:
+                • Clase: $nombreClase
+                • Descripción: $descripcion
+                ${if (contextoPdf.isNotBlank()) "• Material de referencia: PDF completo proporcionado arriba" else ""}
+
+                TAREA:
+                Genera 4 ideas pedagógicas innovadoras y aplicables para esta clase. ${if (contextoPdf.isNotBlank()) "Basa cada idea directamente en conceptos específicos del PDF." else ""}
+
+                FORMATO REQUERIDO para cada idea:
+                **Idea [N]: [Título descriptivo]**
+                • **Objetivo pedagógico:** [Qué aprenderán los estudiantes]
+                • **Contenido del PDF aplicado:** [Concepto/sección específica del material]
+                • **Implementación:** [3-4 pasos concretos para ejecutar en clase]
+                • **Recursos necesarios:** [Materiales o herramientas]
+                • **Tiempo estimado:** [Duración aproximada]
+
+                CRITERIOS:
+                - Ideas prácticas y realistas para el contexto escolar/universitario chileno
+                - Enfoque en participación activa de estudiantes
+                - Alineación directa con el contenido del material
+                - Lenguaje profesional pero accesible para docentes
             """.trimIndent()
 
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+            llamarGemini(prompt)
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error en generarIdeasParaClase: ${e.message}")
-            "⚠️ Error: ${e.message ?: "Desconocido"}"
+            "⚠️ Error generando ideas: ${e.message ?: "Desconocido"}"
         }
     }
 
@@ -679,8 +743,64 @@ class IARepository(private val context: Context) : IIARepository {
         duracion: String,
         pdfUrl: String?
     ): String {
-        val promptExtra = "Duración: $duracion"
-        return generarIdeasParaClase(nombreClase, "$descripcion\n$promptExtra", pdfUrl)
+        return try {
+            val contextoPdf = prepararContextoPdf(pdfUrl)
+
+            val prompt = """
+                $contextoPdf
+
+                ROL: Eres un planificador pedagógico experto en diseño de sesiones de clase efectivas.
+
+                CONTEXTO:
+                • Clase: $nombreClase
+                • Descripción: $descripcion
+                • Duración total: $duracion
+                ${if (contextoPdf.isNotBlank()) "• Material base: PDF completo proporcionado arriba" else ""}
+
+                TAREA:
+                Diseña una estructura temporal completa para esta clase, distribuyendo actividades de forma pedagógicamente efectiva. ${if (contextoPdf.isNotBlank()) "Integra directamente el contenido del PDF en cada segmento." else ""}
+
+                FORMATO REQUERIDO:
+                **📋 Plan de Clase - $nombreClase ($duracion)**
+
+                **1. INICIO (X min)**
+                • Actividad: [Descripción]
+                • Objetivo: [Propósito específico]
+                • Contenido PDF: [Sección/concepto aplicado]
+
+                **2. DESARROLLO (X min)**
+                • Actividad: [Descripción]
+                • Objetivo: [Propósito específico]
+                • Contenido PDF: [Sección/concepto aplicado]
+
+                **3. PRÁCTICA (X min)**
+                • Actividad: [Descripción]
+                • Objetivo: [Propósito específico]
+                • Contenido PDF: [Sección/concepto aplicado]
+
+                **4. CIERRE (X min)**
+                • Actividad: [Descripción]
+                • Objetivo: [Propósito específico]
+                • Evaluación: [Método de verificación]
+
+                **📌 Recursos necesarios:**
+                [Lista de materiales]
+
+                **💡 Recomendaciones:**
+                [2-3 sugerencias para optimizar la sesión]
+
+                CRITERIOS:
+                - Tiempos realistas y flexibles
+                - Transiciones fluidas entre actividades
+                - Balance entre teoría y práctica
+                - Adaptable al contexto chileno
+            """.trimIndent()
+
+            llamarGemini(prompt)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error en estructurarClasePorTiempo: ${e.message}")
+            "⚠️ Error estructurando clase: ${e.message ?: "Desconocido"}"
+        }
     }
 
     override suspend fun resumirContenidoPdf(
@@ -688,10 +808,51 @@ class IARepository(private val context: Context) : IIARepository {
         descripcion: String,
         pdfUrl: String?
     ): String {
+        if (pdfUrl.isNullOrEmpty()) return "⚠️ No se proporcionó URL del PDF"
         return try {
-            analizarPdfConIA(nombre, pdfUrl)
+            val contextoPdf = prepararContextoPdf(pdfUrl)
+
+            val prompt = """
+                $contextoPdf
+
+                ROL: Eres un sintetizador de contenido académico especializado en extraer información clave.
+
+                TAREA:
+                Genera un resumen CONCISO Y EJECUTIVO del PDF para la clase "$nombre". Este resumen será usado por docentes para toma rápida de decisiones.
+
+                FORMATO REQUERIDO (MÁXIMO 400 PALABRAS):
+                
+                **📚 Resumen Ejecutivo**
+                
+                **Tema principal:**
+                [1-2 líneas]
+                
+                **Conceptos clave:**
+                • [Concepto 1 + breve explicación]
+                • [Concepto 2 + breve explicación]
+                • [Concepto 3 + breve explicación]
+                • [Concepto 4 + breve explicación]
+                
+                **Estructura del documento:**
+                [2-3 líneas describiendo cómo está organizado]
+                
+                **Aplicabilidad pedagógica:**
+                [2-3 líneas sobre cómo usar este material en clase]
+                
+                **Nivel de complejidad:**
+                [Básico/Intermedio/Avanzado + justificación en 1 línea]
+
+                CRITERIOS CRÍTICOS:
+                - BREVEDAD: Máximo 400 palabras total
+                - PRECISIÓN: Información exacta del PDF
+                - UTILIDAD: Enfocado en qué puede hacer el docente con esto
+                - SIN REDUNDANCIA: Cada palabra debe aportar valor
+            """.trimIndent()
+
+            llamarGemini(prompt)
         } catch (e: Exception) {
-            "⚠️ Resumen no disponible: ${e.message ?: "Desconocido"}"
+            Log.e(TAG, "❌ Error en resumirContenidoPdf: ${e.message}")
+            "⚠️ Error generando resumen: ${e.message ?: "Desconocido"}"
         }
     }
 
@@ -702,17 +863,70 @@ class IARepository(private val context: Context) : IIARepository {
     ): String {
         return try {
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            
             val prompt = """
                 $contextoPdf
 
-                Genera una guía de presentación clara y ordenada para la clase $nombre.
-                Descripción: $descripcion
-                ${if (contextoPdf.isNotBlank()) "\nBasándote en el contenido del PDF mostrado arriba." else ""}
+                ROL: Eres un especialista en comunicación pedagógica y diseño de presentaciones efectivas.
+
+                CONTEXTO:
+                • Clase: $nombre
+                • Descripción: $descripcion
+                ${if (contextoPdf.isNotBlank()) "• Material base: PDF completo proporcionado arriba" else ""}
+
+                TAREA:
+                Diseña una guía profesional para presentar/dictar esta clase de forma estructurada y atractiva. ${if (contextoPdf.isNotBlank()) "Utiliza el contenido específico del PDF para construir cada sección." else ""}
+
+                FORMATO REQUERIDO:
+
+                **🎯 Guía de Presentación: $nombre**
+
+                **1. APERTURA (3-5 minutos)**
+                • **Gancho inicial:** [Pregunta/dato/situación que capte atención]
+                • **Objetivo de la clase:** [Qué aprenderán hoy]
+                • **Conexión con conocimientos previos:** [Qué ya saben los estudiantes]
+
+                **2. DESARROLLO DE CONTENIDO**
+
+                **Tema 1: [Nombre del tema]**
+                • Concepto principal: [Del PDF]
+                • Explicación clave: [2-3 puntos fundamentales]
+                • Ejemplo práctico: [Situación real o caso]
+                • Apoyo visual sugerido: [Diagrama/imagen/pizarra]
+
+                **Tema 2: [Nombre del tema]**
+                [Misma estructura]
+
+                **Tema 3: [Nombre del tema]**
+                [Misma estructura]
+
+                **3. ACTIVIDAD PRÁCTICA**
+                • Tipo: [Individual/Grupal/Colaborativa]
+                • Instrucciones: [Paso a paso]
+                • Tiempo: [Duración]
+                • Objetivo: [Qué reforzar]
+
+                **4. SÍNTESIS Y CIERRE**
+                • Puntos clave para recapitular: [Lista breve]
+                • Preguntas de reflexión: [2-3 preguntas abiertas]
+                • Conexión con próxima clase: [Puente al siguiente tema]
+
+                **📝 NOTAS PARA EL DOCENTE:**
+                • Conceptos que pueden generar dudas: [Lista]
+                • Tiempos flexibles por sección: [Estimaciones]
+                • Material de apoyo recomendado: [Recursos]
+
+                CRITERIOS:
+                - Flujo narrativo lógico y progresivo
+                - Balance entre teoría y práctica
+                - Lenguaje accesible pero preciso
+                - Anticipación de posibles dudas
             """.trimIndent()
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+
+            llamarGemini(prompt)
         } catch (e: Exception) {
-            "⚠️ Error: ${e.message ?: "Desconocido"}"
+            Log.e(TAG, "❌ Error en generarGuiaPresentacion: ${e.message}")
+            "⚠️ Error generando guía: ${e.message ?: "Desconocido"}"
         }
     }
 
@@ -723,17 +937,102 @@ class IARepository(private val context: Context) : IIARepository {
     ): String {
         return try {
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            
             val prompt = """
                 $contextoPdf
 
-                Genera ejercicios para alumnos relacionados a $nombre.
-                Descripción: $descripcion
-                ${if (contextoPdf.isNotBlank()) "\nBasa los ejercicios en el contenido del PDF mostrado arriba." else ""}
+                ROL: Eres un creador de ejercicios didácticos que ayudan a estudiantes a practicar y consolidar aprendizajes.
+
+                CONTEXTO:
+                • Tema: $nombre
+                • Descripción: $descripcion
+                ${if (contextoPdf.isNotBlank()) "• Material de referencia: PDF completo proporcionado arriba" else ""}
+
+                AUDIENCIA: Estudiantes que necesitan practicar lo aprendido de forma autónoma.
+
+                TAREA:
+                Crea ejercicios prácticos variados con diferentes niveles de dificultad. ${if (contextoPdf.isNotBlank()) "Todos los ejercicios deben estar basados directamente en el contenido del PDF." else ""}
+
+                FORMATO REQUERIDO:
+
+                **✍️ Ejercicios de Práctica - $nombre**
+
+                **📝 NIVEL BÁSICO (Comprensión)**
+
+                **Ejercicio 1: Completar**
+                [Texto con espacios en blanco basado en el PDF]
+                
+                Palabras clave: [lista de palabras]
+
+                **Ejercicio 2: Verdadero o Falso**
+                1. [Afirmación basada en el PDF] (  )
+                2. [Afirmación basada en el PDF] (  )
+                3. [Afirmación basada en el PDF] (  )
+                4. [Afirmación basada en el PDF] (  )
+                5. [Afirmación basada en el PDF] (  )
+
+                ---
+
+                **🧩 NIVEL INTERMEDIO (Aplicación)**
+
+                **Ejercicio 3: Relacionar Conceptos**
+                Columna A → Columna B
+                [Concepto] → [Opciones]
+                [Concepto] → [Opciones]
+                [Concepto] → [Opciones]
+
+                **Ejercicio 4: Situación Práctica**
+                [Plantear un problema/situación real donde se apliquen los conceptos del PDF]
+                
+                Preguntas:
+                a) [Pregunta de análisis]
+                b) [Pregunta de aplicación]
+                c) [Pregunta de solución]
+
+                ---
+
+                **🚀 NIVEL AVANZADO (Análisis y Síntesis)**
+
+                **Ejercicio 5: Caso de Estudio**
+                [Descripción de un caso complejo que requiera integrar varios conceptos del PDF]
+                
+                Tareas:
+                1. [Analizar aspecto X]
+                2. [Proponer solución para Y]
+                3. [Justificar decisión Z]
+
+                **Ejercicio 6: Pregunta Abierta**
+                [Pregunta reflexiva que requiera pensamiento crítico basado en el contenido]
+
+                ---
+
+                **✅ RESPUESTAS**
+                [Al final, incluir las respuestas correctas de TODOS los ejercicios]
+
+                **Ejercicio 1:** [respuestas]
+                **Ejercicio 2:** [V/F con justificación]
+                **Ejercicio 3:** [pares correctos]
+                **Ejercicio 4:** [orientaciones de respuesta]
+                **Ejercicio 5:** [rúbrica de evaluación]
+                **Ejercicio 6:** [criterios de una buena respuesta]
+
+                **💡 CONSEJOS PARA RESOLVER:**
+                • [Tip 1 sobre cómo abordar los ejercicios]
+                • [Tip 2 sobre qué repasar si tienes dudas]
+                • [Tip 3 sobre cómo autoevaluarte]
+
+                CRITERIOS:
+                - Ejercicios progresivos en dificultad
+                - Instrucciones claras y sin ambigüedad
+                - Variedad de formatos para mantener interés
+                - Aplicables de forma autónoma
+                - Contenido 100% basado en el material del PDF
             """.trimIndent()
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+
+            llamarGemini(prompt)
         } catch (e: Exception) {
-            "⚠️ Error: ${e.message ?: "Desconocido"}"
+            Log.e(TAG, "❌ Error en generarEjerciciosParaAlumno: ${e.message}")
+            "⚠️ Error generando ejercicios: ${e.message ?: "Desconocido"}"
         }
     }
 
@@ -744,17 +1043,122 @@ class IARepository(private val context: Context) : IIARepository {
     ): String {
         return try {
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            
             val prompt = """
                 $contextoPdf
 
-                Crea un resumen de estudio para alumnos basado en el material de la clase $nombre.
-                Descripción: $descripcion
-                ${if (contextoPdf.isNotBlank()) "\nEl resumen debe estar basado en el contenido del PDF mostrado arriba." else ""}
+                ROL: Eres un compañero de estudios experto que ayuda a crear resúmenes efectivos para preparar evaluaciones.
+
+                CONTEXTO:
+                • Tema: $nombre
+                • Descripción: $descripcion
+                ${if (contextoPdf.isNotBlank()) "• Material a resumir: PDF completo proporcionado arriba" else ""}
+
+                AUDIENCIA: Estudiantes que necesitan un resumen organizado para estudiar y repasar antes de evaluaciones.
+
+                TAREA:
+                Crea un resumen de estudio completo, organizado y fácil de repasar. ${if (contextoPdf.isNotBlank()) "Extrae y sintetiza el contenido clave del PDF de forma estructurada." else ""}
+
+                FORMATO REQUERIDO:
+
+                **📖 Resumen de Estudio - $nombre**
+
+                **🎯 Objetivo del Tema:**
+                [En 2-3 líneas: ¿Qué voy a aprender con este material?]
+
+                ---
+
+                **📌 CONCEPTOS FUNDAMENTALES**
+
+                **1. [Concepto Clave #1]**
+                • **Definición:** [Breve y clara]
+                • **Características:**
+                  - [Punto 1]
+                  - [Punto 2]
+                  - [Punto 3]
+                • **Ejemplo:** [Ejemplo concreto del PDF]
+                • **⚡ Memoriza:** [Frase/regla mnemotécnica]
+
+                **2. [Concepto Clave #2]**
+                [Misma estructura]
+
+                **3. [Concepto Clave #3]**
+                [Misma estructura]
+
+                [Incluir mínimo 5 conceptos fundamentales]
+
+                ---
+
+                **🔗 RELACIONES Y CONEXIONES**
+                • [Concepto A] se relaciona con [Concepto B] porque...
+                • [Concepto C] es consecuencia de...
+                • La diferencia entre [X] y [Y] es...
+
+                ---
+
+                **📊 ESQUEMA VISUAL SUGERIDO**
+                [Describir cómo organizar la información en un mapa mental o diagrama]
+                ```
+                [Representación simple en texto de cómo estructurar visualmente]
+                ```
+
+                ---
+
+                **⚠️ ERRORES COMUNES A EVITAR**
+                1. ❌ [Error típico] → ✅ [Forma correcta]
+                2. ❌ [Error típico] → ✅ [Forma correcta]
+                3. ❌ [Error típico] → ✅ [Forma correcta]
+
+                ---
+
+                **❓ PREGUNTAS DE AUTOEVALUACIÓN**
+                Antes de la prueba, asegúrate de poder responder:
+                1. [Pregunta esencial de comprensión]
+                2. [Pregunta de aplicación práctica]
+                3. [Pregunta de análisis/síntesis]
+                4. [Pregunta integradora]
+
+                ---
+
+                **📝 TÉRMINOS CLAVE PARA MEMORIZAR**
+                | Término | Definición Breve |
+                |---------|------------------|
+                | [Término 1] | [Definición] |
+                | [Término 2] | [Definición] |
+                | [Término 3] | [Definición] |
+                [Mínimo 8-10 términos]
+
+                ---
+
+                **🎯 CHECKLIST DE ESTUDIO**
+                Para considerar que dominas el tema, verifica:
+                - [ ] Puedo explicar cada concepto con mis propias palabras
+                - [ ] Entiendo cómo se relacionan los conceptos entre sí
+                - [ ] Puedo dar ejemplos propios (no solo los del PDF)
+                - [ ] Identifico aplicaciones prácticas del tema
+                - [ ] Resuelvo ejercicios sin consultar apuntes
+
+                ---
+
+                **💡 TIPS DE ESTUDIO**
+                • **Mejor momento:** [Sugerencia de cuándo estudiar esto]
+                • **Técnica recomendada:** [Método específico para este contenido]
+                • **Tiempo sugerido:** [Cuánto dedicar al estudio activo]
+                • **Material de apoyo:** [Qué más revisar si necesitas profundizar]
+
+                CRITERIOS:
+                - Información condensada pero completa
+                - Organización lógica y visual
+                - Lenguaje accesible para estudiantes
+                - Herramientas prácticas de memorización
+                - Balance entre teoría y aplicación
+                - 100% basado en el contenido del PDF
             """.trimIndent()
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+
+            llamarGemini(prompt)
         } catch (e: Exception) {
-            "⚠️ Error: ${e.message ?: "Desconocido"}"
+            Log.e(TAG, "❌ Error en crearResumenEstudioParaAlumno: ${e.message}")
+            "⚠️ Error creando resumen: ${e.message ?: "Desconocido"}"
         }
     }
 
@@ -765,17 +1169,68 @@ class IARepository(private val context: Context) : IIARepository {
     ): String {
         return try {
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            
             val prompt = """
                 $contextoPdf
 
-                Diseña 3 actividades interactivas para la clase $nombreClase.
-                Descripción: $descripcion
-                ${if (contextoPdf.isNotBlank()) "\nLas actividades deben estar basadas en el contenido del PDF mostrado arriba." else ""}
+                ROL: Eres un diseñador de experiencias de aprendizaje activo, especializado en metodologías participativas.
+
+                CONTEXTO:
+                • Clase: $nombreClase
+                • Descripción: $descripcion
+                ${if (contextoPdf.isNotBlank()) "• Material fuente: PDF completo proporcionado arriba" else ""}
+
+                TAREA:
+                Diseña 3 actividades interactivas innovadoras que promuevan participación activa y aprendizaje significativo. ${if (contextoPdf.isNotBlank()) "Cada actividad debe aplicar directamente contenido específico del PDF." else ""}
+
+                FORMATO REQUERIDO para cada actividad:
+
+                **🎮 Actividad [N]: [Nombre atractivo]**
+                
+                **Tipo:** [Individual/Parejas/Grupos/Plenaria]
+                
+                **Objetivos de aprendizaje:**
+                • [Objetivo cognitivo]
+                • [Objetivo procedimental]
+                
+                **Contenido del PDF aplicado:**
+                [Concepto/sección específica que se trabaja]
+                
+                **Dinámica paso a paso:**
+                1. [Instrucción clara para estudiantes]
+                2. [Siguiente paso]
+                3. [Siguiente paso]
+                4. [Cierre/socialización]
+                
+                **Materiales necesarios:**
+                • [Lista específica y realista]
+                
+                **Tiempo:** [X minutos]
+                
+                **Variante/Adaptación:**
+                [Cómo modificar si el grupo es más grande/pequeño o tiene otro nivel]
+                
+                **Evaluación formativa:**
+                [Cómo verificar que se logró el aprendizaje]
+
+                ---
+
+                **💡 NOTAS DE IMPLEMENTACIÓN:**
+                • Recomendaciones para gestión del tiempo
+                • Posibles desafíos y cómo abordarlos
+                • Conexión entre las 3 actividades (progresión)
+
+                CRITERIOS:
+                - Actividades factibles con recursos típicos de aula chilena
+                - Progresión de simple a complejo
+                - Fomento de pensamiento crítico y colaboración
+                - Instrucciones claras y ejecutables
             """.trimIndent()
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+
+            llamarGemini(prompt)
         } catch (e: Exception) {
-            "⚠️ Error: ${e.message ?: "Desconocido"}"
+            Log.e(TAG, "❌ Error en generarActividadesInteractivas: ${e.message}")
+            "⚠️ Error generando actividades: ${e.message ?: "Desconocido"}"
         }
     }
 
@@ -786,17 +1241,82 @@ class IARepository(private val context: Context) : IIARepository {
     ): String {
         return try {
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            
             val prompt = """
                 $contextoPdf
 
-                Eres un tutor. Explica en lenguaje simple los conceptos principales de $nombreClase.
-                Descripción: $descripcion
-                ${if (contextoPdf.isNotBlank()) "\nBasa tu explicación en el contenido del PDF mostrado arriba." else ""}
+                ROL: Eres un tutor paciente y didáctico que explica conceptos complejos de forma simple y amigable.
+
+                CONTEXTO:
+                • Tema: $nombreClase
+                • Descripción: $descripcion
+                ${if (contextoPdf.isNotBlank()) "• Material de estudio: PDF completo proporcionado arriba" else ""}
+
+                AUDIENCIA: Estudiantes que están aprendiendo este tema por primera vez o reforzando conocimientos.
+
+                TAREA:
+                Explica los conceptos principales de este tema de forma clara, usando ejemplos cotidianos y lenguaje accesible. ${if (contextoPdf.isNotBlank()) "Basa cada explicación en el contenido específico del PDF." else ""}
+
+                FORMATO REQUERIDO:
+
+                **🎓 Explicación de Conceptos - $nombreClase**
+
+                **¿De qué trata este tema?**
+                [Introducción general en 2-3 líneas, como si hablaras con un amigo]
+
+                ---
+
+                **Conceptos Principales:**
+
+                **1️⃣ [Nombre del Concepto]**
+                
+                **¿Qué es?**
+                [Definición simple, sin tecnicismos innecesarios]
+                
+                **¿Cómo funciona?**
+                [Explicación paso a paso o proceso]
+                
+                **Ejemplo del día a día:**
+                [Situación cotidiana que ilustre el concepto]
+                
+                **💡 Para recordar:**
+                [Tip o frase clave para memorizar]
+
+                ---
+
+                **2️⃣ [Nombre del Concepto]**
+                [Misma estructura]
+
+                ---
+
+                **3️⃣ [Nombre del Concepto]**
+                [Misma estructura]
+
+                ---
+
+                **🔗 ¿Cómo se relacionan estos conceptos?**
+                [Explicar las conexiones entre los conceptos de forma simple]
+
+                **❓ Preguntas para verificar que entendiste:**
+                1. [Pregunta de comprensión]
+                2. [Pregunta de aplicación]
+                3. [Pregunta de análisis]
+
+                **📚 ¿Quieres profundizar?**
+                [Sugerencias de qué estudiar después o cómo practicar más]
+
+                CRITERIOS:
+                - Lenguaje simple y directo (como hablarías con un amigo)
+                - Evitar jerga técnica o explicarla cuando sea necesaria
+                - Ejemplos concretos y relacion ables
+                - Tono motivador y positivo
+                - Explicaciones que construyan comprensión progresiva
             """.trimIndent()
-            val resultado = llamarGemini(prompt)
-            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+
+            llamarGemini(prompt)
         } catch (e: Exception) {
-            "⚠️ Error: ${e.message ?: "Desconocido"}"
+            Log.e(TAG, "❌ Error en explicarConceptosParaAlumno: ${e.message}")
+            "⚠️ Error explicando conceptos: ${e.message ?: "Desconocido"}"
         }
     }
 
