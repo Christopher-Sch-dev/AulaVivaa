@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cl.duocuc.aulaviva.presentation.activity.DocenteAsignaturasActivity
+import cl.duocuc.aulaviva.presentation.activity.compose.DocenteAsignaturasActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.auth.compose.LoginActivityCompose
 import cl.duocuc.aulaviva.presentation.viewmodel.PanelPrincipalViewModel
 import cl.duocuc.aulaviva.utils.NotificationHelper
@@ -182,7 +182,7 @@ fun PanelPrincipalScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
-                            val intent = Intent(context, DocenteAsignaturasActivity::class.java)
+                            val intent = Intent(context, DocenteAsignaturasActivityCompose::class.java)
                             context.startActivity(intent)
                         },
                         modifier = Modifier

@@ -72,6 +72,30 @@
             android:name=".presentation.ui.main.compose.PanelPrincipalActivityCompose"
             android:exported="false"
             android:theme="@style/Theme.AulaViva" />
+        
+        <!-- PanelAlumnoActivity Compose -->
+        <activity
+            android:name=".presentation.ui.main.compose.PanelAlumnoActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+        
+        <!-- DocenteAsignaturasActivity Compose -->
+        <activity
+            android:name=".presentation.activity.compose.DocenteAsignaturasActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+        
+        <!-- AlumnoAsignaturasActivity Compose -->
+        <activity
+            android:name=".presentation.activity.compose.AlumnoAsignaturasActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+        
+        <!-- DocenteClasesActivity Compose -->
+        <activity
+            android:name=".presentation.activity.compose.DocenteClasesActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
         <activity
             android:name=".presentation.ui.ia.ResultadoIAActivity"
             android:exported="false" />

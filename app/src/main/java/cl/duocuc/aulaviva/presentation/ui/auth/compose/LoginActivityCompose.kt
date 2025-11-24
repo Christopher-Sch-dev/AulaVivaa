@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import cl.duocuc.aulaviva.presentation.ui.main.PanelAlumnoActivity
+import cl.duocuc.aulaviva.presentation.ui.main.compose.PanelAlumnoActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.main.compose.PanelPrincipalActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTheme
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
@@ -48,10 +48,10 @@ class LoginActivityCompose : ComponentActivity() {
                                             this@LoginActivityCompose,
                                             PanelPrincipalActivityCompose::class.java
                                         )
-                                        "alumno" -> Intent(
-                                            this@LoginActivityCompose,
-                                            PanelAlumnoActivity::class.java
-                                        )
+                                "alumno" -> Intent(
+                                    this@LoginActivityCompose,
+                                    PanelAlumnoActivityCompose::class.java
+                                )
                                         else -> Intent(
                                             this@LoginActivityCompose,
                                             PanelPrincipalActivityCompose::class.java
