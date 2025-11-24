@@ -21,6 +21,7 @@
       <option value="712e1567-60c4-42fd-841a-d11a5d44581a" />
       <option value="71c30fa4-e28c-4fcd-8e1e-404dbdddbb7f" />
       <option value="72290f73-d5df-4e02-b353-c976c26771b4" />
+      <option value="7577469e-fc4e-4463-858b-556a8db17fcb" />
       <option value="81a234a2-0197-47ea-a848-5f8b33cafdbf" />
       <option value="858d58e9-e8b7-45c9-bb62-83b586bfb2a3" />
       <option value="8c6c22bb-9ef9-45ed-856c-2be3e10ae177" />
@@ -38,6 +39,7 @@
       <option value="c87514a6-5218-485e-aed1-616350548e51" />
       <option value="cb65b101-c184-4870-a3e8-00fc9fabd8ef" />
       <option value="d9d54b89-00b3-410d-aaa0-41061f433c41" />
+      <option value="dbb11d52-c0d9-4593-a9e2-99922c7209e7" />
       <option value="e6ef2816-498a-4498-bfb2-26209da09573" />
       <option value="eccca1da-2d5e-438e-b76d-be5dfe0e3b90" />
       <option value="f1a2e94e-e8fd-4580-9319-442eb45bea84" />
@@ -254,11 +256,11 @@
         <entry key="c87514a6-5218-485e-aed1-616350548e51">
           <value>
             <set>
-              <option value="64c109a6-76e2-4454-be67-9604199fe3f7" />
               <option value="31c81694-7669-46b9-b5cb-2fcd659d02df" />
-              <option value="a54e74a1-5476-49e7-a06c-a14528699b4c" />
-              <option value="86bbe6d2-fa81-4252-aeba-a504e748bdb9" />
+              <option value="64c109a6-76e2-4454-be67-9604199fe3f7" />
               <option value="831253c6-f07b-45b7-b35b-220aec8b1cb0" />
+              <option value="86bbe6d2-fa81-4252-aeba-a504e748bdb9" />
+              <option value="a54e74a1-5476-49e7-a06c-a14528699b4c" />
             </set>
           </value>
         </entry>
@@ -266,6 +268,15 @@
           <value>
             <set>
               <option value="571cbfa4-ac07-4d0e-b123-d852355c0a99" />
+            </set>
+          </value>
+        </entry>
+        <entry key="dbb11d52-c0d9-4593-a9e2-99922c7209e7">
+          <value>
+            <set>
+              <option value="0cddb014-cc88-4832-8ac2-2bea437730ac" />
+              <option value="f39e3988-8550-42ed-8ff3-d88eb4f23c79" />
+              <option value="61e0bbb4-5ee1-4b90-9170-21ac8b3cf842" />
             </set>
           </value>
         </entry>
@@ -305,13 +316,13 @@
       <entry key="aa091703-1fcc-4b16-b281-c059c8fe4be0" />
       <entry key="abd6fe1b-e22c-40e4-84ea-2076cc1e77b1" />
       <entry key="c62c1a13-009a-463b-93c1-fa95042c9182" />
-      <entry key="c87514a6-5218-485e-aed1-616350548e51">
+      <entry key="c87514a6-5218-485e-aed1-616350548e51" />
+      <entry key="d9d54b89-00b3-410d-aaa0-41061f433c41" />
+      <entry key="dbb11d52-c0d9-4593-a9e2-99922c7209e7">
         <set>
           <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/IARepository.kt" />
-          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/remote/GeminiApiService.kt" />
         </set>
       </entry>
-      <entry key="d9d54b89-00b3-410d-aaa0-41061f433c41" />
       <entry key="e6ef2816-498a-4498-bfb2-26209da09573" />
       <entry key="f5966b0a-d6c4-48fa-8caf-234ab7cb91d4" />
     </pendingWorkingSetItems>

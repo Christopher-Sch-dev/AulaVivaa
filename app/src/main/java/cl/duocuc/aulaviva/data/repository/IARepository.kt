@@ -235,7 +235,11 @@ class IARepository(private val context: Context) : IIARepository {
     // Helpers básicos para extracción y compresión de texto (implementación simple y segura)
     private fun extractTextChunksFromPdf(pdfFile: File, chunkSize: Int = 6_000): List<String> {
         return try {
-            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfFile)
+            // Use disk-backed memory setting to avoid loading huge PDFs fully into heap
+            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
+                pdfFile,
+                MemoryUsageSetting.setupTempFileOnly()
+            )
             val stripper = try {
                 // PDFBox Android puede exponer PDFTextStripper bajo este paquete
                 com.tom_roush.pdfbox.text.PDFTextStripper()
@@ -245,7 +249,14 @@ class IARepository(private val context: Context) : IIARepository {
                 null
             }
             val fullText = stripper?.getText(document) ?: ""
-            document.close()
+            try {
+                // cerrar documento en finally para mayor seguridad
+            } finally {
+                try {
+                    document.close()
+                } catch (_: Exception) {
+                }
+            }
             if (fullText.isBlank()) return emptyList()
             val chunks = mutableListOf<String>()
             var idx = 0
@@ -313,20 +324,26 @@ class IARepository(private val context: Context) : IIARepository {
             """.trimIndent()
             return llamarGemini(finalPrompt)
         }
+        // Intentar enviar binario directamente si no es demasiado grande; proteger contra OOM
         if (pdfFile.length() <= 20_000_000L) {
-            val pdfBytes = pdfFile.readBytes()
-            val contenidoMultimodal = content { text(prompt); blob("application/pdf", pdfBytes) }
-            // Limitar la llamada multimodal para que no quede esperando excesivamente
-            val response =
-                withTimeout(60_000) { googleAiModel.generateContent(contenidoMultimodal) }
-            return response.text ?: throw Exception("Respuesta vacía de Google AI SDK")
-        } else {
-            val chunks = extractTextChunksFromPdf(pdfFile)
-            if (chunks.isEmpty()) throw Exception("No se pudo extraer texto del PDF")
-            mutableListOf<String>()
-            // En vez de llamar por cada chunk (muy lento), hacemos un resumen comprimido y una única llamada
-            val compressed = compressChunksForSingleCall(chunks)
-            val combinedPrompt = """
+            try {
+                val pdfBytes = pdfFile.readBytes()
+                Log.d(TAG, "📦 pdf bytes leídos size=${pdfBytes.size} (fileLen=${pdfFile.length()})")
+                val contenidoMultimodal =
+                    content { text(prompt); blob("application/pdf", pdfBytes) }
+                // Limitar la llamada multimodal para que no quede esperando excesivamente
+                val response =
+                    withTimeout(60_000) { googleAiModel.generateContent(contenidoMultimodal) }
+                return response.text ?: throw Exception("Respuesta vacía de Google AI SDK")
+            } catch (oom: OutOfMemoryError) {
+                Log.w(
+                    TAG,
+                    "⚠️ OOM leyendo PDF en memoria, usando resumen comprimido como fallback: ${oom.message}"
+                )
+                val chunks = extractTextChunksFromPdf(pdfFile)
+                if (chunks.isEmpty()) throw Exception("No se pudo extraer texto del PDF para fallback")
+                val compressed = compressChunksForSingleCall(chunks)
+                val combinedPrompt = """
                 $prompt
                 
                 HE DIVIDIDO EN PARTES Y COMPRIMIDO EL CONTENIDO:
@@ -334,6 +351,27 @@ class IARepository(private val context: Context) : IIARepository {
                 
                 INSTRUCCIÓN: A partir del contenido comprimido, genera un análisis coherente del PDF completo, mencionando conceptos y detalles específicos. Responde en español.
             """.trimIndent()
+                try {
+                    return llamarGemini(combinedPrompt)
+                } catch (e: Exception) {
+                    Log.w(TAG, "⚠️ Error en llamarGemini para contenido comprimido: ${e.message}")
+                    throw e
+                }
+            }
+        } else {
+            val chunks = extractTextChunksFromPdf(pdfFile)
+            if (chunks.isEmpty()) throw Exception("No se pudo extraer texto del PDF")
+            mutableListOf<String>()
+            // En vez de llamar por cada chunk (muy lento), hacemos un resumen comprimido y una única llamada
+            val compressed = compressChunksForSingleCall(chunks)
+            val combinedPrompt = """
+                 $prompt
+                 
+                 HE DIVIDIDO EN PARTES Y COMPRIMIDO EL CONTENIDO:
+                 $compressed
+                 
+                 INSTRUCCIÓN: A partir del contenido comprimido, genera un análisis coherente del PDF completo, mencionando conceptos y detalles específicos. Responde en español.
+             """.trimIndent()
             try {
                 return llamarGemini(combinedPrompt)
             } catch (e: Exception) {
@@ -350,29 +388,29 @@ class IARepository(private val context: Context) : IIARepository {
         if (totalChars < 30_000) {
             val textoPdf = chunks.joinToString("\n\n")
             val promptCompleto = """
-                $prompt
+                 $prompt
 
-                📎 CONTENIDO DEL PDF (extraído con PDFBox):
-                ---
-                Caracteres extraídos: ${textoPdf.length}
+                 📎 CONTENIDO DEL PDF (extraído con PDFBox):
+                 ---
+                 Caracteres extraídos: ${textoPdf.length}
 
-                CONTENIDO COMPLETO:
-                $textoPdf
-                ---
+                 CONTENIDO COMPLETO:
+                 $textoPdf
+                 ---
 
-                IMPORTANTE: Analiza TODO el contenido del PDF proporcionado.
-            """.trimIndent()
+                 IMPORTANTE: Analiza TODO el contenido del PDF proporcionado.
+             """.trimIndent()
             return llamarGemini(promptCompleto)
         } else {
             val compressed = compressChunksForSingleCall(chunks)
             val finalPrompt = """
-                $prompt
+                 $prompt
 
-                CONTENIDO COMPRIMIDO:
-                $compressed
+                 CONTENIDO COMPRIMIDO:
+                 $compressed
 
-                INSTRUCCIÓN FINAL: A partir del contenido comprimido, genera un análisis coherente del PDF completo.
-            """.trimIndent()
+                 INSTRUCCIÓN FINAL: A partir del contenido comprimido, genera un análisis coherente del PDF completo.
+             """.trimIndent()
             return llamarGemini(finalPrompt)
         }
     }
@@ -390,6 +428,26 @@ class IARepository(private val context: Context) : IIARepository {
                     val tempFile = File.createTempFile("aulaviva_pdf_", ".pdf", context.cacheDir)
                     FileOutputStream(tempFile).use { out ->
                         body.byteStream().use { input -> input.copyTo(out) }
+                    }
+                    // Calcular checksum (SHA-256) para verificar integridad / detectar truncamiento
+                    try {
+                        val md = java.security.MessageDigest.getInstance("SHA-256")
+                        java.io.FileInputStream(tempFile).use { fis ->
+                            val buf = ByteArray(8 * 1024)
+                            var read = fis.read(buf)
+                            while (read > 0) {
+                                md.update(buf, 0, read)
+                                read = fis.read(buf)
+                            }
+                        }
+                        val digest = md.digest()
+                        val hex = digest.joinToString("") { String.format("%02x", it) }
+                        Log.d(
+                            TAG,
+                            "⬇️ PDF guardado en temp: ${tempFile.absolutePath} size=${tempFile.length()} checksum=sha256:$hex"
+                        )
+                    } catch (e: Exception) {
+                        Log.w(TAG, "⚠️ No se pudo calcular checksum del PDF: ${e.message}")
                     }
                     Log.d(
                         TAG,
