@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.aulaviva.data.model.Asignatura
-import cl.duocuc.aulaviva.presentation.activity.AlumnoClasesActivity
+import cl.duocuc.aulaviva.presentation.activity.compose.AlumnoClasesActivityCompose
 import cl.duocuc.aulaviva.presentation.viewmodel.AlumnoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,14 +30,14 @@ fun AlumnoAsignaturasScreen(
     val asignaturas by viewModel.asignaturasInscritas.collectAsStateWithLifecycle(initialValue = emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    
+
     var showCodigoDialog by remember { mutableStateOf(false) }
     var codigoIngresado by remember { mutableStateOf("") }
-    
+
     LaunchedEffect(Unit) {
         viewModel.sincronizarAsignaturasInscritas()
     }
-    
+
     LaunchedEffect(viewModel.error.collectAsStateWithLifecycle().value) {
         viewModel.error.value?.let {
             snackbarHostState.showSnackbar(it)
@@ -92,7 +92,7 @@ fun AlumnoAsignaturasScreen(
                         AsignaturaAlumnoCard(
                             asignatura = asignatura,
                             onVerClases = {
-                                val intent = Intent(context, AlumnoClasesActivity::class.java)
+                                val intent = Intent(context, AlumnoClasesActivityCompose::class.java)
                                 intent.putExtra("ASIGNATURA_ID", asignatura.id)
                                 intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
                                 context.startActivity(intent)
@@ -105,7 +105,7 @@ fun AlumnoAsignaturasScreen(
                     }
                 }
             }
-            
+
             if (isLoading) {
                 LinearProgressIndicator(
                     modifier = Modifier
@@ -115,7 +115,7 @@ fun AlumnoAsignaturasScreen(
             }
         }
     }
-    
+
     // Dialog código
     if (showCodigoDialog) {
         AlertDialog(
@@ -192,7 +192,7 @@ fun AsignaturaAlumnoCard(
     onDarDeBaja: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    
+
     Card(
         onClick = onVerClases,
         modifier = Modifier.fillMaxWidth(),
@@ -226,7 +226,7 @@ fun AsignaturaAlumnoCard(
             }
         }
     }
-    
+
     DropdownMenu(
         expanded = showMenu,
         onDismissRequest = { showMenu = false }

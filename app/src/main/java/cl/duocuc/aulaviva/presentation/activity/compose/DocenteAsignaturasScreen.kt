@@ -21,7 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.activity.compose.DocenteClasesActivityCompose
-import cl.duocuc.aulaviva.presentation.activity.InscritosActivity
+import cl.duocuc.aulaviva.presentation.activity.compose.InscritosActivityCompose
 import cl.duocuc.aulaviva.presentation.viewmodel.AsignaturasViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,11 +33,11 @@ fun DocenteAsignaturasScreen(
     val asignaturas by viewModel.asignaturas.collectAsStateWithLifecycle(initialValue = emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    
+
     var showCrearDialog by remember { mutableStateOf(false) }
     var nombreAsignatura by remember { mutableStateOf("") }
     var descripcionAsignatura by remember { mutableStateOf("") }
-    
+
     LaunchedEffect(Unit) {
         viewModel.sincronizarAsignaturas()
     }
@@ -95,7 +95,7 @@ fun DocenteAsignaturasScreen(
                                 context.startActivity(intent)
                             },
                             onVerInscritos = {
-                                val intent = Intent(context, InscritosActivity::class.java)
+                                val intent = Intent(context, InscritosActivityCompose::class.java)
                                 intent.putExtra("ASIGNATURA_ID", asignatura.id)
                                 intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
                                 context.startActivity(intent)
@@ -114,7 +114,7 @@ fun DocenteAsignaturasScreen(
                     }
                 }
             }
-            
+
             if (isLoading) {
                 LinearProgressIndicator(
                     modifier = Modifier
@@ -124,7 +124,7 @@ fun DocenteAsignaturasScreen(
             }
         }
     }
-    
+
     // Dialog crear asignatura
     if (showCrearDialog) {
         AlertDialog(
@@ -214,7 +214,7 @@ fun AsignaturaDocenteCard(
     onEliminar: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -253,9 +253,9 @@ fun AsignaturaDocenteCard(
                     Icon(Icons.Default.MoreVert, "Opciones")
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -279,7 +279,7 @@ fun AsignaturaDocenteCard(
             }
         }
     }
-    
+
     DropdownMenu(
         expanded = showMenu,
         onDismissRequest = { showMenu = false }

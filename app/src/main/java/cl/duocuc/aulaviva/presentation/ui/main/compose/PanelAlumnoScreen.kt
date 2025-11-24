@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.aulaviva.data.model.Asignatura
-import cl.duocuc.aulaviva.presentation.activity.AlumnoClasesActivity
+import cl.duocuc.aulaviva.presentation.activity.compose.AlumnoClasesActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.auth.compose.LoginActivityCompose
 import cl.duocuc.aulaviva.presentation.viewmodel.AlumnoViewModel
 
@@ -119,7 +119,7 @@ fun PanelAlumnoScreen(
                         AsignaturaCard(
                             asignatura = asignatura,
                             onClick = {
-                                val intent = Intent(context, AlumnoClasesActivity::class.java)
+                                val intent = Intent(context, AlumnoClasesActivityCompose::class.java)
                                 intent.putExtra("ASIGNATURA_ID", asignatura.id)
                                 intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
                                 context.startActivity(intent)

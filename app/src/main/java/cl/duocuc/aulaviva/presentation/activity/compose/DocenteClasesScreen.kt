@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.aulaviva.data.model.Clase
-import cl.duocuc.aulaviva.presentation.ui.clases.CrearEditarClaseActivity
-import cl.duocuc.aulaviva.presentation.ui.clases.DetalleClaseActivity
+import cl.duocuc.aulaviva.presentation.ui.clases.compose.CrearEditarClaseActivityCompose
+import cl.duocuc.aulaviva.presentation.ui.clases.compose.DetalleClaseActivityCompose
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,7 +32,7 @@ fun DocenteClasesScreen(
     val clases by viewModel.clases.collectAsStateWithLifecycle(initialValue = emptyList())
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    
+
     LaunchedEffect(Unit) {
         viewModel.cargarClasesPorAsignatura(asignaturaId)
     }
@@ -95,12 +95,13 @@ fun DocenteClasesScreen(
                         ClaseCard(
                             clase = clase,
                             onClaseClick = {
-                                val intent = Intent(context, DetalleClaseActivity::class.java)
+                                val intent = Intent(context, DetalleClaseActivityCompose::class.java)
                                 intent.putExtra("CLASE_ID", clase.id)
+                                intent.putExtra("ES_ALUMNO", false)
                                 context.startActivity(intent)
                             },
                             onEditar = {
-                                val intent = Intent(context, CrearEditarClaseActivity::class.java)
+                                val intent = Intent(context, CrearEditarClaseActivityCompose::class.java)
                                 intent.putExtra("CLASE_ID", clase.id)
                                 intent.putExtra("ASIGNATURA_ID", asignaturaId)
                                 intent.putExtra("ASIGNATURA_NOMBRE", asignaturaNombre)
@@ -114,7 +115,7 @@ fun DocenteClasesScreen(
                     }
                 }
             }
-            
+
             if (isLoading) {
                 LinearProgressIndicator(
                     modifier = Modifier
@@ -167,7 +168,7 @@ fun ClaseCard(
     onEliminar: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    
+
     Card(
         onClick = onClaseClick,
         modifier = Modifier.fillMaxWidth(),
@@ -208,7 +209,7 @@ fun ClaseCard(
             }
         }
     }
-    
+
     DropdownMenu(
         expanded = showMenu,
         onDismissRequest = { showMenu = false }

@@ -1,4 +1,4 @@
-package cl.duocuc.aulaviva.presentation.activity.compose
+package cl.duocuc.aulaviva.presentation.ui.clases.compose
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,14 +9,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTheme
 
-class DocenteClasesActivityCompose : ComponentActivity() {
+class DetalleClaseActivityCompose : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val asignaturaId = intent.getStringExtra("ASIGNATURA_ID") ?: ""
-        val asignaturaNombre = intent.getStringExtra("ASIGNATURA_NOMBRE") ?: "Asignatura"
+        val claseId = intent.getStringExtra("CLASE_ID") ?: ""
+        val esAlumno = intent.getBooleanExtra("ES_ALUMNO", false)
 
-        if (asignaturaId.isEmpty()) {
+        if (claseId.isEmpty()) {
             finish()
             return
         }
@@ -27,9 +27,9 @@ class DocenteClasesActivityCompose : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    DocenteClasesScreen(
-                        asignaturaId = asignaturaId,
-                        asignaturaNombre = asignaturaNombre
+                    DetalleClaseScreen(
+                        claseId = claseId,
+                        esAlumno = esAlumno
                     )
                 }
             }

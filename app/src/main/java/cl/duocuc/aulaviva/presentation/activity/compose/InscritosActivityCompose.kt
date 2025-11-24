@@ -9,7 +9,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTheme
 
-class DocenteClasesActivityCompose : ComponentActivity() {
+class InscritosActivityCompose : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -27,7 +27,7 @@ class DocenteClasesActivityCompose : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    DocenteClasesScreen(
+                    InscritosScreen(
                         asignaturaId = asignaturaId,
                         asignaturaNombre = asignaturaNombre
                     )

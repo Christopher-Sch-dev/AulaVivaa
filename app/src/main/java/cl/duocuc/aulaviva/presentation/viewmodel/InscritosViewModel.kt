@@ -52,4 +52,8 @@ class InscritosViewModel(application: Application) : AndroidViewModel(applicatio
      */
     fun obtenerInscritosLive(asignaturaId: String) =
         repository.obtenerInscritosFlow(asignaturaId).asLiveData()
+
+    fun clearError() {
+        _error.value = null
+    }
 }
