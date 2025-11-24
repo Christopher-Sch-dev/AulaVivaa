@@ -149,10 +149,10 @@ fun ResultadoIAScreen(
                             mensajeTexto = ""
                             isLoading = true
                             mensajesRestantes--
-                            
+
                             // Agregar mensaje del usuario
                             mensajes = mensajes + MensajeChat(esUsuario = true, contenido = mensaje)
-                            
+
                             // Enviar a IA
                             val live = iaViewModel.enviarMensajeChat(mensaje)
                             val observer = Observer<Result<String>> { result ->

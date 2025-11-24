@@ -57,7 +57,7 @@ fun DocenteClasesScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    val intent = Intent(context, CrearEditarClaseActivity::class.java)
+                    val intent = Intent(context, CrearEditarClaseActivityCompose::class.java)
                     intent.putExtra("ASIGNATURA_ID", asignaturaId)
                     intent.putExtra("ASIGNATURA_NOMBRE", asignaturaNombre)
                     context.startActivity(intent)
@@ -78,7 +78,7 @@ fun DocenteClasesScreen(
             } else if (clases.isEmpty()) {
                 EmptyStateClases(
                     onCreateClick = {
-                        val intent = Intent(context, CrearEditarClaseActivity::class.java)
+                        val intent = Intent(context, CrearEditarClaseActivityCompose::class.java)
                         intent.putExtra("ASIGNATURA_ID", asignaturaId)
                         intent.putExtra("ASIGNATURA_NOMBRE", asignaturaNombre)
                         context.startActivity(intent)
