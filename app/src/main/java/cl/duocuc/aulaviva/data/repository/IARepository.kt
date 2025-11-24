@@ -870,11 +870,6 @@ class IARepository(private val context: Context) : IIARepository {
             }
         }
     }
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ [CHAT] Error iniciando: ${e.message}"); chatSession = null
-            }
-        }
-    }
 
     override suspend fun enviarMensajeChat(mensaje: String): String {
         return withContext(Dispatchers.IO) {

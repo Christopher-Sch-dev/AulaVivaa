@@ -1,5 +1,5 @@
 # 🔧 FIXES FINALES - IA y PDF FUNCIONANDO AL 100%
-**Branch:** `dev-chris`  
+**Branch:** `dev-chris`
 **Fecha:** Noviembre 24, 2025 (Segunda iteración)
 
 ---
@@ -83,10 +83,10 @@ D  ✅ [CHAT] Sesión TEMPORAL creada con id=123, contexto PDF incluido
 ```kotlin
 private suspend fun prepararContextoPdf(pdfUrl: String?): String {
     if (pdfUrl.isNullOrEmpty()) return ""
-    
+
     try {
         val textoPdf = extractTextFromPdf(pdfUrl)
-        
+
         return if (textoPdf.length <= 20_000) {
             // PDF pequeño: enviar completo
             """
@@ -138,7 +138,7 @@ override suspend fun generarIdeasParaClase(...): String {
     val contextoPdf = prepararContextoPdf(pdfUrl) // Texto completo!
     val prompt = """
         $contextoPdf
-        
+
         Genera 4 ideas basándote EN EL CONTENIDO DEL PDF...
     """
     return llamarGemini(prompt)
@@ -166,20 +166,20 @@ override suspend fun iniciarChatConContexto(...) {
 override suspend fun iniciarChatConContexto(...) {
     // SIEMPRE crear sesión TEMPORAL nueva
     Log.d(TAG, "🆕 [CHAT] Creando sesión TEMPORAL nueva")
-    
+
     val contextoPdf = prepararContextoPdf(pdfUrl)
     val promptInicial = """
         CONTEXTO DE LA CLASE:
         $nombreClase - $descripcion
-        
+
         $contextoPdf
     """
-    
+
     val historial = listOf(
         content("user") { text(promptInicial) },
         content("model") { text(respuestaInicial) }
     )
-    
+
     chatSession = googleAiModel.startChat(history = historial)
 }
 ```
