@@ -38,7 +38,13 @@ class IARepository(private val context: Context) : IIARepository {
 
     companion object {
         private const val TAG = "AulaViva_IA"
+        private const val MAX_PDF_SIZE = 50_000_000L // 50 MB
+        private const val PDF_CHUNK_SIZE = 8_000 // Aumentado para mejor contexto
     }
+    
+    // ✅ NUEVO: Caché de PDFs descargados y texto extraído
+    private val pdfCache = mutableMapOf<String, File>()
+    private val textCache = mutableMapOf<String, String>()
 
     private val GEMINI_API_KEY = BuildConfig.GEMINI_API_KEY
 
@@ -70,7 +76,8 @@ class IARepository(private val context: Context) : IIARepository {
         .callTimeout(180, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
         .addInterceptor(HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            // ✅ FIX: Cambiar a BASIC para evitar logging masivo de PDFs
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
         })
         .build()
 
@@ -232,25 +239,51 @@ class IARepository(private val context: Context) : IIARepository {
         }
     }
 
-    // Helpers básicos para extracción y compresión de texto (implementación simple y segura)
-    private fun extractTextChunksFromPdf(pdfFile: File, chunkSize: Int = 6_000): List<String> {
+    // ✅ FIX: Helpers mejorados para extracción y caché de texto
+    private suspend fun extractTextFromPdf(pdfUrl: String): String = withContext(Dispatchers.IO) {
+        // Verificar caché primero
+        textCache[pdfUrl]?.let { cached ->
+            Log.d(TAG, "✅ Usando texto desde caché: ${cached.length} chars")
+            return@withContext cached
+        }
+        
+        val pdfFile = descargarPDFATempFile(pdfUrl)
+        val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
+            pdfFile,
+            MemoryUsageSetting.setupTempFileOnly()
+        )
+        
+        try {
+            val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
+            val fullText = stripper.getText(document)
+            
+            // ✅ FIX: Guardar en caché
+            textCache[pdfUrl] = fullText
+            
+            Log.d(TAG, "✅ Texto extraído del PDF: ${fullText.length} caracteres")
+            fullText
+        } finally {
+            try {
+                document.close()
+            } catch (_: Exception) {
+            }
+        }
+    }
+    
+    private fun extractTextChunksFromPdf(pdfFile: File, chunkSize: Int = PDF_CHUNK_SIZE): List<String> {
         return try {
-            // Use disk-backed memory setting to avoid loading huge PDFs fully into heap
             val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
                 pdfFile,
                 MemoryUsageSetting.setupTempFileOnly()
             )
             val stripper = try {
-                // PDFBox Android puede exponer PDFTextStripper bajo este paquete
                 com.tom_roush.pdfbox.text.PDFTextStripper()
             } catch (t: Throwable) {
-                // Si no está disponible el stripper relocado, no referenciamos org.apache.* (no está en classpath Android)
-                Log.w(TAG, "⚠️ PDFTextStripper no disponible en com.tom_roush: ${t.message}")
+                Log.w(TAG, "⚠️ PDFTextStripper no disponible: ${t.message}")
                 null
             }
             val fullText = stripper?.getText(document) ?: ""
             try {
-                // cerrar documento en finally para mayor seguridad
             } finally {
                 try {
                     document.close()
@@ -302,82 +335,76 @@ class IARepository(private val context: Context) : IIARepository {
             }
         }
 
+    // ✅ FIX: NUNCA enviar PDF binario, siempre extraer texto primero
     private suspend fun analizarConGoogleAI(pdfUrl: String, prompt: String): String {
-        val pdfFile = descargarPDFATempFile(pdfUrl)
-        Log.d(TAG, "📄 PDF descargado size=${pdfFile.length()} bytes")
-        // Para evitar múltiples llamadas por chunk que tardan mucho, si el archivo es grande usamos un único resumen comprimido
-        if (pdfFile.length() > 6_000_000L) {
-            Log.d(
-                TAG,
-                "⚠️ PDF grande, aplicando compresión de texto y llamada única en vez de múltiples chunks"
-            )
-            val chunks = extractTextChunksFromPdf(pdfFile)
-            if (chunks.isEmpty()) throw Exception("No se pudo extraer texto del PDF")
-            val compressed = compressChunksForSingleCall(chunks)
-            val finalPrompt = """
-                $prompt
-                
-                CONTENIDO_COMPRIMIDO:
-                $compressed
-                
-                INSTRUCCIÓN: A partir del contenido comprimido, genera un análisis en español.
-            """.trimIndent()
-            return llamarGemini(finalPrompt)
-        }
-        // Intentar enviar binario directamente si no es demasiado grande; proteger contra OOM
-        if (pdfFile.length() <= 20_000_000L) {
-            try {
-                val pdfBytes = pdfFile.readBytes()
-                Log.d(TAG, "📦 pdf bytes leídos size=${pdfBytes.size} (fileLen=${pdfFile.length()})")
-                val contenidoMultimodal =
-                    content { text(prompt); blob("application/pdf", pdfBytes) }
-                // Limitar la llamada multimodal para que no quede esperando excesivamente
-                val response =
-                    withTimeout(60_000) { googleAiModel.generateContent(contenidoMultimodal) }
-                return response.text ?: throw Exception("Respuesta vacía de Google AI SDK")
-            } catch (oom: OutOfMemoryError) {
-                Log.w(
-                    TAG,
-                    "⚠️ OOM leyendo PDF en memoria, usando resumen comprimido como fallback: ${oom.message}"
-                )
-                val chunks = extractTextChunksFromPdf(pdfFile)
-                if (chunks.isEmpty()) throw Exception("No se pudo extraer texto del PDF para fallback")
-                val compressed = compressChunksForSingleCall(chunks)
-                val combinedPrompt = """
-                $prompt
-                
-                HE DIVIDIDO EN PARTES Y COMPRIMIDO EL CONTENIDO:
-                $compressed
-                
-                INSTRUCCIÓN: A partir del contenido comprimido, genera un análisis coherente del PDF completo, mencionando conceptos y detalles específicos. Responde en español.
-            """.trimIndent()
-                try {
-                    return llamarGemini(combinedPrompt)
-                } catch (e: Exception) {
-                    Log.w(TAG, "⚠️ Error en llamarGemini para contenido comprimido: ${e.message}")
-                    throw e
+        Log.d(TAG, "📄 Iniciando análisis de PDF con Google AI")
+        
+        try {
+            // ✅ FIX: SIEMPRE extraer texto, NUNCA enviar binario
+            val fullText = extractTextFromPdf(pdfUrl)
+            
+            if (fullText.isBlank()) {
+                throw Exception("No se pudo extraer texto del PDF")
+            }
+            
+            Log.d(TAG, "✅ Texto extraído: ${fullText.length} caracteres")
+            
+            // ✅ FIX: Si el texto es razonable, enviarlo completo
+            if (fullText.length <= 25_000) {
+                val promptCompleto = """
+                    $prompt
+                    
+                    📎 CONTENIDO COMPLETO DEL PDF:
+                    ---
+                    $fullText
+                    ---
+                    
+                    IMPORTANTE: Analiza TODO el contenido del PDF proporcionado. Responde en español.
+                """.trimIndent()
+                return llamarGemini(promptCompleto)
+            }
+            
+            // ✅ FIX: Si es muy largo, tomar secciones clave
+            Log.d(TAG, "⚠️ Texto largo (${fullText.length} chars), usando estrategia inteligente")
+            
+            // Tomar: inicio (10K) + medio (5K) + final (5K) = 20K chars total
+            val inicio = fullText.take(10_000)
+            val medio = if (fullText.length > 15_000) {
+                fullText.substring(fullText.length / 2, (fullText.length / 2) + 5_000)
+            } else ""
+            val fin = if (fullText.length > 20_000) {
+                fullText.takeLast(5_000)
+            } else ""
+            
+            val contenidoInteligente = buildString {
+                append("=== INICIO DEL DOCUMENTO ===\n")
+                append(inicio)
+                if (medio.isNotBlank()) {
+                    append("\n\n=== SECCIÓN MEDIA DEL DOCUMENTO ===\n")
+                    append(medio)
+                }
+                if (fin.isNotBlank()) {
+                    append("\n\n=== FINAL DEL DOCUMENTO ===\n")
+                    append(fin)
                 }
             }
-        } else {
-            val chunks = extractTextChunksFromPdf(pdfFile)
-            if (chunks.isEmpty()) throw Exception("No se pudo extraer texto del PDF")
-            mutableListOf<String>()
-            // En vez de llamar por cada chunk (muy lento), hacemos un resumen comprimido y una única llamada
-            val compressed = compressChunksForSingleCall(chunks)
-            val combinedPrompt = """
-                 $prompt
-                 
-                 HE DIVIDIDO EN PARTES Y COMPRIMIDO EL CONTENIDO:
-                 $compressed
-                 
-                 INSTRUCCIÓN: A partir del contenido comprimido, genera un análisis coherente del PDF completo, mencionando conceptos y detalles específicos. Responde en español.
-             """.trimIndent()
-            try {
-                return llamarGemini(combinedPrompt)
-            } catch (e: Exception) {
-                Log.w(TAG, "⚠️ Error en llamarGemini para contenido comprimido: ${e.message}")
-                throw e
-            }
+            
+            val promptCompleto = """
+                $prompt
+                
+                📎 CONTENIDO CLAVE DEL PDF (${fullText.length} caracteres totales):
+                ---
+                $contenidoInteligente
+                ---
+                
+                INSTRUCCIÓN: Este es un documento de ${fullText.length} caracteres. He incluido las secciones clave (inicio, medio y final) para que puedas hacer un análisis completo y coherente. Responde en español.
+            """.trimIndent()
+            
+            return llamarGemini(promptCompleto)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error en analizarConGoogleAI: ${e.message}")
+            throw e
         }
     }
 
@@ -416,50 +443,48 @@ class IARepository(private val context: Context) : IIARepository {
     }
 
     private suspend fun descargarPDFATempFile(url: String): File = withContext(Dispatchers.IO) {
+        // ✅ FIX: Verificar caché primero
+        pdfCache[url]?.let { cachedFile ->
+            if (cachedFile.exists()) {
+                Log.d(TAG, "✅ Usando PDF desde caché: ${cachedFile.length()} bytes")
+                return@withContext cachedFile
+            } else {
+                pdfCache.remove(url) // Limpiar entrada inválida
+            }
+        }
+        
         Log.d(TAG, "⬇️ Descargando PDF desde: $url")
         try {
             return@withContext withTimeout(60_000L) {
                 val request = okhttp3.Request.Builder().url(url).get().build()
-                // Ejecutar la llamada de forma síncrona en el contexto IO (evita callbacks y problemas de parsing)
                 val response = okHttpClient.newCall(request).execute()
                 try {
-                    if (!response.isSuccessful) throw java.io.IOException("HTTP error descargando PDF: respuesta no exitosa")
+                    if (!response.isSuccessful) throw java.io.IOException("HTTP error descargando PDF: código ${response.code}")
                     val body = response.body ?: throw java.io.IOException("Body vacío")
+                    
+                    // ✅ FIX: Validar tamaño antes de descargar
+                    val contentLength = body.contentLength()
+                    if (contentLength > MAX_PDF_SIZE) {
+                        throw java.io.IOException("PDF demasiado grande: ${contentLength / 1024 / 1024} MB (máximo ${MAX_PDF_SIZE / 1024 / 1024} MB)")
+                    }
+                    
                     val tempFile = File.createTempFile("aulaviva_pdf_", ".pdf", context.cacheDir)
                     FileOutputStream(tempFile).use { out ->
                         body.byteStream().use { input -> input.copyTo(out) }
                     }
-                    // Calcular checksum (SHA-256) para verificar integridad / detectar truncamiento
-                    try {
-                        val md = java.security.MessageDigest.getInstance("SHA-256")
-                        java.io.FileInputStream(tempFile).use { fis ->
-                            val buf = ByteArray(8 * 1024)
-                            var read = fis.read(buf)
-                            while (read > 0) {
-                                md.update(buf, 0, read)
-                                read = fis.read(buf)
-                            }
-                        }
-                        val digest = md.digest()
-                        val hex = digest.joinToString("") { String.format("%02x", it) }
-                        Log.d(
-                            TAG,
-                            "⬇️ PDF guardado en temp: ${tempFile.absolutePath} size=${tempFile.length()} checksum=sha256:$hex"
-                        )
-                    } catch (e: Exception) {
-                        Log.w(TAG, "⚠️ No se pudo calcular checksum del PDF: ${e.message}")
-                    }
-                    Log.d(
-                        TAG,
-                        "⬇️ PDF guardado en temp: ${tempFile.absolutePath} size=${tempFile.length()}"
-                    )
+                    
+                    Log.d(TAG, "✅ PDF descargado: ${tempFile.length()} bytes")
+                    
+                    // ✅ FIX: Guardar en caché
+                    pdfCache[url] = tempFile
+                    
                     tempFile
                 } finally {
                     response.close()
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error descargando PDF o timeout: ${e.message}")
+            Log.e(TAG, "❌ Error descargando PDF: ${e.message}")
             throw e
         }
     }
@@ -513,23 +538,32 @@ class IARepository(private val context: Context) : IIARepository {
             Log.w(TAG, "⚠️ [CHAT] Error consultando sesión: ${e.message}")
         }
 
-        // 2) si no hay sesión pero hay pdfUrl, extraer metadata y (opcional) hacer un análisis rápido
+        // 2) si no hay sesión pero hay pdfUrl, extraer metadata y hacer análisis COMPLETO
         if (!pdfUrl.isNullOrEmpty()) {
             val meta = extractPdfMetadata(pdfUrl)
             title = meta.first
             author = meta.second
             try {
-                // análisis rápido y breve (timeout corto)
-                val shortPrompt =
-                    "Resume brevemente los puntos clave del PDF para uso pedagógico (máx 3 líneas)."
+                // ✅ FIX: Análisis COMPLETO en vez de 3 líneas
+                val fullPrompt = """
+                    Analiza este PDF académico y genera un resumen pedagógico completo que incluya:
+                    1. Tema principal y subtemas
+                    2. Conceptos clave explicados
+                    3. Estructura del documento
+                    4. Puntos importantes para enseñanza
+                    
+                    El resumen debe ser detallado (mínimo 200 palabras) para mantener contexto útil.
+                """.trimIndent()
+                
                 val resumen = try {
-                    withTimeout(30_000L) { analizarPDFInteligente(pdfUrl, shortPrompt) }
+                    withTimeout(45_000L) { analizarPDFInteligente(pdfUrl, fullPrompt) }
                 } catch (e: Exception) {
-                    Log.w(TAG, "⚠️ [ANALYSIS] No quick analysis: ${e.message}"); null
+                    Log.w(TAG, "⚠️ [ANALYSIS] Análisis timeout: ${e.message}"); null
                 }
+                
                 if (!resumen.isNullOrBlank()) {
                     analysis = resumen
-                    // crear sesión temporal para almacenar análisis
+                    // crear sesión para almacenar análisis completo
                     try {
                         val sessionId = chatDao.insertSession(
                             ChatSessionEntity(
@@ -547,6 +581,7 @@ class IARepository(private val context: Context) : IIARepository {
                                 message = analysis
                             )
                         )
+                        Log.d(TAG, "✅ Análisis completo guardado: ${analysis.length} chars")
                     } catch (e: Exception) {
                         Log.w(TAG, "⚠️ [CHAT] Error guardando análisis: ${e.message}")
                     }
@@ -829,15 +864,28 @@ class IARepository(private val context: Context) : IIARepository {
                 if (existing != null) {
                     currentSessionId = existing.id
                     val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
-                    // Si ya existe un análisis guardado, lo añadimos como mensaje de sistema para dar contexto
-                    existing.analysisText?.let { anal -> historial.add(content("system") { text("ANALYSIS:\n" + anal) }) }
+                    
+                    // ✅ FIX CRÍTICO: Usar "user" role en vez de "system" (Gemini no reconoce system)
+                    // El análisis del PDF debe estar como mensaje del usuario para mantener contexto
+                    existing.analysisText?.let { anal -> 
+                        val contextoPdf = """
+                            CONTEXTO DEL PDF DE LA CLASE:
+                            
+                            $anal
+                            
+                            Por favor, mantén este contexto del PDF en todas tus respuestas.
+                        """.trimIndent()
+                        historial.add(content("user") { text(contextoPdf) })
+                        historial.add(content("model") { text("Entendido. He analizado el PDF y mantendré este contexto en todas mis respuestas. ¿En qué puedo ayudarte con este material?") })
+                    }
+                    
                     val messages = chatDao.getMessagesForSession(existing.id)
                     for (m in messages) {
                         if (m.sender == "user") historial.add(content("user") { text(m.message) })
                         else historial.add(content("model") { text(m.message) })
                     }
                     chatSession = googleAiModel.startChat(history = historial)
-                    Log.d(TAG, "✅ [CHAT] Sesión restaurada desde BD con ${messages.size} mensajes")
+                    Log.d(TAG, "✅ [CHAT] Sesión restaurada con contexto PDF preservado (${messages.size} mensajes)")
                 } else {
                     val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
                     val promptInicial = """
@@ -846,20 +894,41 @@ class IARepository(private val context: Context) : IIARepository {
                         Descripción: $descripcion
                     """.trimIndent()
 
+                    // ✅ FIX: NUNCA enviar PDF binario, siempre texto
                     val contenidoUsuario = if (!pdfUrl.isNullOrEmpty()) {
-                        val pdfFile = descargarPDFATempFile(pdfUrl)
-                        if (pdfFile.length() <= 20_000_000L) {
-                            val pdfBytes = pdfFile.readBytes()
-                            content("user") {
-                                text(promptInicial); blob(
-                                "application/pdf",
-                                pdfBytes
-                            )
+                        try {
+                            val textoPdf = extractTextFromPdf(pdfUrl)
+                            
+                            // Limitar tamaño del texto en el contexto inicial
+                            val textoLimitado = if (textoPdf.length > 15_000) {
+                                val inicio = textoPdf.take(10_000)
+                                val fin = textoPdf.takeLast(5_000)
+                                """
+                                === INICIO DEL PDF ===
+                                $inicio
+                                
+                                === FINAL DEL PDF ===
+                                $fin
+                                """.trimIndent()
+                            } else {
+                                textoPdf
                             }
-                        } else {
-                            val chunks = extractTextChunksFromPdf(pdfFile)
-                            val compressed = compressChunksForSingleCall(chunks)
-                            content("user") { text(promptInicial + "\n\nCONTENIDO_COMPRIMIDO:\n" + compressed) }
+                            
+                            content("user") { 
+                                text("""
+                                    $promptInicial
+                                    
+                                    📎 CONTENIDO DEL PDF (${textoPdf.length} caracteres):
+                                    ---
+                                    $textoLimitado
+                                    ---
+                                    
+                                    Por favor, mantén este contexto del PDF en todas tus respuestas.
+                                """.trimIndent())
+                            }
+                        } catch (e: Exception) {
+                            Log.w(TAG, "⚠️ Error extrayendo texto del PDF: ${e.message}")
+                            content("user") { text(promptInicial) }
                         }
                     } else content("user") { text(promptInicial) }
 
@@ -873,25 +942,29 @@ class IARepository(private val context: Context) : IIARepository {
                     )
                     currentSessionId = sessionId
 
-                    // Si hay PDF, intentar analizar y guardar el análisis en la sesión
+                    // ✅ FIX: Si hay PDF, hacer análisis COMPLETO (ya está en caché el texto)
                     if (!pdfUrl.isNullOrEmpty()) {
                         try {
-                            // Intentar análisis breve y con timeout corto para no bloquear el inicio del chat
                             val analysis = try {
-                                withTimeout(25_000L) {
-                                    analizarPDFInteligente(
-                                        pdfUrl,
-                                        "Analiza el PDF y entrega un informe pedagógico para la clase: $nombreClase"
-                                    )
+                                withTimeout(45_000L) {
+                                    val fullPrompt = """
+                                        Analiza este PDF académico y genera un resumen pedagógico COMPLETO para la clase: $nombreClase
+                                        
+                                        Debe incluir:
+                                        1. Tema principal y estructura
+                                        2. Conceptos clave detallados
+                                        3. Puntos importantes para enseñanza
+                                        4. Contexto pedagógico
+                                        
+                                        Mínimo 200 palabras para mantener contexto útil.
+                                    """.trimIndent()
+                                    analizarPDFInteligente(pdfUrl, fullPrompt)
                                 }
                             } catch (e: Exception) {
-                                Log.w(
-                                    TAG,
-                                    "⚠️ Análisis inicial rápido falló o timeout: ${e.message}"
-                                ); null
+                                Log.w(TAG, "⚠️ Análisis inicial timeout: ${e.message}"); null
                             }
+                            
                             if (!analysis.isNullOrBlank()) {
-                                // actualizar la sesión con el análisis (si obtenemos uno)
                                 val sessionToUpdate = ChatSessionEntity(
                                     id = sessionId,
                                     nombreClase = nombreClase,
@@ -909,12 +982,10 @@ class IARepository(private val context: Context) : IIARepository {
                                         message = analysis
                                     )
                                 )
+                                Log.d(TAG, "✅ Análisis completo guardado en sesión: ${analysis.length} chars")
                             }
                         } catch (e: Exception) {
-                            Log.w(
-                                TAG,
-                                "⚠️ Error analizando PDF al iniciar chat (no crítico): ${e.message}"
-                            )
+                            Log.w(TAG, "⚠️ Error analizando PDF al iniciar chat: ${e.message}")
                         }
                     }
 
