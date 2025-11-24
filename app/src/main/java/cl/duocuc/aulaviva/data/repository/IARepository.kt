@@ -26,6 +26,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 /**
  * `IARepository2` — versión limpia y estable basada en la versión anterior del usuario.
@@ -62,10 +63,12 @@ class IARepository(private val context: Context) : IIARepository {
     private var currentSessionId: Long? = null
 
     private val okHttpClient = OkHttpClient.Builder()
-        // reducir timeouts para evitar esperas largas en redes lentas
+        // Aumentar read/write timeout para llamadas a Gemini que pueden tardar (modelos grandes)
         .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(20, TimeUnit.SECONDS)
+        .readTimeout(120, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
+        .callTimeout(180, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
         .addInterceptor(HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         })
@@ -91,12 +94,15 @@ class IARepository(private val context: Context) : IIARepository {
     private suspend fun llamarGemini(prompt: String): String {
         return withContext(Dispatchers.IO) {
             val start = System.currentTimeMillis()
+            // Timeout global para toda la operación (reintentos incluidos)
             try {
-                withTimeout(60_000L) {
+                withTimeout(180_000L) {
                     var intento = 0
                     var ultimoError: Exception? = null
                     val maxIntentos = 3
                     var resultado: String? = null
+
+                    val baseDelay = 1000L // 1s
 
                     while (intento < maxIntentos && resultado == null) {
                         try {
@@ -106,6 +112,7 @@ class IARepository(private val context: Context) : IIARepository {
                                     temperature = 0.6f, topP = 0.9f, maxOutputTokens = 4096
                                 )
                             )
+                            Log.d(TAG, "🔁 Gemini attempt ${intento + 1} — enviando petición")
                             val response = geminiService.generateContent(GEMINI_API_KEY, request)
                             if (response.isSuccessful) {
                                 val text = response.body()
@@ -116,30 +123,75 @@ class IARepository(private val context: Context) : IIARepository {
                                     ?.firstOrNull()
                                     ?.text
                                 if (!text.isNullOrBlank()) {
-                                    System.currentTimeMillis() - start
+                                    val elapsed = System.currentTimeMillis() - start
                                     Log.d(
                                         TAG,
-                                        "✅ Gemini responded in ${'$'}elapsed ms (attempt ${'$'}{intento + 1})"
+                                        "✅ Gemini responded in ${elapsed} ms (attempt ${intento + 1})"
                                     )
                                     resultado = text
                                     break
                                 } else {
                                     ultimoError = Exception("Respuesta vacía de Gemini")
+                                    // marcar como retryable y aumentar intento
+                                    intento++
+                                    val jitter = Random.nextLong(0, 500)
+                                    val delayMs =
+                                        1000L * (1L shl (intento - 1)).coerceAtMost(30L) + jitter
+                                    Log.w(
+                                        TAG,
+                                        "⚠️ Gemini empty response on attempt ${intento}, delaying ${delayMs}ms and retrying"
+                                    )
+                                    kotlinx.coroutines.delay(delayMs)
+                                    continue
                                 }
                             } else {
+                                val code = response.code()
+                                val message = response.message()
                                 ultimoError =
-                                    Exception("HTTP error en Gemini: respuesta no exitosa")
+                                    Exception("HTTP error en Gemini: respuesta no exitosa (code=${code}, message=${message})")
+                                // decidir retry para 429 o 5xx
+                                val shouldRetryHttp = (code == 429) || (code >= 500)
+                                intento++
+                                if (!shouldRetryHttp || intento >= maxIntentos) {
+                                    Log.w(
+                                        TAG,
+                                        "⚠️ Gemini HTTP failure code=${code}, will not retry further (attempt ${intento})"
+                                    )
+                                    break
+                                } else {
+                                    val jitter = Random.nextLong(0, 500)
+                                    val delayMs =
+                                        1000L * (1L shl (intento - 1)).coerceAtMost(30L) + jitter
+                                    Log.w(
+                                        TAG,
+                                        "⚠️ Gemini HTTP ${code} on attempt ${intento}, sleeping ${delayMs}ms before retry"
+                                    )
+                                    kotlinx.coroutines.delay(delayMs)
+                                    continue
+                                }
                             }
                         } catch (e: Exception) {
                             ultimoError = e
+                            // Sólo reintentar en errores de red/timeout (IO) o SocketTimeout
+                            val shouldRetry = when (e) {
+                                is java.net.SocketTimeoutException -> true
+                                is java.io.IOException -> true
+                                else -> false
+                            }
                             intento++
                             Log.w(
                                 TAG,
-                                "⚠️ Gemini attempt ${'$'}{intento} failed: ${'$'}{e.message}"
+                                "⚠️ Gemini attempt ${intento} failed: ${e.message}. willRetry=$shouldRetry"
                             )
+                            if (!shouldRetry) break
+                            // backoff exponencial con jitter
+                            val jitter = Random.nextLong(0, 500)
+                            val delayMs =
+                                baseDelay * (1L shl (intento - 1)).coerceAtMost(30L) + jitter
                             try {
-                                kotlinx.coroutines.delay(300L * intento)
+                                kotlinx.coroutines.delay(delayMs)
                             } catch (_: Exception) {
+                                // ignorar cancelaciones de delay
                             }
                         }
                     }

@@ -256,6 +256,9 @@
             <set>
               <option value="64c109a6-76e2-4454-be67-9604199fe3f7" />
               <option value="31c81694-7669-46b9-b5cb-2fcd659d02df" />
+              <option value="a54e74a1-5476-49e7-a06c-a14528699b4c" />
+              <option value="86bbe6d2-fa81-4252-aeba-a504e748bdb9" />
+              <option value="831253c6-f07b-45b7-b35b-220aec8b1cb0" />
             </set>
           </value>
         </entry>
@@ -305,6 +308,7 @@
       <entry key="c87514a6-5218-485e-aed1-616350548e51">
         <set>
           <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/repository/IARepository.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/cl/duocuc/aulaviva/data/remote/GeminiApiService.kt" />
         </set>
       </entry>
       <entry key="d9d54b89-00b3-410d-aaa0-41061f433c41" />
