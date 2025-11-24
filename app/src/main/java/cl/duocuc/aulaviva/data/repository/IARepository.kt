@@ -41,7 +41,7 @@ class IARepository(private val context: Context) : IIARepository {
         private const val MAX_PDF_SIZE = 50_000_000L // 50 MB
         private const val PDF_CHUNK_SIZE = 8_000 // Aumentado para mejor contexto
     }
-    
+
     // ✅ NUEVO: Caché de PDFs descargados y texto extraído
     private val pdfCache = mutableMapOf<String, File>()
     private val textCache = mutableMapOf<String, String>()
@@ -246,20 +246,20 @@ class IARepository(private val context: Context) : IIARepository {
             Log.d(TAG, "✅ Usando texto desde caché: ${cached.length} chars")
             return@withContext cached
         }
-        
+
         val pdfFile = descargarPDFATempFile(pdfUrl)
         val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
             pdfFile,
             MemoryUsageSetting.setupTempFileOnly()
         )
-        
+
         try {
             val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
             val fullText = stripper.getText(document)
-            
+
             // ✅ FIX: Guardar en caché
             textCache[pdfUrl] = fullText
-            
+
             Log.d(TAG, "✅ Texto extraído del PDF: ${fullText.length} caracteres")
             fullText
         } finally {
@@ -269,14 +269,14 @@ class IARepository(private val context: Context) : IIARepository {
             }
         }
     }
-    
+
     // ✅ NUEVO: Helper para preparar contexto de PDF inteligentemente
     private suspend fun prepararContextoPdf(pdfUrl: String?): String {
         if (pdfUrl.isNullOrEmpty()) return ""
-        
+
         try {
             val textoPdf = extractTextFromPdf(pdfUrl)
-            
+
             // Estrategia inteligente según tamaño
             return if (textoPdf.length <= 20_000) {
                 """
@@ -289,7 +289,7 @@ class IARepository(private val context: Context) : IIARepository {
                 // Tomar secciones clave: inicio + medio + final
                 val inicio = textoPdf.take(10_000)
                 val medio = textoPdf.substring(
-                    textoPdf.length / 2, 
+                    textoPdf.length / 2,
                     (textoPdf.length / 2) + 5_000
                 ).coerceAtMost(textoPdf)
                 val fin = textoPdf.takeLast(5_000)
@@ -298,10 +298,10 @@ class IARepository(private val context: Context) : IIARepository {
                 ---
                 === INICIO DEL PDF ===
                 $inicio
-                
+
                 === SECCIÓN MEDIA DEL PDF ===
                 $medio
-                
+
                 === FINAL DEL PDF ===
                 $fin
                 ---
@@ -312,7 +312,7 @@ class IARepository(private val context: Context) : IIARepository {
             return ""
         }
     }
-    
+
     private fun extractTextChunksFromPdf(pdfFile: File, chunkSize: Int = PDF_CHUNK_SIZE): List<String> {
         return try {
             val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
@@ -381,35 +381,35 @@ class IARepository(private val context: Context) : IIARepository {
     // ✅ FIX: NUNCA enviar PDF binario, siempre extraer texto primero
     private suspend fun analizarConGoogleAI(pdfUrl: String, prompt: String): String {
         Log.d(TAG, "📄 Iniciando análisis de PDF con Google AI")
-        
+
         try {
             // ✅ FIX: SIEMPRE extraer texto, NUNCA enviar binario
             val fullText = extractTextFromPdf(pdfUrl)
-            
+
             if (fullText.isBlank()) {
                 throw Exception("No se pudo extraer texto del PDF")
             }
-            
+
             Log.d(TAG, "✅ Texto extraído: ${fullText.length} caracteres")
-            
+
             // ✅ FIX: Si el texto es razonable, enviarlo completo
             if (fullText.length <= 25_000) {
                 val promptCompleto = """
                     $prompt
-                    
+
                     📎 CONTENIDO COMPLETO DEL PDF:
                     ---
                     $fullText
                     ---
-                    
+
                     IMPORTANTE: Analiza TODO el contenido del PDF proporcionado. Responde en español.
                 """.trimIndent()
                 return llamarGemini(promptCompleto)
             }
-            
+
             // ✅ FIX: Si es muy largo, tomar secciones clave
             Log.d(TAG, "⚠️ Texto largo (${fullText.length} chars), usando estrategia inteligente")
-            
+
             // Tomar: inicio (10K) + medio (5K) + final (5K) = 20K chars total
             val inicio = fullText.take(10_000)
             val medio = if (fullText.length > 15_000) {
@@ -418,7 +418,7 @@ class IARepository(private val context: Context) : IIARepository {
             val fin = if (fullText.length > 20_000) {
                 fullText.takeLast(5_000)
             } else ""
-            
+
             val contenidoInteligente = buildString {
                 append("=== INICIO DEL DOCUMENTO ===\n")
                 append(inicio)
@@ -431,20 +431,20 @@ class IARepository(private val context: Context) : IIARepository {
                     append(fin)
                 }
             }
-            
+
             val promptCompleto = """
                 $prompt
-                
+
                 📎 CONTENIDO CLAVE DEL PDF (${fullText.length} caracteres totales):
                 ---
                 $contenidoInteligente
                 ---
-                
+
                 INSTRUCCIÓN: Este es un documento de ${fullText.length} caracteres. He incluido las secciones clave (inicio, medio y final) para que puedas hacer un análisis completo y coherente. Responde en español.
             """.trimIndent()
-            
+
             return llamarGemini(promptCompleto)
-            
+
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error en analizarConGoogleAI: ${e.message}")
             throw e
@@ -495,7 +495,7 @@ class IARepository(private val context: Context) : IIARepository {
                 pdfCache.remove(url) // Limpiar entrada inválida
             }
         }
-        
+
         Log.d(TAG, "⬇️ Descargando PDF desde: $url")
         try {
             return@withContext withTimeout(60_000L) {
@@ -504,23 +504,23 @@ class IARepository(private val context: Context) : IIARepository {
                 try {
                     if (!response.isSuccessful) throw java.io.IOException("HTTP error descargando PDF: código ${response.code}")
                     val body = response.body ?: throw java.io.IOException("Body vacío")
-                    
+
                     // ✅ FIX: Validar tamaño antes de descargar
                     val contentLength = body.contentLength()
                     if (contentLength > MAX_PDF_SIZE) {
                         throw java.io.IOException("PDF demasiado grande: ${contentLength / 1024 / 1024} MB (máximo ${MAX_PDF_SIZE / 1024 / 1024} MB)")
                     }
-                    
+
                     val tempFile = File.createTempFile("aulaviva_pdf_", ".pdf", context.cacheDir)
                     FileOutputStream(tempFile).use { out ->
                         body.byteStream().use { input -> input.copyTo(out) }
                     }
-                    
+
                     Log.d(TAG, "✅ PDF descargado: ${tempFile.length()} bytes")
-                    
+
                     // ✅ FIX: Guardar en caché
                     pdfCache[url] = tempFile
-                    
+
                     tempFile
                 } finally {
                     response.close()
@@ -594,16 +594,16 @@ class IARepository(private val context: Context) : IIARepository {
                     2. Conceptos clave explicados
                     3. Estructura del documento
                     4. Puntos importantes para enseñanza
-                    
+
                     El resumen debe ser detallado (mínimo 200 palabras) para mantener contexto útil.
                 """.trimIndent()
-                
+
                 val resumen = try {
                     withTimeout(45_000L) { analizarPDFInteligente(pdfUrl, fullPrompt) }
                 } catch (e: Exception) {
                     Log.w(TAG, "⚠️ [ANALYSIS] Análisis timeout: ${e.message}"); null
                 }
-                
+
                 if (!resumen.isNullOrBlank()) {
                     analysis = resumen
                     // crear sesión para almacenar análisis completo
@@ -645,17 +645,17 @@ class IARepository(private val context: Context) : IIARepository {
         return try {
             // ✅ FIX: Preparar contexto completo del PDF
             val contextoPdf = prepararContextoPdf(pdfUrl)
-            
+
             val prompt = """
                 $contextoPdf
-                
+
                 Eres un consultor en innovación educativa.
                 Clase: $nombreClase
                 Descripción: $descripcion
 
                 ${if (contextoPdf.isNotBlank()) "Basándote EN EL CONTENIDO DEL PDF mostrado arriba, g" else "G"}enera 4 ideas prácticas para trabajo en clase, con objetivo pedagógico y pasos. Responde en español.
             """.trimIndent()
-            
+
             val resultado = llamarGemini(prompt)
             "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
         } catch (e: Exception) {
@@ -704,7 +704,7 @@ class IARepository(private val context: Context) : IIARepository {
             val contextoPdf = prepararContextoPdf(pdfUrl)
             val prompt = """
                 $contextoPdf
-                
+
                 Genera una guía de presentación clara y ordenada para la clase $nombre.
                 Descripción: $descripcion
                 ${if (contextoPdf.isNotBlank()) "\nBasándote en el contenido del PDF mostrado arriba." else ""}
@@ -725,7 +725,7 @@ class IARepository(private val context: Context) : IIARepository {
             val contextoPdf = prepararContextoPdf(pdfUrl)
             val prompt = """
                 $contextoPdf
-                
+
                 Genera ejercicios para alumnos relacionados a $nombre.
                 Descripción: $descripcion
                 ${if (contextoPdf.isNotBlank()) "\nBasa los ejercicios en el contenido del PDF mostrado arriba." else ""}
@@ -746,7 +746,7 @@ class IARepository(private val context: Context) : IIARepository {
             val contextoPdf = prepararContextoPdf(pdfUrl)
             val prompt = """
                 $contextoPdf
-                
+
                 Crea un resumen de estudio para alumnos basado en el material de la clase $nombre.
                 Descripción: $descripcion
                 ${if (contextoPdf.isNotBlank()) "\nEl resumen debe estar basado en el contenido del PDF mostrado arriba." else ""}
@@ -767,7 +767,7 @@ class IARepository(private val context: Context) : IIARepository {
             val contextoPdf = prepararContextoPdf(pdfUrl)
             val prompt = """
                 $contextoPdf
-                
+
                 Diseña 3 actividades interactivas para la clase $nombreClase.
                 Descripción: $descripcion
                 ${if (contextoPdf.isNotBlank()) "\nLas actividades deben estar basadas en el contenido del PDF mostrado arriba." else ""}
@@ -788,7 +788,7 @@ class IARepository(private val context: Context) : IIARepository {
             val contextoPdf = prepararContextoPdf(pdfUrl)
             val prompt = """
                 $contextoPdf
-                
+
                 Eres un tutor. Explica en lenguaje simple los conceptos principales de $nombreClase.
                 Descripción: $descripcion
                 ${if (contextoPdf.isNotBlank()) "\nBasa tu explicación en el contenido del PDF mostrado arriba." else ""}
@@ -811,29 +811,29 @@ class IARepository(private val context: Context) : IIARepository {
                 // ✅ FIX: NO restaurar sesiones antiguas, SIEMPRE crear sesión TEMPORAL nueva
                 // El chat es momentáneo mientras el usuario está en la pantalla ResultadoIAActivity
                 Log.d(TAG, "🆕 [CHAT] Creando sesión TEMPORAL nueva (no se restaura historial)")
-                
+
                 val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
-                
+
                 // ✅ FIX: Incluir el texto completo del PDF en el contexto inicial
                 val contextoPdf = prepararContextoPdf(pdfUrl)
-                
+
                 val promptInicial = """
                     CONTEXTO DE LA CLASE:
                     Clase: $nombreClase
                     Descripción: $descripcion
-                    
+
                     $contextoPdf
-                    
+
                     ${if (contextoPdf.isNotBlank()) "Por favor, mantén el contexto del PDF en todas tus respuestas." else ""}
                 """.trimIndent()
-                
+
                 // Mensaje inicial del usuario con contexto
                 val contenidoUsuario = content("user") { text(promptInicial) }
                 historial.add(contenidoUsuario)
-                
+
                 // Respuesta inicial de la IA (la que ya se generó antes)
                 historial.add(content("model") { text(respuestaInicial) })
-                
+
                 // Guardar sesión TEMPORAL en BD
                 val sessionId = chatDao.insertSession(
                     ChatSessionEntity(
@@ -844,7 +844,7 @@ class IARepository(private val context: Context) : IIARepository {
                     )
                 )
                 currentSessionId = sessionId
-                
+
                 // Persistir mensajes iniciales
                 chatDao.insertMessage(
                     ChatMessageEntity(
@@ -860,7 +860,7 @@ class IARepository(private val context: Context) : IIARepository {
                         message = respuestaInicial
                     )
                 )
-                
+
                 // Crear sesión de chat con historial inicial
                 chatSession = googleAiModel.startChat(history = historial)
                 Log.d(TAG, "✅ [CHAT] Sesión TEMPORAL creada con id=$sessionId, contexto PDF incluido")
