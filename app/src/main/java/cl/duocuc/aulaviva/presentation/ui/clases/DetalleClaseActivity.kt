@@ -144,12 +144,31 @@ class DetalleClaseActivity : BaseActivity() {
     }
 
     private fun mostrarDialogoCarga(titulo: String, mensaje: String): AlertDialog {
-        return AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle(titulo)
             .setMessage(mensaje)
-            .setCancelable(false)
+            .setCancelable(true)
             .create()
-            .also { it.show() }
+        dialog.show()
+
+        // Auto-timeout: si tras 120s sigue abierto, cerrarlo y notificar al usuario
+        lifecycleScope.launch {
+            try {
+                kotlinx.coroutines.delay(120_000L)
+                if (dialog.isShowing) {
+                    dialog.dismiss()
+                    Toast.makeText(
+                        this@DetalleClaseActivity,
+                        "⏳ Tiempo de espera agotado. Revisa conexión o intenta de nuevo.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            } catch (_: Exception) {
+                // no-op
+            }
+        }
+
+        return dialog
     }
 
     private fun mostrarResultadoIA(

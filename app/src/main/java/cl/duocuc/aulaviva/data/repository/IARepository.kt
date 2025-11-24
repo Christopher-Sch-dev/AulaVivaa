@@ -25,7 +25,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
 import java.io.FileOutputStream
-import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 
 /**
@@ -63,9 +62,10 @@ class IARepository(private val context: Context) : IIARepository {
     private var currentSessionId: Long? = null
 
     private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
+        // reducir timeouts para evitar esperas largas en redes lentas
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(20, TimeUnit.SECONDS)
         .addInterceptor(HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         })
@@ -90,119 +90,200 @@ class IARepository(private val context: Context) : IIARepository {
 
     private suspend fun llamarGemini(prompt: String): String {
         return withContext(Dispatchers.IO) {
-            withTimeout(60_000L) {
-                var intento = 0
-                var ultimoError: Exception? = null
-                val maxIntentos = 3
-                while (intento < maxIntentos) {
-                    try {
-                        val request = GeminiRequest(
-                            contents = listOf(Content(parts = listOf(Part(text = prompt)))),
-                            generationConfig = GenerationConfig(
-                                temperature = 0.6f, topP = 0.9f, maxOutputTokens = 4096
+            val start = System.currentTimeMillis()
+            try {
+                withTimeout(60_000L) {
+                    var intento = 0
+                    var ultimoError: Exception? = null
+                    val maxIntentos = 3
+                    var resultado: String? = null
+
+                    while (intento < maxIntentos && resultado == null) {
+                        try {
+                            val request = GeminiRequest(
+                                contents = listOf(Content(parts = listOf(Part(text = prompt)))),
+                                generationConfig = GenerationConfig(
+                                    temperature = 0.6f, topP = 0.9f, maxOutputTokens = 4096
+                                )
                             )
-                        )
-                        val response = geminiService.generateContent(GEMINI_API_KEY, request)
-                        if (response.isSuccessful) {
-                            val text =
-                                response.body()?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
-                            if (!text.isNullOrBlank()) return@withTimeout text
-                            throw Exception("Respuesta vacía de Gemini")
-                        } else {
-                            throw Exception("HTTP ${'$'}{response.code()}: ${'$'}{response.message()}")
-                        }
-                    } catch (e: Exception) {
-                        ultimoError = e
-                        intento++
-                        if (intento < maxIntentos && (e is SocketTimeoutException || e.message?.contains(
-                                "HTTP 503"
-                            ) == true || e.message?.contains("HTTP 504") == true || e.message?.contains(
-                                "vacía"
-                            ) == true)
-                        ) {
-                            try {
-                                Thread.sleep(800L * intento)
-                            } catch (_: InterruptedException) {
+                            val response = geminiService.generateContent(GEMINI_API_KEY, request)
+                            if (response.isSuccessful) {
+                                val text = response.body()
+                                    ?.candidates
+                                    ?.firstOrNull()
+                                    ?.content
+                                    ?.parts
+                                    ?.firstOrNull()
+                                    ?.text
+                                if (!text.isNullOrBlank()) {
+                                    System.currentTimeMillis() - start
+                                    Log.d(
+                                        TAG,
+                                        "✅ Gemini responded in ${'$'}elapsed ms (attempt ${'$'}{intento + 1})"
+                                    )
+                                    resultado = text
+                                    break
+                                } else {
+                                    ultimoError = Exception("Respuesta vacía de Gemini")
+                                }
+                            } else {
+                                ultimoError =
+                                    Exception("HTTP ${'$'}{response.code()}: ${'$'}{response.message()}")
                             }
-                            continue
-                        } else if (intento < maxIntentos) {
+                        } catch (e: Exception) {
+                            ultimoError = e
+                            intento++
+                            Log.w(
+                                TAG,
+                                "⚠️ Gemini attempt ${'$'}{intento} failed: ${'$'}{e.message}"
+                            )
                             try {
-                                Thread.sleep(400L)
-                            } catch (_: InterruptedException) {
+                                kotlinx.coroutines.delay(300L * intento)
+                            } catch (_: Exception) {
                             }
-                            continue
-                        } else {
-                            throw Exception("Error Gemini: ${e.message}")
                         }
                     }
+
+                    resultado
+                        ?: throw Exception("Error Gemini: ${'$'}{ultimoError?.message ?: " Desconocido "}")
                 }
-                throw Exception("Error Gemini: ${ultimoError?.message ?: "Desconocido"}")
+            } catch (e: Exception) {
+                // Propagar el error para manejo superior
+                throw e
             }
         }
     }
 
     override suspend fun analizarPdfConIA(nombreClase: String, pdfUrl: String?): String {
+        if (pdfUrl.isNullOrEmpty()) return "⚠️ No se proporcionó URL del PDF"
         return try {
-            if (pdfUrl.isNullOrEmpty()) return "⚠️ No se proporcionó URL del PDF"
-            analizarPDFInteligente(
-                pdfUrl,
-                "Analiza el PDF y entrega un informe pedagógico para la clase: $nombreClase"
-            )
+            // Limitar el trabajo total de análisis para evitar que la UI espere demasiado
+            try {
+                // devolvemos directamente el resultado del bloque con timeout
+                withTimeout(180_000L) {
+                    withContext(Dispatchers.IO) {
+                        analizarPDFInteligente(
+                            pdfUrl,
+                            "Analiza el PDF y entrega un informe pedagógico para la clase: $nombreClase"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ análisis largo: ${e.message}")
+                "⚠️ Tiempo de análisis excedido o error: ${e.message ?: "Desconocido"}"
+            }
         } catch (e: Exception) {
             "⚠️ Error analizando PDF: ${e.message ?: "Desconocido"}"
         }
     }
 
+    // Helpers básicos para extracción y compresión de texto (implementación simple y segura)
+    private fun extractTextChunksFromPdf(pdfFile: File, chunkSize: Int = 6_000): List<String> {
+        return try {
+            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfFile)
+            val stripper = try {
+                // PDFBox Android puede exponer PDFTextStripper bajo este paquete
+                com.tom_roush.pdfbox.text.PDFTextStripper()
+            } catch (t: Throwable) {
+                // Fallback al paquete apache si existe
+                org.apache.pdfbox.text.PDFTextStripper()
+            }
+            val fullText = stripper.getText(document) ?: ""
+            document.close()
+            if (fullText.isBlank()) return emptyList()
+            val chunks = mutableListOf<String>()
+            var idx = 0
+            while (idx < fullText.length) {
+                val end = (idx + chunkSize).coerceAtMost(fullText.length)
+                chunks.add(fullText.substring(idx, end))
+                idx = end
+            }
+            chunks
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ [PDF] extractTextChunksFromPdf failed: ${e.message}")
+            emptyList()
+        }
+    }
+
+    private fun compressChunksForSingleCall(chunks: List<String>): String {
+        if (chunks.isEmpty()) return ""
+        // estrategia simple: tomar primeros N chars de cada chunk hasta límite global
+        val globalLimit = 12_000
+        val sb = StringBuilder()
+        for (c in chunks) {
+            if (sb.length >= globalLimit) break
+            val toTake = (globalLimit - sb.length).coerceAtMost(c.length)
+            sb.append(c.substring(0, toTake))
+            if (sb.length < globalLimit) sb.append("\n---\n")
+        }
+        return sb.toString().take(globalLimit)
+    }
+
     private suspend fun analizarPDFInteligente(pdfUrl: String, prompt: String): String =
         withContext(Dispatchers.IO) {
             try {
+                Log.d(TAG, "🔎 iniciar analizarPDFInteligente para url=$pdfUrl")
                 analizarConGoogleAI(pdfUrl, prompt)
             } catch (e: Exception) {
                 Log.w(TAG, "⚠️ Google AI falló: ${e.message}, usando PDFBox fallback")
-                analizarConPDFBox(pdfUrl, prompt)
+                try {
+                    withTimeout(30_000L) { analizarConPDFBox(pdfUrl, prompt) }
+                } catch (e2: Exception) {
+                    Log.e(TAG, "❌ Fallback PDFBox también falló: ${e2.message}")
+                    throw Exception("No fue posible analizar el PDF: ${e2.message ?: e.message}")
+                }
             }
         }
 
     private suspend fun analizarConGoogleAI(pdfUrl: String, prompt: String): String {
         val pdfFile = descargarPDFATempFile(pdfUrl)
+        Log.d(TAG, "📄 PDF descargado size=${pdfFile.length()} bytes")
+        // Para evitar múltiples llamadas por chunk que tardan mucho, si el archivo es grande usamos un único resumen comprimido
+        if (pdfFile.length() > 6_000_000L) {
+            Log.d(
+                TAG,
+                "⚠️ PDF grande, aplicando compresión de texto y llamada única en vez de múltiples chunks"
+            )
+            val chunks = extractTextChunksFromPdf(pdfFile)
+            if (chunks.isEmpty()) throw Exception("No se pudo extraer texto del PDF")
+            val compressed = compressChunksForSingleCall(chunks)
+            val finalPrompt = """
+                $prompt
+                
+                CONTENIDO_COMPRIMIDO:
+                $compressed
+                
+                INSTRUCCIÓN: A partir del contenido comprimido, genera un análisis en español.
+            """.trimIndent()
+            return llamarGemini(finalPrompt)
+        }
         if (pdfFile.length() <= 20_000_000L) {
             val pdfBytes = pdfFile.readBytes()
             val contenidoMultimodal = content { text(prompt); blob("application/pdf", pdfBytes) }
+            // Limitar la llamada multimodal para que no quede esperando excesivamente
             val response =
-                withTimeout(90_000) { googleAiModel.generateContent(contenidoMultimodal) }
+                withTimeout(60_000) { googleAiModel.generateContent(contenidoMultimodal) }
             return response.text ?: throw Exception("Respuesta vacía de Google AI SDK")
         } else {
             val chunks = extractTextChunksFromPdf(pdfFile)
             if (chunks.isEmpty()) throw Exception("No se pudo extraer texto del PDF")
-            val summaries = mutableListOf<String>()
-            for ((index, chunk) in chunks.withIndex()) {
-                val chunkPrompt = """
-                    $prompt
-
-                    He recibido la parte ${index + 1} de ${chunks.size} del PDF:
-                    ${chunk.take(30_000)}
-
-                    Instrucción: Resume los puntos clave y extrae conceptos específicos de esta parte. Responde en español.
-                """.trimIndent()
-                try {
-                    summaries.add(llamarGemini(chunkPrompt))
-                } catch (e: Exception) {
-                    Log.w(
-                        TAG,
-                        "⚠️ Error resumiendo chunk ${index + 1}: ${e.message}"
-                    ); summaries.add("[Error resumiendo chunk ${index + 1}: ${e.message}]")
-                }
-            }
-            val combined = summaries.joinToString("\n\n---\n\n")
-            val finalPrompt = """
+            mutableListOf<String>()
+            // En vez de llamar por cada chunk (muy lento), hacemos un resumen comprimido y una única llamada
+            val compressed = compressChunksForSingleCall(chunks)
+            val combinedPrompt = """
                 $prompt
-
-                He recibido el PDF en partes y he resumido cada sección. A continuación están los resúmenes parciales:
-                $combined
-
-                INSTRUCCIÓN FINAL: A partir de los resúmenes parciales, genera un análisis coherente del PDF completo, mencionando conceptos y detalles específicos.
+                
+                HE DIVIDIDO EN PARTES Y COMPRIMIDO EL CONTENIDO:
+                $compressed
+                
+                INSTRUCCIÓN: A partir del contenido comprimido, genera un análisis coherente del PDF completo, mencionando conceptos y detalles específicos. Responde en español.
             """.trimIndent()
-            return llamarGemini(finalPrompt)
+            try {
+                return llamarGemini(combinedPrompt)
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ Error en llamarGemini para contenido comprimido: ${e.message}")
+                throw e
+            }
         }
     }
 
@@ -217,7 +298,7 @@ class IARepository(private val context: Context) : IIARepository {
 
                 📎 CONTENIDO DEL PDF (extraído con PDFBox):
                 ---
-                Caracteres extraídos: ${'$'}{textoPdf.length}
+                Caracteres extraídos: ${textoPdf.length}
 
                 CONTENIDO COMPLETO:
                 $textoPdf
@@ -241,59 +322,32 @@ class IARepository(private val context: Context) : IIARepository {
     }
 
     private suspend fun descargarPDFATempFile(url: String): File = withContext(Dispatchers.IO) {
-        val client = OkHttpClient.Builder().connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS).build()
-        val request = okhttp3.Request.Builder().url(url).get().build()
-        val response = client.newCall(request).execute()
-        if (!response.isSuccessful) throw java.io.IOException("HTTP ${'$'}{response.code}")
-        val body = response.body ?: throw java.io.IOException("Body vacío")
-        val tempFile = File.createTempFile("aulaviva_pdf_", ".pdf", context.cacheDir)
-        FileOutputStream(tempFile).use { out ->
-            body.byteStream().use { input -> input.copyTo(out) }
-        }
-        tempFile
-    }
-
-    private fun extractTextChunksFromPdf(file: File, pagesPerChunk: Int = 5): List<String> {
-        val out = mutableListOf<String>()
+        Log.d(TAG, "⬇️ Descargando PDF desde: $url")
         try {
-            val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
-                file,
-                MemoryUsageSetting.setupTempFileOnly()
-            )
-            val total = document.numberOfPages
-            val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
-            var page = 1
-            while (page <= total) {
-                stripper.startPage = page
-                stripper.endPage = (page + pagesPerChunk - 1).coerceAtMost(total)
-                out.add(stripper.getText(document))
-                page += pagesPerChunk
+            return@withContext withTimeout(60_000L) {
+                val request = okhttp3.Request.Builder().url(url).get().build()
+                // Ejecutar la llamada de forma síncrona en el contexto IO (evita callbacks y problemas de parsing)
+                val response = okHttpClient.newCall(request).execute()
+                try {
+                    if (!response.isSuccessful) throw java.io.IOException("HTTP ${response.code()}")
+                    val body = response.body ?: throw java.io.IOException("Body vacío")
+                    val tempFile = File.createTempFile("aulaviva_pdf_", ".pdf", context.cacheDir)
+                    FileOutputStream(tempFile).use { out ->
+                        body.byteStream().use { input -> input.copyTo(out) }
+                    }
+                    Log.d(
+                        TAG,
+                        "⬇️ PDF guardado en temp: ${tempFile.absolutePath} size=${tempFile.length()}"
+                    )
+                    tempFile
+                } finally {
+                    response.close()
+                }
             }
-            document.close()
         } catch (e: Exception) {
-            Log.w(TAG, "⚠️ [PDFBox] Error extrayendo: ${e.message}")
+            Log.e(TAG, "❌ Error descargando PDF o timeout: ${e.message}")
+            throw e
         }
-        return out
-    }
-
-    private fun compressChunksForSingleCall(chunks: List<String>, maxChars: Int = 40_000): String {
-        if (chunks.isEmpty()) return ""
-        val b = StringBuilder()
-        for ((i, c) in chunks.withIndex()) {
-            if (b.length >= maxChars) break
-            b.append("-- PARTE ${i + 1} --\n")
-            b.append(c.take(1500))
-            b.append("\n\n")
-        }
-        var i = 0
-        while (b.length < maxChars && i < chunks.size) {
-            b.append("-- MUESTRA ${i + 1} (tail) --\n")
-            b.append(chunks[i].takeLast(500))
-            b.append("\n\n")
-            i++
-        }
-        return if (b.length > maxChars) b.toString().take(maxChars) else b.toString()
     }
 
     // --- Helpers para contexto de PDF y metadata ---
@@ -708,38 +762,49 @@ class IARepository(private val context: Context) : IIARepository {
                     // Si hay PDF, intentar analizar y guardar el análisis en la sesión
                     if (!pdfUrl.isNullOrEmpty()) {
                         try {
-                            val analysis = analizarPDFInteligente(
-                                pdfUrl,
-                                "Analiza el PDF y entrega un informe pedagógico para la clase: $nombreClase"
-                            )
-                            chatDao.getLatestSessionForClass(nombreClase)?.copy().apply {
-                                // safe update: getLatestSessionForClass should return the same inserted session
+                            // Intentar análisis breve y con timeout corto para no bloquear el inicio del chat
+                            val analysis = try {
+                                withTimeout(25_000L) {
+                                    analizarPDFInteligente(
+                                        pdfUrl,
+                                        "Analiza el PDF y entrega un informe pedagógico para la clase: $nombreClase"
+                                    )
+                                }
+                            } catch (e: Exception) {
+                                Log.w(
+                                    TAG,
+                                    "⚠️ Análisis inicial rápido falló o timeout: ${e.message}"
+                                ); null
                             }
-                            // actualizar la sesión con el análisis
-                            val sessionToUpdate = ChatSessionEntity(
-                                id = sessionId,
-                                nombreClase = nombreClase,
-                                descripcion = descripcion,
-                                pdfUrl = pdfUrl,
-                                analysisText = analysis,
-                                startedAt = System.currentTimeMillis(),
-                                lastActivityAt = System.currentTimeMillis()
-                            )
-                            chatDao.updateSession(sessionToUpdate)
-                            // Persistir el análisis como mensaje AI para contexto histórico
-                            chatDao.insertMessage(
-                                ChatMessageEntity(
-                                    sessionId = sessionId,
-                                    sender = "ai",
-                                    message = analysis
+                            if (!analysis.isNullOrBlank()) {
+                                // actualizar la sesión con el análisis (si obtenemos uno)
+                                val sessionToUpdate = ChatSessionEntity(
+                                    id = sessionId,
+                                    nombreClase = nombreClase,
+                                    descripcion = descripcion,
+                                    pdfUrl = pdfUrl,
+                                    analysisText = analysis,
+                                    startedAt = System.currentTimeMillis(),
+                                    lastActivityAt = System.currentTimeMillis()
                                 )
-                            )
+                                chatDao.updateSession(sessionToUpdate)
+                                chatDao.insertMessage(
+                                    ChatMessageEntity(
+                                        sessionId = sessionId,
+                                        sender = "ai",
+                                        message = analysis
+                                    )
+                                )
+                            }
                         } catch (e: Exception) {
-                            Log.w(TAG, "⚠️ Error analizando PDF al iniciar chat: ${e.message}")
+                            Log.w(
+                                TAG,
+                                "⚠️ Error analizando PDF al iniciar chat (no crítico): ${e.message}"
+                            )
                         }
                     }
 
-                    // Persistir el mensaje inicial de contexto del usuario
+                    // Persistir mensaje inicial de contexto del usuario
                     historial.add(contenidoUsuario)
                     chatDao.insertMessage(
                         ChatMessageEntity(
