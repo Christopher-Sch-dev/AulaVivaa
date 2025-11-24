@@ -270,6 +270,49 @@ class IARepository(private val context: Context) : IIARepository {
         }
     }
     
+    // ✅ NUEVO: Helper para preparar contexto de PDF inteligentemente
+    private suspend fun prepararContextoPdf(pdfUrl: String?): String {
+        if (pdfUrl.isNullOrEmpty()) return ""
+        
+        try {
+            val textoPdf = extractTextFromPdf(pdfUrl)
+            
+            // Estrategia inteligente según tamaño
+            return if (textoPdf.length <= 20_000) {
+                """
+                📚 CONTENIDO COMPLETO DEL PDF (${textoPdf.length} caracteres):
+                ---
+                $textoPdf
+                ---
+                """.trimIndent()
+            } else {
+                // Tomar secciones clave: inicio + medio + final
+                val inicio = textoPdf.take(10_000)
+                val medio = textoPdf.substring(
+                    textoPdf.length / 2, 
+                    (textoPdf.length / 2) + 5_000
+                ).coerceAtMost(textoPdf)
+                val fin = textoPdf.takeLast(5_000)
+                """
+                📚 CONTENIDO DEL PDF (${textoPdf.length} caracteres totales, mostrando secciones clave):
+                ---
+                === INICIO DEL PDF ===
+                $inicio
+                
+                === SECCIÓN MEDIA DEL PDF ===
+                $medio
+                
+                === FINAL DEL PDF ===
+                $fin
+                ---
+                """.trimIndent()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "⚠️ Error preparando contexto PDF: ${e.message}")
+            return ""
+        }
+    }
+    
     private fun extractTextChunksFromPdf(pdfFile: File, chunkSize: Int = PDF_CHUNK_SIZE): List<String> {
         return try {
             val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
@@ -600,37 +643,23 @@ class IARepository(private val context: Context) : IIARepository {
         pdfUrl: String?
     ): String {
         return try {
-            val (title, author, analysis) = ensureAnalysisAndMetadata(nombreClase, pdfUrl)
-            val contextHeader = buildString {
-                append("DETALLES DEL PDF ANALIZADO:\n")
-                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
-                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
-                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
-            }
+            // ✅ FIX: Preparar contexto completo del PDF
+            val contextoPdf = prepararContextoPdf(pdfUrl)
+            
             val prompt = """
-                $contextHeader
+                $contextoPdf
+                
                 Eres un consultor en innovación educativa.
                 Clase: $nombreClase
                 Descripción: $descripcion
 
-                Genera 4 ideas prácticas para trabajo en clase, con objetivo pedagógico y pasos.
+                ${if (contextoPdf.isNotBlank()) "Basándote EN EL CONTENIDO DEL PDF mostrado arriba, g" else "G"}enera 4 ideas prácticas para trabajo en clase, con objetivo pedagógico y pasos. Responde en español.
             """.trimIndent()
+            
             val resultado = llamarGemini(prompt)
-            // persistir respuesta si hay sesión
-            currentSessionId?.let { sid ->
-                try {
-                    chatDao.insertMessage(
-                        ChatMessageEntity(
-                            sessionId = sid,
-                            sender = "ai",
-                            message = resultado
-                        )
-                    )
-                } catch (_: Exception) {
-                }
-            }
-            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
         } catch (e: Exception) {
+            Log.e(TAG, "❌ Error en generarIdeasParaClase: ${e.message}")
             "⚠️ Error: ${e.message ?: "Desconocido"}"
         }
     }
@@ -672,32 +701,16 @@ class IARepository(private val context: Context) : IIARepository {
         pdfUrl: String?
     ): String {
         return try {
-            val (title, author, analysis) = ensureAnalysisAndMetadata(nombre, pdfUrl)
-            val contextHeader = buildString {
-                append("DETALLES DEL PDF ANALIZADO:\n")
-                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
-                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
-                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
-            }
+            val contextoPdf = prepararContextoPdf(pdfUrl)
             val prompt = """
-                $contextHeader
+                $contextoPdf
+                
                 Genera una guía de presentación clara y ordenada para la clase $nombre.
                 Descripción: $descripcion
+                ${if (contextoPdf.isNotBlank()) "\nBasándote en el contenido del PDF mostrado arriba." else ""}
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            currentSessionId?.let { sid ->
-                try {
-                    chatDao.insertMessage(
-                        ChatMessageEntity(
-                            sessionId = sid,
-                            sender = "ai",
-                            message = resultado
-                        )
-                    )
-                } catch (_: Exception) {
-                }
-            }
-            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
         } catch (e: Exception) {
             "⚠️ Error: ${e.message ?: "Desconocido"}"
         }
@@ -709,32 +722,16 @@ class IARepository(private val context: Context) : IIARepository {
         pdfUrl: String?
     ): String {
         return try {
-            val (title, author, analysis) = ensureAnalysisAndMetadata(nombre, pdfUrl)
-            val contextHeader = buildString {
-                append("DETALLES DEL PDF ANALIZADO:\n")
-                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
-                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
-                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
-            }
+            val contextoPdf = prepararContextoPdf(pdfUrl)
             val prompt = """
-                $contextHeader
+                $contextoPdf
+                
                 Genera ejercicios para alumnos relacionados a $nombre.
                 Descripción: $descripcion
+                ${if (contextoPdf.isNotBlank()) "\nBasa los ejercicios en el contenido del PDF mostrado arriba." else ""}
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            currentSessionId?.let { sid ->
-                try {
-                    chatDao.insertMessage(
-                        ChatMessageEntity(
-                            sessionId = sid,
-                            sender = "ai",
-                            message = resultado
-                        )
-                    )
-                } catch (_: Exception) {
-                }
-            }
-            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
         } catch (e: Exception) {
             "⚠️ Error: ${e.message ?: "Desconocido"}"
         }
@@ -746,32 +743,16 @@ class IARepository(private val context: Context) : IIARepository {
         pdfUrl: String?
     ): String {
         return try {
-            val (title, author, analysis) = ensureAnalysisAndMetadata(nombre, pdfUrl)
-            val contextHeader = buildString {
-                append("DETALLES DEL PDF ANALIZADO:\n")
-                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
-                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
-                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
-            }
+            val contextoPdf = prepararContextoPdf(pdfUrl)
             val prompt = """
-                $contextHeader
+                $contextoPdf
+                
                 Crea un resumen de estudio para alumnos basado en el material de la clase $nombre.
                 Descripción: $descripcion
+                ${if (contextoPdf.isNotBlank()) "\nEl resumen debe estar basado en el contenido del PDF mostrado arriba." else ""}
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            currentSessionId?.let { sid ->
-                try {
-                    chatDao.insertMessage(
-                        ChatMessageEntity(
-                            sessionId = sid,
-                            sender = "ai",
-                            message = resultado
-                        )
-                    )
-                } catch (_: Exception) {
-                }
-            }
-            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
         } catch (e: Exception) {
             "⚠️ Error: ${e.message ?: "Desconocido"}"
         }
@@ -783,32 +764,16 @@ class IARepository(private val context: Context) : IIARepository {
         pdfUrl: String?
     ): String {
         return try {
-            val (title, author, analysis) = ensureAnalysisAndMetadata(nombreClase, pdfUrl)
-            val contextHeader = buildString {
-                append("DETALLES DEL PDF ANALIZADO:\n")
-                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
-                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
-                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
-            }
+            val contextoPdf = prepararContextoPdf(pdfUrl)
             val prompt = """
-                $contextHeader
+                $contextoPdf
+                
                 Diseña 3 actividades interactivas para la clase $nombreClase.
                 Descripción: $descripcion
+                ${if (contextoPdf.isNotBlank()) "\nLas actividades deben estar basadas en el contenido del PDF mostrado arriba." else ""}
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            currentSessionId?.let { sid ->
-                try {
-                    chatDao.insertMessage(
-                        ChatMessageEntity(
-                            sessionId = sid,
-                            sender = "ai",
-                            message = resultado
-                        )
-                    )
-                } catch (_: Exception) {
-                }
-            }
-            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
         } catch (e: Exception) {
             "⚠️ Error: ${e.message ?: "Desconocido"}"
         }
@@ -820,32 +785,16 @@ class IARepository(private val context: Context) : IIARepository {
         pdfUrl: String?
     ): String {
         return try {
-            val (title, author, analysis) = ensureAnalysisAndMetadata(nombreClase, pdfUrl)
-            val contextHeader = buildString {
-                append("DETALLES DEL PDF ANALIZADO:\n")
-                append("Título: ${if (title.isNotBlank()) title else "Desconocido"}\n")
-                append("Autor: ${if (author.isNotBlank()) author else "Desconocido"}\n")
-                append("Resumen: ${analysis?.take(500) ?: "No disponible"}\n\n")
-            }
+            val contextoPdf = prepararContextoPdf(pdfUrl)
             val prompt = """
-                $contextHeader
+                $contextoPdf
+                
                 Eres un tutor. Explica en lenguaje simple los conceptos principales de $nombreClase.
                 Descripción: $descripcion
+                ${if (contextoPdf.isNotBlank()) "\nBasa tu explicación en el contenido del PDF mostrado arriba." else ""}
             """.trimIndent()
             val resultado = llamarGemini(prompt)
-            currentSessionId?.let { sid ->
-                try {
-                    chatDao.insertMessage(
-                        ChatMessageEntity(
-                            sessionId = sid,
-                            sender = "ai",
-                            message = resultado
-                        )
-                    )
-                } catch (_: Exception) {
-                }
-            }
-            "$contextHeader$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
+            "$resultado\n\nEste fue gemini real bro 🚬😶‍🌫️"
         } catch (e: Exception) {
             "⚠️ Error: ${e.message ?: "Desconocido"}"
         }
@@ -859,158 +808,68 @@ class IARepository(private val context: Context) : IIARepository {
     ) {
         withContext(Dispatchers.IO) {
             try {
-                // Intentar restaurar sesión existente para la misma clase
-                val existing = chatDao.getLatestSessionForClass(nombreClase)
-                if (existing != null) {
-                    currentSessionId = existing.id
-                    val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
+                // ✅ FIX: NO restaurar sesiones antiguas, SIEMPRE crear sesión TEMPORAL nueva
+                // El chat es momentáneo mientras el usuario está en la pantalla ResultadoIAActivity
+                Log.d(TAG, "🆕 [CHAT] Creando sesión TEMPORAL nueva (no se restaura historial)")
+                
+                val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
+                
+                // ✅ FIX: Incluir el texto completo del PDF en el contexto inicial
+                val contextoPdf = prepararContextoPdf(pdfUrl)
+                
+                val promptInicial = """
+                    CONTEXTO DE LA CLASE:
+                    Clase: $nombreClase
+                    Descripción: $descripcion
                     
-                    // ✅ FIX CRÍTICO: Usar "user" role en vez de "system" (Gemini no reconoce system)
-                    // El análisis del PDF debe estar como mensaje del usuario para mantener contexto
-                    existing.analysisText?.let { anal -> 
-                        val contextoPdf = """
-                            CONTEXTO DEL PDF DE LA CLASE:
-                            
-                            $anal
-                            
-                            Por favor, mantén este contexto del PDF en todas tus respuestas.
-                        """.trimIndent()
-                        historial.add(content("user") { text(contextoPdf) })
-                        historial.add(content("model") { text("Entendido. He analizado el PDF y mantendré este contexto en todas mis respuestas. ¿En qué puedo ayudarte con este material?") })
-                    }
+                    $contextoPdf
                     
-                    val messages = chatDao.getMessagesForSession(existing.id)
-                    for (m in messages) {
-                        if (m.sender == "user") historial.add(content("user") { text(m.message) })
-                        else historial.add(content("model") { text(m.message) })
-                    }
-                    chatSession = googleAiModel.startChat(history = historial)
-                    Log.d(TAG, "✅ [CHAT] Sesión restaurada con contexto PDF preservado (${messages.size} mensajes)")
-                } else {
-                    val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
-                    val promptInicial = """
-                        CONTEXTO DE LA CLASE:
-                        Clase: $nombreClase
-                        Descripción: $descripcion
-                    """.trimIndent()
-
-                    // ✅ FIX: NUNCA enviar PDF binario, siempre texto
-                    val contenidoUsuario = if (!pdfUrl.isNullOrEmpty()) {
-                        try {
-                            val textoPdf = extractTextFromPdf(pdfUrl)
-                            
-                            // Limitar tamaño del texto en el contexto inicial
-                            val textoLimitado = if (textoPdf.length > 15_000) {
-                                val inicio = textoPdf.take(10_000)
-                                val fin = textoPdf.takeLast(5_000)
-                                """
-                                === INICIO DEL PDF ===
-                                $inicio
-                                
-                                === FINAL DEL PDF ===
-                                $fin
-                                """.trimIndent()
-                            } else {
-                                textoPdf
-                            }
-                            
-                            content("user") { 
-                                text("""
-                                    $promptInicial
-                                    
-                                    📎 CONTENIDO DEL PDF (${textoPdf.length} caracteres):
-                                    ---
-                                    $textoLimitado
-                                    ---
-                                    
-                                    Por favor, mantén este contexto del PDF en todas tus respuestas.
-                                """.trimIndent())
-                            }
-                        } catch (e: Exception) {
-                            Log.w(TAG, "⚠️ Error extrayendo texto del PDF: ${e.message}")
-                            content("user") { text(promptInicial) }
-                        }
-                    } else content("user") { text(promptInicial) }
-
-                    // Guardar nueva sesión en BD
-                    val sessionId = chatDao.insertSession(
-                        ChatSessionEntity(
-                            nombreClase = nombreClase,
-                            descripcion = descripcion,
-                            pdfUrl = pdfUrl
-                        )
+                    ${if (contextoPdf.isNotBlank()) "Por favor, mantén el contexto del PDF en todas tus respuestas." else ""}
+                """.trimIndent()
+                
+                // Mensaje inicial del usuario con contexto
+                val contenidoUsuario = content("user") { text(promptInicial) }
+                historial.add(contenidoUsuario)
+                
+                // Respuesta inicial de la IA (la que ya se generó antes)
+                historial.add(content("model") { text(respuestaInicial) })
+                
+                // Guardar sesión TEMPORAL en BD
+                val sessionId = chatDao.insertSession(
+                    ChatSessionEntity(
+                        nombreClase = nombreClase,
+                        descripcion = descripcion,
+                        pdfUrl = pdfUrl,
+                        analysisText = contextoPdf // Guardar el contexto del PDF
                     )
-                    currentSessionId = sessionId
-
-                    // ✅ FIX: Si hay PDF, hacer análisis COMPLETO (ya está en caché el texto)
-                    if (!pdfUrl.isNullOrEmpty()) {
-                        try {
-                            val analysis = try {
-                                withTimeout(45_000L) {
-                                    val fullPrompt = """
-                                        Analiza este PDF académico y genera un resumen pedagógico COMPLETO para la clase: $nombreClase
-                                        
-                                        Debe incluir:
-                                        1. Tema principal y estructura
-                                        2. Conceptos clave detallados
-                                        3. Puntos importantes para enseñanza
-                                        4. Contexto pedagógico
-                                        
-                                        Mínimo 200 palabras para mantener contexto útil.
-                                    """.trimIndent()
-                                    analizarPDFInteligente(pdfUrl, fullPrompt)
-                                }
-                            } catch (e: Exception) {
-                                Log.w(TAG, "⚠️ Análisis inicial timeout: ${e.message}"); null
-                            }
-                            
-                            if (!analysis.isNullOrBlank()) {
-                                val sessionToUpdate = ChatSessionEntity(
-                                    id = sessionId,
-                                    nombreClase = nombreClase,
-                                    descripcion = descripcion,
-                                    pdfUrl = pdfUrl,
-                                    analysisText = analysis,
-                                    startedAt = System.currentTimeMillis(),
-                                    lastActivityAt = System.currentTimeMillis()
-                                )
-                                chatDao.updateSession(sessionToUpdate)
-                                chatDao.insertMessage(
-                                    ChatMessageEntity(
-                                        sessionId = sessionId,
-                                        sender = "ai",
-                                        message = analysis
-                                    )
-                                )
-                                Log.d(TAG, "✅ Análisis completo guardado en sesión: ${analysis.length} chars")
-                            }
-                        } catch (e: Exception) {
-                            Log.w(TAG, "⚠️ Error analizando PDF al iniciar chat: ${e.message}")
-                        }
-                    }
-
-                    // Persistir mensaje inicial de contexto del usuario
-                    historial.add(contenidoUsuario)
-                    chatDao.insertMessage(
-                        ChatMessageEntity(
-                            sessionId = sessionId,
-                            sender = "user",
-                            message = promptInicial
-                        )
+                )
+                currentSessionId = sessionId
+                
+                // Persistir mensajes iniciales
+                chatDao.insertMessage(
+                    ChatMessageEntity(
+                        sessionId = sessionId,
+                        sender = "user",
+                        message = promptInicial
                     )
-                    // Añadir la respuesta inicial provista por la app como mensaje del modelo
-                    historial.add(content("model") { text(respuestaInicial) })
-                    chatDao.insertMessage(
-                        ChatMessageEntity(
-                            sessionId = sessionId,
-                            sender = "ai",
-                            message = respuestaInicial
-                        )
+                )
+                chatDao.insertMessage(
+                    ChatMessageEntity(
+                        sessionId = sessionId,
+                        sender = "ai",
+                        message = respuestaInicial
                     )
-
-                    chatSession = googleAiModel.startChat(history = historial)
-                    Log.d(TAG, "✅ [CHAT] Nueva sesión iniciada y persistida con id=$sessionId")
-                }
+                )
+                
+                // Crear sesión de chat con historial inicial
+                chatSession = googleAiModel.startChat(history = historial)
+                Log.d(TAG, "✅ [CHAT] Sesión TEMPORAL creada con id=$sessionId, contexto PDF incluido")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ [CHAT] Error iniciando: ${e.message}")
+                chatSession = null
+            }
+        }
+    }
             } catch (e: Exception) {
                 Log.e(TAG, "❌ [CHAT] Error iniciando: ${e.message}"); chatSession = null
             }
