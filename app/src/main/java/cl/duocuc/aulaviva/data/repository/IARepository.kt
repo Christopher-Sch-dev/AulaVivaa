@@ -128,7 +128,7 @@ class IARepository(private val context: Context) : IIARepository {
                                 }
                             } else {
                                 ultimoError =
-                                    Exception("HTTP ${'$'}{response.code()}: ${'$'}{response.message()}")
+                                    Exception("HTTP error en Gemini: respuesta no exitosa")
                             }
                         } catch (e: Exception) {
                             ultimoError = e
@@ -145,7 +145,10 @@ class IARepository(private val context: Context) : IIARepository {
                     }
 
                     resultado
-                        ?: throw Exception("Error Gemini: ${'$'}{ultimoError?.message ?: " Desconocido "}")
+                        ?: run {
+                            val errMsg = ultimoError?.message ?: "Desconocido"
+                            throw Exception("Error Gemini: $errMsg")
+                        }
                 }
             } catch (e: Exception) {
                 // Propagar el error para manejo superior
@@ -185,10 +188,11 @@ class IARepository(private val context: Context) : IIARepository {
                 // PDFBox Android puede exponer PDFTextStripper bajo este paquete
                 com.tom_roush.pdfbox.text.PDFTextStripper()
             } catch (t: Throwable) {
-                // Fallback al paquete apache si existe
-                org.apache.pdfbox.text.PDFTextStripper()
+                // Si no está disponible el stripper relocado, no referenciamos org.apache.* (no está en classpath Android)
+                Log.w(TAG, "⚠️ PDFTextStripper no disponible en com.tom_roush: ${t.message}")
+                null
             }
-            val fullText = stripper.getText(document) ?: ""
+            val fullText = stripper?.getText(document) ?: ""
             document.close()
             if (fullText.isBlank()) return emptyList()
             val chunks = mutableListOf<String>()
@@ -329,7 +333,7 @@ class IARepository(private val context: Context) : IIARepository {
                 // Ejecutar la llamada de forma síncrona en el contexto IO (evita callbacks y problemas de parsing)
                 val response = okHttpClient.newCall(request).execute()
                 try {
-                    if (!response.isSuccessful) throw java.io.IOException("HTTP ${response.code()}")
+                    if (!response.isSuccessful) throw java.io.IOException("HTTP error descargando PDF: respuesta no exitosa")
                     val body = response.body ?: throw java.io.IOException("Body vacío")
                     val tempFile = File.createTempFile("aulaviva_pdf_", ".pdf", context.cacheDir)
                     FileOutputStream(tempFile).use { out ->
