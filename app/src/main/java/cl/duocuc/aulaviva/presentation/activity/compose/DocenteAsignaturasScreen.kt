@@ -1,35 +1,39 @@
 package cl.duocuc.aulaviva.presentation.activity.compose
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-// import androidx.compose.material.SwipeRefresh // Temporalmente deshabilitado
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cl.duocuc.aulaviva.R
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.activity.compose.DocenteClasesActivityCompose
 import cl.duocuc.aulaviva.presentation.activity.compose.InscritosActivityCompose
+import cl.duocuc.aulaviva.presentation.ui.common.PullToRefreshContainer
 import cl.duocuc.aulaviva.presentation.viewmodel.AsignaturasViewModel
+import cl.duocuc.aulaviva.utils.ClipboardHelper
+import cl.duocuc.aulaviva.utils.Constants
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +41,9 @@ fun DocenteAsignaturasScreen(
     viewModel: AsignaturasViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp
+    val isTablet = screenWidth >= 600
     val scope = rememberCoroutineScope()
     val asignaturas: List<Asignatura> by viewModel.asignaturas.observeAsState(emptyList())
     val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
@@ -54,8 +61,8 @@ fun DocenteAsignaturasScreen(
     val onRefresh: () -> Unit = {
         viewModel.sincronizarAsignaturas()
         scope.launch {
-            kotlinx.coroutines.delay(500)
-            snackbarHostState.showSnackbar("✓ Datos actualizados")
+            delay(Constants.REFRESH_DELAY_MS)
+            snackbarHostState.showSnackbar(context.getString(R.string.msg_datos_actualizados))
         }
     }
 
@@ -63,7 +70,7 @@ fun DocenteAsignaturasScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Mis Asignaturas") },
+                title = { Text(context.getString(R.string.mis_asignaturas)) },
                 navigationIcon = {
                     IconButton(onClick = {
                         (context as? android.app.Activity)?.finish()
@@ -99,54 +106,69 @@ fun DocenteAsignaturasScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                // SwipeRefresh temporalmente deshabilitado
-                LazyColumn(
+                PullToRefreshContainer(
+                    isRefreshing = isLoading,
+                    onRefresh = onRefresh
+                ) {
+                    LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        contentPadding = PaddingValues(
+                            horizontal = if (isTablet) (Constants.PADDING_STANDARD_DP * 2).dp else Constants.PADDING_STANDARD_DP.dp,
+                            vertical = Constants.PADDING_STANDARD_DP.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(Constants.SPACING_ITEMS_DP.dp)
                     ) {
-                    items(asignaturas) { asignatura ->
-                        AsignaturaDocenteCard(
-                            asignatura = asignatura,
-                            onVerClases = {
-                                val intent = Intent(context, DocenteClasesActivityCompose::class.java)
-                                intent.putExtra("ASIGNATURA_ID", asignatura.id)
-                                intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
-                                context.startActivity(intent)
-                            },
-                            onVerInscritos = {
-                                val intent = Intent(context, InscritosActivityCompose::class.java)
-                                intent.putExtra("ASIGNATURA_ID", asignatura.id)
-                                intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
-                                context.startActivity(intent)
-                            },
-                            onCopiarCodigo = {
-                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val clip = ClipData.newPlainText("Código", asignatura.codigoAcceso)
-                                clipboard.setPrimaryClip(clip)
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("✓ Código copiado: ${asignatura.codigoAcceso}")
-                                }
-                            },
-                            onEliminar = {
-                                // Validar que no tenga clases antes de eliminar
-                                viewModel.verificarTieneClases(asignatura.id) { tieneClases ->
-                                    if (tieneClases) {
+                        items(asignaturas) { asignatura ->
+                            AsignaturaDocenteCard(
+                                asignatura = asignatura,
+                                onVerClases = {
+                                    val intent = Intent(context, DocenteClasesActivityCompose::class.java)
+                                    intent.putExtra("ASIGNATURA_ID", asignatura.id)
+                                    intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
+                                    context.startActivity(intent)
+                                },
+                                onVerInscritos = {
+                                    val intent = Intent(context, InscritosActivityCompose::class.java)
+                                    intent.putExtra("ASIGNATURA_ID", asignatura.id)
+                                    intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
+                                    context.startActivity(intent)
+                                },
+                                onCopiarCodigo = {
+                                    val codigo = viewModel.obtenerCodigoParaCopiar(asignatura.id)
+                                    if (codigo != null && ClipboardHelper.copyToClipboard(
+                                            context,
+                                            Constants.CLIPBOARD_LABEL_CODIGO,
+                                            codigo
+                                        )
+                                    ) {
                                         scope.launch {
                                             snackbarHostState.showSnackbar(
-                                                "⚠️ No se puede eliminar: la asignatura tiene clases asociadas",
-                                                duration = SnackbarDuration.Long
+                                                context.getString(R.string.msg_codigo_copiado, codigo)
                                             )
                                         }
-                                    } else {
-                                        viewModel.eliminarAsignatura(asignatura.id)
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar("✓ Asignatura eliminada")
+                                    }
+                                },
+                                onEliminar = {
+                                    viewModel.verificarTieneClases(asignatura.id) { tieneClases ->
+                                        if (tieneClases) {
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar(
+                                                    context.getString(R.string.msg_error_eliminar_con_clases),
+                                                    duration = SnackbarDuration.Long
+                                                )
+                                            }
+                                        } else {
+                                            viewModel.eliminarAsignatura(asignatura.id)
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar(
+                                                    context.getString(R.string.msg_asignatura_eliminada)
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -165,21 +187,21 @@ fun DocenteAsignaturasScreen(
     if (showCrearDialog) {
         AlertDialog(
             onDismissRequest = { showCrearDialog = false },
-            title = { Text("Crear Asignatura") },
+            title = { Text(context.getString(R.string.crear_asignatura)) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = nombreAsignatura,
                         onValueChange = { nombreAsignatura = it },
-                        label = { Text("Nombre") },
+                        label = { Text(context.getString(R.string.nombre_asignatura)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Constants.PADDING_SMALL_DP.dp))
                     OutlinedTextField(
                         value = descripcionAsignatura,
                         onValueChange = { descripcionAsignatura = it },
-                        label = { Text("Descripción") },
+                        label = { Text(context.getString(R.string.descripcion_asignatura)) },
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 3
                     )
@@ -196,12 +218,12 @@ fun DocenteAsignaturasScreen(
                         }
                     }
                 ) {
-                    Text("Crear")
+                    Text(context.getString(R.string.crear_asignatura))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCrearDialog = false }) {
-                    Text("Cancelar")
+                    Text(context.getString(R.string.cancelar))
                 }
             }
         )
@@ -213,6 +235,7 @@ fun EmptyState(
     onCreateClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -221,21 +244,21 @@ fun EmptyState(
         Text("📚", style = MaterialTheme.typography.displayMedium)
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            "No tienes asignaturas",
+            text = context.getString(R.string.no_tienes_asignaturas),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(Constants.PADDING_SMALL_DP.dp))
         Text(
-            "Crea tu primera asignatura para comenzar",
+            text = context.getString(R.string.crea_primera_asignatura),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onCreateClick) {
             Icon(Icons.Default.Add, null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Crear Asignatura")
+            Spacer(modifier = Modifier.width(Constants.PADDING_SMALL_DP.dp))
+            Text(context.getString(R.string.crear_asignatura))
         }
     }
 }
@@ -248,6 +271,7 @@ fun AsignaturaDocenteCard(
     onCopiarCodigo: () -> Unit,
     onEliminar: () -> Unit
 ) {
+    val context = LocalContext.current
     var showMenu by remember { mutableStateOf(false) }
 
     Card(
@@ -277,9 +301,9 @@ fun AsignaturaDocenteCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Constants.PADDING_SMALL_DP.dp))
                     Text(
-                        text = "Código: ${asignatura.codigoAcceso}",
+                        text = context.getString(R.string.codigo_acceso, asignatura.codigoAcceso),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -296,7 +320,7 @@ fun AsignaturaDocenteCard(
                         onDismissRequest = { showMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Copiar código") },
+                            text = { Text(context.getString(R.string.copiar_codigo)) },
                             onClick = {
                                 onCopiarCodigo()
                                 showMenu = false
@@ -304,7 +328,7 @@ fun AsignaturaDocenteCard(
                             leadingIcon = { Icon(Icons.Default.ContentCopy, null) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Eliminar", color = MaterialTheme.colorScheme.error) },
+                            text = { Text(context.getString(R.string.eliminar), color = MaterialTheme.colorScheme.error) },
                             onClick = {
                                 onEliminar()
                                 showMenu = false
@@ -319,7 +343,7 @@ fun AsignaturaDocenteCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(Constants.PADDING_SMALL_DP.dp)
             ) {
                 OutlinedButton(
                     onClick = onVerClases,
@@ -327,7 +351,7 @@ fun AsignaturaDocenteCard(
                 ) {
                     Icon(Icons.Default.MenuBook, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Clases")
+                    Text(context.getString(R.string.ver_clases))
                 }
                 OutlinedButton(
                     onClick = onVerInscritos,
@@ -335,7 +359,7 @@ fun AsignaturaDocenteCard(
                 ) {
                     Icon(Icons.Default.People, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Inscritos")
+                    Text(context.getString(R.string.ver_inscritos))
                 }
             }
         }

@@ -209,4 +209,13 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
     fun limpiarError() {
         _error.value = null
     }
+
+    /**
+     * Obtiene el código de acceso de una asignatura para copiar.
+     * Retorna el código si existe, null en caso contrario.
+     */
+    fun obtenerCodigoParaCopiar(asignaturaId: String): String? {
+        val asignatura = asignaturas.value?.find { it.id == asignaturaId }
+        return asignatura?.codigoAcceso
+    }
 }

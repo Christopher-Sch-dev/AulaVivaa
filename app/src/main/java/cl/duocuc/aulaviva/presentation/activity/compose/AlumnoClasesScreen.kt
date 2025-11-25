@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-// import androidx.compose.material.SwipeRefresh // Temporalmente deshabilitado
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -18,10 +17,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.ui.clases.compose.DetalleClaseActivityCompose
+import cl.duocuc.aulaviva.presentation.ui.common.PullToRefreshContainer
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
+import cl.duocuc.aulaviva.utils.Constants
+import cl.duocuc.aulaviva.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,8 +51,8 @@ fun AlumnoClasesScreen(
             viewModel.sincronizarClasesPorAsignatura(asignaturaId)
         }
         scope.launch {
-            kotlinx.coroutines.delay(500)
-            snackbarHostState.showSnackbar("✓ Datos actualizados")
+            delay(Constants.REFRESH_DELAY_MS)
+            snackbarHostState.showSnackbar(context.getString(R.string.msg_datos_actualizados))
         }
     }
 
@@ -60,7 +63,7 @@ fun AlumnoClasesScreen(
                 title = {
                     Column {
                         Text(asignaturaNombre)
-                        Text("Clases", style = MaterialTheme.typography.bodySmall)
+                        Text(context.getString(R.string.clases), style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 navigationIcon = {
@@ -89,22 +92,26 @@ fun AlumnoClasesScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                // SwipeRefresh temporalmente deshabilitado
-                LazyColumn(
+                PullToRefreshContainer(
+                    isRefreshing = isLoading,
+                    onRefresh = onRefresh
+                ) {
+                    LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        contentPadding = PaddingValues(Constants.PADDING_STANDARD_DP.dp),
+                        verticalArrangement = Arrangement.spacedBy(Constants.SPACING_ITEMS_DP.dp)
                     ) {
-                    items(clases) { clase ->
-                        ClaseAlumnoCard(
-                            clase = clase,
-                            onClick = {
-                                val intent = Intent(context, DetalleClaseActivityCompose::class.java)
-                                intent.putExtra("CLASE_ID", clase.id)
-                                intent.putExtra("ES_ALUMNO", true)
-                                context.startActivity(intent)
-                            }
-                        )
+                        items(clases) { clase ->
+                            ClaseAlumnoCard(
+                                clase = clase,
+                                onClick = {
+                                    val intent = Intent(context, DetalleClaseActivityCompose::class.java)
+                                    intent.putExtra("CLASE_ID", clase.id)
+                                    intent.putExtra("ES_ALUMNO", true)
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -124,21 +131,22 @@ fun AlumnoClasesScreen(
 fun EmptyStateClasesAlumno(
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text("📖", style = MaterialTheme.typography.displayMedium)
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Constants.PADDING_STANDARD_DP.dp))
         Text(
-            "No hay clases disponibles",
+            text = context.getString(R.string.no_hay_clases_disponibles),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(Constants.PADDING_SMALL_DP.dp))
         Text(
-            "El docente aún no ha creado clases para esta asignatura",
+            text = context.getString(R.string.docente_no_creo_clases),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -150,6 +158,7 @@ fun ClaseAlumnoCard(
     clase: Clase,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -173,16 +182,16 @@ fun ClaseAlumnoCard(
                     maxLines = 2
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Constants.PADDING_SMALL_DP.dp))
             Text(
-                text = "Fecha: ${clase.fecha}",
+                text = context.getString(R.string.lbl_fecha, clase.fecha),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
             if (clase.archivoPdfUrl.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "📄 ${clase.archivoPdfNombre.ifEmpty { "Material PDF disponible" }}",
+                    text = "📄 ${clase.archivoPdfNombre.ifEmpty { context.getString(R.string.material_pdf_disponible) }}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary
                 )

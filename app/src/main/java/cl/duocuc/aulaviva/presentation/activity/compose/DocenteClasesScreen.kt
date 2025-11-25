@@ -5,12 +5,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-// import androidx.compose.material.SwipeRefresh // Temporalmente deshabilitado
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,11 +21,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.ui.clases.compose.CrearEditarClaseActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.clases.compose.DetalleClaseActivityCompose
+import cl.duocuc.aulaviva.presentation.ui.common.PullToRefreshContainer
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
+import cl.duocuc.aulaviva.utils.Constants
+import cl.duocuc.aulaviva.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,8 +52,8 @@ fun DocenteClasesScreen(
     val onRefresh: () -> Unit = {
         viewModel.sincronizarClasesPorAsignatura(asignaturaId)
         scope.launch {
-            kotlinx.coroutines.delay(500)
-            snackbarHostState.showSnackbar("✓ Datos actualizados")
+            delay(Constants.REFRESH_DELAY_MS)
+            snackbarHostState.showSnackbar(context.getString(R.string.msg_datos_actualizados))
         }
     }
 
@@ -60,7 +64,7 @@ fun DocenteClasesScreen(
                 title = {
                     Column {
                         Text(asignaturaNombre)
-                        Text("Gestionar Clases", style = MaterialTheme.typography.bodySmall)
+                        Text(context.getString(R.string.gestionar_clases), style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 navigationIcon = {
@@ -108,35 +112,39 @@ fun DocenteClasesScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                // SwipeRefresh temporalmente deshabilitado
-                LazyColumn(
+                PullToRefreshContainer(
+                    isRefreshing = isLoading,
+                    onRefresh = onRefresh
+                ) {
+                    LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        contentPadding = PaddingValues(Constants.PADDING_STANDARD_DP.dp),
+                        verticalArrangement = Arrangement.spacedBy(Constants.SPACING_ITEMS_DP.dp)
                     ) {
-                    items(clases) { clase ->
-                        ClaseCard(
-                            clase = clase,
-                            onClaseClick = {
-                                val intent = Intent(context, DetalleClaseActivityCompose::class.java)
-                                intent.putExtra("CLASE_ID", clase.id)
-                                intent.putExtra("ES_ALUMNO", false)
-                                context.startActivity(intent)
-                            },
-                            onEditar = {
-                                val intent = Intent(context, CrearEditarClaseActivityCompose::class.java)
-                                intent.putExtra("CLASE_ID", clase.id)
-                                intent.putExtra("ASIGNATURA_ID", asignaturaId)
-                                intent.putExtra("ASIGNATURA_NOMBRE", asignaturaNombre)
-                                context.startActivity(intent)
-                            },
-                            onEliminar = {
-                                viewModel.eliminarClase(clase.id)
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("✓ Clase eliminada")
+                        items(clases) { clase ->
+                            ClaseCard(
+                                clase = clase,
+                                onClaseClick = {
+                                    val intent = Intent(context, DetalleClaseActivityCompose::class.java)
+                                    intent.putExtra("CLASE_ID", clase.id)
+                                    intent.putExtra("ES_ALUMNO", false)
+                                    context.startActivity(intent)
+                                },
+                                onEditar = {
+                                    val intent = Intent(context, CrearEditarClaseActivityCompose::class.java)
+                                    intent.putExtra("CLASE_ID", clase.id)
+                                    intent.putExtra("ASIGNATURA_ID", asignaturaId)
+                                    intent.putExtra("ASIGNATURA_NOMBRE", asignaturaNombre)
+                                    context.startActivity(intent)
+                                },
+                                onEliminar = {
+                                    viewModel.eliminarClase(clase.id)
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(context.getString(R.string.msg_clase_eliminada))
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -157,29 +165,30 @@ fun EmptyStateClases(
     onCreateClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text("📖", style = MaterialTheme.typography.displayMedium)
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Constants.PADDING_STANDARD_DP.dp))
         Text(
-            "No hay clases",
+            text = context.getString(R.string.no_hay_clases),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(Constants.PADDING_SMALL_DP.dp))
         Text(
-            "Crea tu primera clase para comenzar",
+            text = context.getString(R.string.crea_primera_clase),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onCreateClick) {
             Icon(Icons.Default.Add, null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Crear Clase")
+            Spacer(modifier = Modifier.width(Constants.PADDING_SMALL_DP.dp))
+            Text(context.getString(R.string.crear_clase))
         }
     }
 }
@@ -191,6 +200,7 @@ fun ClaseCard(
     onEditar: () -> Unit,
     onEliminar: () -> Unit
 ) {
+    val context = LocalContext.current
     var showMenu by remember { mutableStateOf(false) }
 
     Card(
@@ -221,9 +231,9 @@ fun ClaseCard(
                         maxLines = 2
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Constants.PADDING_SMALL_DP.dp))
                 Text(
-                    text = "Fecha: ${clase.fecha}",
+                    text = context.getString(R.string.lbl_fecha, clase.fecha),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -240,7 +250,7 @@ fun ClaseCard(
             onDismissRequest = { showMenu = false }
         ) {
         DropdownMenuItem(
-            text = { Text("Editar") },
+            text = { Text(context.getString(R.string.editar)) },
             onClick = {
                 onEditar()
                 showMenu = false
@@ -248,7 +258,7 @@ fun ClaseCard(
             leadingIcon = { Icon(Icons.Default.Edit, null) }
         )
         DropdownMenuItem(
-            text = { Text("Eliminar", color = MaterialTheme.colorScheme.error) },
+            text = { Text(context.getString(R.string.eliminar), color = MaterialTheme.colorScheme.error) },
             onClick = {
                 onEliminar()
                 showMenu = false

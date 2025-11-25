@@ -461,10 +461,11 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      */
     suspend fun crearClaseDePrueba(onSuccess: () -> Unit, onError: (String) -> Unit) {
         try {
-            val claseDemoId = "clase_demo_${'$'}{System.currentTimeMillis()}"
+            val claseDemoId = "clase_demo_${System.currentTimeMillis()}"
             val nombreArchivoDemo = "clase_demo.pdf"
-            // TODO: Replace with actual Uri from assets, e.g., Uri.parse("android.resource://" + appContext.packageName + "/raw/clase_demo")
-            val dummyAssetUri: Uri = Uri.EMPTY // Placeholder for asset Uri
+            // Usar URL externa por defecto. Para usar assets, descomentar y configurar:
+            // val assetUri = Uri.parse("android.resource://${appContext.packageName}/raw/clase_demo")
+            val dummyAssetUri: Uri = Uri.EMPTY // Placeholder para asset Uri (no implementado aún)
 
             var pdfUrl: String = "https://www.bluebooksoft.com/DISENO_PROGRAMACION_WEB/1366.pdf"
 

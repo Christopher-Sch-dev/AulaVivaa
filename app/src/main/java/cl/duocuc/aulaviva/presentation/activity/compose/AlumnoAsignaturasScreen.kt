@@ -5,13 +5,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-// import androidx.compose.material.SwipeRefresh // Temporalmente deshabilitado
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,10 +21,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.activity.compose.AlumnoClasesActivityCompose
+import cl.duocuc.aulaviva.presentation.ui.common.PullToRefreshContainer
 import cl.duocuc.aulaviva.presentation.viewmodel.AlumnoViewModel
+import cl.duocuc.aulaviva.utils.Constants
+import cl.duocuc.aulaviva.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,8 +52,8 @@ fun AlumnoAsignaturasScreen(
     val onRefresh: () -> Unit = {
         viewModel.sincronizarAsignaturasInscritas()
         scope.launch {
-            kotlinx.coroutines.delay(500)
-            snackbarHostState.showSnackbar("✓ Datos actualizados")
+            delay(Constants.REFRESH_DELAY_MS)
+            snackbarHostState.showSnackbar(context.getString(R.string.msg_datos_actualizados))
         }
     }
 
@@ -68,7 +71,7 @@ fun AlumnoAsignaturasScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Mis Asignaturas") },
+                title = { Text(context.getString(R.string.mis_asignaturas)) },
                 navigationIcon = {
                     IconButton(onClick = {
                         (context as? android.app.Activity)?.finish()
@@ -104,28 +107,34 @@ fun AlumnoAsignaturasScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                // SwipeRefresh temporalmente deshabilitado
-                LazyColumn(
+                PullToRefreshContainer(
+                    isRefreshing = isLoading,
+                    onRefresh = onRefresh
+                ) {
+                    LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        contentPadding = PaddingValues(Constants.PADDING_STANDARD_DP.dp),
+                        verticalArrangement = Arrangement.spacedBy(Constants.SPACING_ITEMS_DP.dp)
                     ) {
-                    items(asignaturas) { asignatura ->
-                        AsignaturaAlumnoCard(
-                            asignatura = asignatura,
-                            onVerClases = {
-                                val intent = Intent(context, AlumnoClasesActivityCompose::class.java)
-                                intent.putExtra("ASIGNATURA_ID", asignatura.id)
-                                intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
-                                context.startActivity(intent)
-                            },
-                            onDarDeBaja = {
-                                viewModel.darDeBaja(asignatura.id)
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("✓ Te has dado de baja de ${asignatura.nombre}")
+                        items(asignaturas) { asignatura ->
+                            AsignaturaAlumnoCard(
+                                asignatura = asignatura,
+                                onVerClases = {
+                                    val intent = Intent(context, AlumnoClasesActivityCompose::class.java)
+                                    intent.putExtra("ASIGNATURA_ID", asignatura.id)
+                                    intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
+                                    context.startActivity(intent)
+                                },
+                                onDarDeBaja = {
+                                    viewModel.darDeBaja(asignatura.id)
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            context.getString(R.string.msg_baja_exitosa, asignatura.nombre)
+                                        )
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -144,12 +153,12 @@ fun AlumnoAsignaturasScreen(
     if (showCodigoDialog) {
         AlertDialog(
             onDismissRequest = { showCodigoDialog = false },
-            title = { Text("Inscribirse con código") },
+            title = { Text(context.getString(R.string.inscribirse_con_codigo)) },
             text = {
                 OutlinedTextField(
                     value = codigoIngresado,
                     onValueChange = { codigoIngresado = it },
-                    label = { Text("Código de acceso") },
+                    label = { Text(context.getString(R.string.codigo_de_acceso)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -164,12 +173,12 @@ fun AlumnoAsignaturasScreen(
                         }
                     }
                 ) {
-                    Text("Inscribirse")
+                    Text(context.getString(R.string.inscribirse))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCodigoDialog = false }) {
-                    Text("Cancelar")
+                    Text(context.getString(R.string.cancelar))
                 }
             }
         )
@@ -181,29 +190,30 @@ fun EmptyStateAlumno(
     onAgregarClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text("📚", style = MaterialTheme.typography.displayMedium)
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Constants.PADDING_STANDARD_DP.dp))
         Text(
-            "No tienes asignaturas",
+            text = context.getString(R.string.no_tienes_asignaturas),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(Constants.PADDING_SMALL_DP.dp))
         Text(
-            "Agrega una asignatura con un código de acceso",
+            text = context.getString(R.string.agregar_con_codigo),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onAgregarClick) {
             Icon(Icons.Default.Add, null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Agregar con código")
+            Spacer(modifier = Modifier.width(Constants.PADDING_SMALL_DP.dp))
+            Text(context.getString(R.string.agregar_con_codigo))
         }
     }
 }
@@ -214,6 +224,7 @@ fun AsignaturaAlumnoCard(
     onVerClases: () -> Unit,
     onDarDeBaja: () -> Unit
 ) {
+    val context = LocalContext.current
     var showMenu by remember { mutableStateOf(false) }
 
     Card(
@@ -256,7 +267,7 @@ fun AsignaturaAlumnoCard(
             onDismissRequest = { showMenu = false }
         ) {
         DropdownMenuItem(
-            text = { Text("Ver clases") },
+            text = { Text(context.getString(R.string.ver_clases_menu)) },
             onClick = {
                 onVerClases()
                 showMenu = false
@@ -264,7 +275,7 @@ fun AsignaturaAlumnoCard(
             leadingIcon = { Icon(Icons.Default.MenuBook, null) }
         )
         DropdownMenuItem(
-            text = { Text("Dar de baja", color = MaterialTheme.colorScheme.error) },
+            text = { Text(context.getString(R.string.dar_de_baja), color = MaterialTheme.colorScheme.error) },
             onClick = {
                 onDarDeBaja()
                 showMenu = false

@@ -56,4 +56,44 @@
     <string name="ia_sugerir_act_btn">🎯 Sugerir actividades</string>
     <string name="ia_estructurar">⏱️ Estructurar clase por tiempo</string>
     <string name="ia_analizar_pdf">🤖 Analizar PDF con IA</string>
+
+    <!-- Mensajes de éxito -->
+    <string name="msg_datos_actualizados">✓ Datos actualizados</string>
+    <string name="msg_codigo_copiado">✓ Código copiado: %1$s</string>
+    <string name="msg_asignatura_eliminada">✓ Asignatura eliminada</string>
+    <string name="msg_clase_eliminada">✓ Clase eliminada</string>
+    <string name="msg_baja_exitosa">✓ Te has dado de baja de %1$s</string>
+
+    <!-- Mensajes de error -->
+    <string name="msg_error_eliminar_con_clases">⚠️ No se puede eliminar: la asignatura tiene clases asociadas</string>
+
+    <!-- Asignaturas -->
+    <string name="mis_asignaturas">Mis Asignaturas</string>
+    <string name="crear_asignatura">Crear Asignatura</string>
+    <string name="nombre_asignatura">Nombre</string>
+    <string name="descripcion_asignatura">Descripción</string>
+    <string name="codigo_acceso">Código: %1$s</string>
+    <string name="copiar_codigo">Copiar código</string>
+    <string name="eliminar">Eliminar</string>
+    <string name="ver_clases">Clases</string>
+    <string name="ver_inscritos">Inscritos</string>
+    <string name="no_tienes_asignaturas">No tienes asignaturas</string>
+    <string name="crea_primera_asignatura">Crea tu primera asignatura para comenzar</string>
+    <string name="agregar_con_codigo">Agregar con código</string>
+    <string name="inscribirse_con_codigo">Inscribirse con código</string>
+    <string name="codigo_de_acceso">Código de acceso</string>
+    <string name="inscribirse">Inscribirse</string>
+
+    <!-- Clases -->
+    <string name="gestionar_clases">Gestionar Clases</string>
+    <string name="clases">Clases</string>
+    <string name="crear_clase">Crear Clase</string>
+    <string name="no_hay_clases">No hay clases</string>
+    <string name="crea_primera_clase">Crea tu primera clase para comenzar</string>
+    <string name="no_hay_clases_disponibles">No hay clases disponibles</string>
+    <string name="docente_no_creo_clases">El docente aún no ha creado clases para esta asignatura</string>
+    <string name="editar">Editar</string>
+    <string name="ver_clases_menu">Ver clases</string>
+    <string name="dar_de_baja">Dar de baja</string>
+    <string name="material_pdf_disponible">Material PDF disponible</string>
 </resources>
