@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.domain.repository.IAsignaturasRepository
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.domain.repository.IClaseRepository
 import cl.duocuc.aulaviva.domain.repository.IStorageRepository
@@ -21,6 +23,7 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
 
     // Repository
     private val repository: IAsignaturasRepository = RepositoryProvider.provideAsignaturasRepository(application)
+    private val authRepository: IAuthRepository = RepositoryProvider.provideAuthRepository()
 
     // LiveData para la lista de asignaturas (automática desde Room)
     val asignaturas: LiveData<List<Asignatura>> = repository.obtenerAsignaturasDocente().asLiveData()
@@ -39,8 +42,18 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
     val codigoGenerado: LiveData<String?> = _codigoGenerado
 
     init {
-        // ✅ Sincronizar UNA SOLA VEZ al inicio
-        sincronizarAsignaturas()
+        // Verificar autenticación antes de sincronizar
+        viewModelScope.launch {
+            // Pequeño delay para asegurar que la sesión esté completamente establecida
+            delay(200)
+
+            // Solo sincronizar si el usuario está autenticado
+            if (authRepository.isLoggedIn()) {
+                sincronizarAsignaturas()
+            } else {
+                android.util.Log.w("AsignaturasVM", "⚠️ Usuario no autenticado, omitiendo sincronización inicial")
+            }
+        }
     }
 
     // ClaseRepository para operaciones relacionadas con clases (ej.: verificar existencia)
@@ -72,6 +85,13 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
      */
     fun sincronizarAsignaturas() {
         viewModelScope.launch {
+            // Verificar autenticación antes de sincronizar
+            if (!authRepository.isLoggedIn()) {
+                android.util.Log.w("AsignaturasVM", "⚠️ Usuario no autenticado, no se puede sincronizar")
+                _error.value = "Sesión no válida. Por favor, inicia sesión nuevamente."
+                return@launch
+            }
+
             _isLoading.value = true
             _error.value = null
 
@@ -80,8 +100,16 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
                     android.util.Log.d("AsignaturasVM", "✅ Sincronización exitosa")
                 }
                 .onFailure { exception ->
-                    _error.value = exception.message
-                    android.util.Log.e("AsignaturasVM", "❌ Error sincronizando", exception)
+                    // No cerrar la sesión automáticamente, solo mostrar el error
+                    val errorMessage = when {
+                        exception.message?.contains("Usuario no autenticado", ignoreCase = true) == true ||
+                        exception.message?.contains("not authenticated", ignoreCase = true) == true ||
+                        exception.message?.contains("session", ignoreCase = true) == true ->
+                            "Sesión expirada. Por favor, inicia sesión nuevamente."
+                        else -> exception.message ?: "Error al sincronizar asignaturas"
+                    }
+                    _error.value = errorMessage
+                    android.util.Log.e("AsignaturasVM", "❌ Error sincronizando: ${exception.message}", exception)
                 }
 
             _isLoading.value = false

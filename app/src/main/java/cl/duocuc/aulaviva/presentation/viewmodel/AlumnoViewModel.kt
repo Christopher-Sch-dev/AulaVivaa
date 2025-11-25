@@ -11,6 +11,7 @@ import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.domain.repository.IAlumnoRepository
 import cl.duocuc.aulaviva.domain.repository.IAuthRepository
 import cl.duocuc.aulaviva.domain.repository.IStorageRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -42,7 +43,18 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
     val inscripcionExitosa: LiveData<Asignatura?> = _inscripcionExitosa
 
     init {
-        sincronizarAsignaturasInscritas()
+        // Verificar autenticación antes de sincronizar
+        viewModelScope.launch {
+            // Pequeño delay para asegurar que la sesión esté completamente establecida
+            delay(200)
+
+            // Solo sincronizar si el usuario está autenticado
+            if (authRepository.isLoggedIn()) {
+                sincronizarAsignaturasInscritas()
+            } else {
+                android.util.Log.w("AlumnoVM", "⚠️ Usuario no autenticado, omitiendo sincronización inicial")
+            }
+        }
     }
 
     /**
@@ -50,6 +62,13 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
      */
     fun sincronizarAsignaturasInscritas() {
         viewModelScope.launch {
+            // Verificar autenticación antes de sincronizar
+            if (!authRepository.isLoggedIn()) {
+                android.util.Log.w("AlumnoVM", "⚠️ Usuario no autenticado, no se puede sincronizar")
+                _error.value = "Sesión no válida. Por favor, inicia sesión nuevamente."
+                return@launch
+            }
+
             _isLoading.value = true
             _error.value = null
 
@@ -58,8 +77,16 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
                     android.util.Log.d("AlumnoVM", "✅ Sincronización exitosa")
                 }
                 .onFailure { exception ->
-                    _error.value = exception.message
-                    android.util.Log.e("AlumnoVM", "❌ Error sincronizando", exception)
+                    // No cerrar la sesión automáticamente, solo mostrar el error
+                    val errorMessage = when {
+                        exception.message?.contains("Usuario no autenticado", ignoreCase = true) == true ||
+                        exception.message?.contains("not authenticated", ignoreCase = true) == true ||
+                        exception.message?.contains("session", ignoreCase = true) == true ->
+                            "Sesión expirada. Por favor, inicia sesión nuevamente."
+                        else -> exception.message ?: "Error al sincronizar asignaturas"
+                    }
+                    _error.value = errorMessage
+                    android.util.Log.e("AlumnoVM", "❌ Error sincronizando: ${exception.message}", exception)
                 }
 
             _isLoading.value = false

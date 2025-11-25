@@ -12,6 +12,7 @@ import cl.duocuc.aulaviva.domain.repository.IClaseRepository
 import cl.duocuc.aulaviva.domain.repository.IAuthRepository
 import cl.duocuc.aulaviva.domain.repository.IStorageRepository
 import cl.duocuc.aulaviva.utils.IdUtils
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class PanelPrincipalViewModel(application: Application) : AndroidViewModel(application) {
@@ -89,8 +90,18 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
 
     init {
         // Inicializar user info desde el repositorio de auth
-        _userEmail.value = authRepository.getCurrentUserEmail()
-        _userId.value = authRepository.getCurrentUserId()
+        // Verificar autenticación antes de obtener datos del usuario
+        viewModelScope.launch {
+            // Pequeño delay para asegurar que la sesión esté completamente establecida
+            delay(200)
+
+            if (authRepository.isLoggedIn()) {
+                _userEmail.value = authRepository.getCurrentUserEmail()
+                _userId.value = authRepository.getCurrentUserId()
+            } else {
+                android.util.Log.w("PanelPrincipalVM", "⚠️ Usuario no autenticado, no se pueden obtener datos del usuario")
+            }
+        }
     }
 
     fun logout() {
