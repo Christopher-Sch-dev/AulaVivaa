@@ -20,9 +20,11 @@ import androidx.room.RoomDatabase
     entities = [
         ClaseEntity::class,
         AsignaturaEntity::class,
-        AlumnoAsignaturaEntity::class
+        AlumnoAsignaturaEntity::class,
+        cl.duocuc.aulaviva.data.local.ChatSessionEntity::class,
+        cl.duocuc.aulaviva.data.local.ChatMessageEntity::class
     ],
-    version = 3, // Versión 3: asignaturas + alumno_asignaturas + asignaturaId en clases
+    version = 4, // Versión 4: añade tablas de chat para persistencia de sesiones
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -31,6 +33,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun claseDao(): ClaseDao
     abstract fun asignaturaDao(): AsignaturaDao
     abstract fun alumnoAsignaturaDao(): AlumnoAsignaturaDao
+    abstract fun chatDao(): ChatDao
 
     companion object {
         // @Volatile asegura que los cambios sean visibles en todos los threads

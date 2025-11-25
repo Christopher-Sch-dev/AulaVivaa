@@ -6,11 +6,14 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import cl.duocuc.aulaviva.data.local.AppDatabase
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.data.model.Asignatura
-import cl.duocuc.aulaviva.data.repository.AsignaturasRepository
-import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
+import cl.duocuc.aulaviva.domain.repository.IAsignaturasRepository
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import cl.duocuc.aulaviva.domain.repository.IClaseRepository
+import cl.duocuc.aulaviva.domain.repository.IStorageRepository
 
 /**
  * ViewModel para gestión de asignaturas (DOCENTES).
@@ -19,15 +22,8 @@ import kotlinx.coroutines.launch
 class AsignaturasViewModel(application: Application) : AndroidViewModel(application) {
 
     // Repository
-    private val database = AppDatabase.getDatabase(application)
-    private val repository = AsignaturasRepository(
-        asignaturaDao = database.asignaturaDao(),
-        alumnoAsignaturaDao = database.alumnoAsignaturaDao(),
-        supabaseRepository = SupabaseAsignaturaRepository(
-            asignaturaDao = database.asignaturaDao(),
-            alumnoAsignaturaDao = database.alumnoAsignaturaDao()
-        )
-    )
+    private val repository: IAsignaturasRepository = RepositoryProvider.provideAsignaturasRepository(application)
+    private val authRepository: IAuthRepository = RepositoryProvider.provideAuthRepository()
 
     // LiveData para la lista de asignaturas (automática desde Room)
     val asignaturas: LiveData<List<Asignatura>> = repository.obtenerAsignaturasDocente().asLiveData()
@@ -46,8 +42,42 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
     val codigoGenerado: LiveData<String?> = _codigoGenerado
 
     init {
-        // ✅ Sincronizar UNA SOLA VEZ al inicio
-        sincronizarAsignaturas()
+        // Verificar autenticación antes de sincronizar
+        viewModelScope.launch {
+            // Pequeño delay para asegurar que la sesión esté completamente establecida
+            delay(200)
+
+            // Solo sincronizar si el usuario está autenticado
+            if (authRepository.isLoggedIn()) {
+                sincronizarAsignaturas()
+            } else {
+                android.util.Log.w("AsignaturasVM", "⚠️ Usuario no autenticado, omitiendo sincronización inicial")
+            }
+        }
+    }
+
+    // ClaseRepository para operaciones relacionadas con clases (ej.: verificar existencia)
+    private val claseRepository: IClaseRepository = RepositoryProvider.provideClaseRepository(application)
+    // Storage repo for any future file operations related to asignaturas/classes
+    private val storageRepository: IStorageRepository = RepositoryProvider.provideStorageRepository(application)
+
+    /**
+     * Verifica si una asignatura tiene clases (delegado al ClaseRepository).
+     * Función suspend para usar desde coroutines.
+     */
+    suspend fun tieneClases(asignaturaId: String): Boolean {
+        return claseRepository.tieneClases(asignaturaId)
+    }
+
+    /**
+     * Verifica si una asignatura tiene clases (versión no-suspend para usar desde UI).
+     * Usa viewModelScope para ejecutar la verificación.
+     */
+    fun verificarTieneClases(asignaturaId: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val tiene = claseRepository.tieneClases(asignaturaId)
+            onResult(tiene)
+        }
     }
 
     /**
@@ -55,6 +85,13 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
      */
     fun sincronizarAsignaturas() {
         viewModelScope.launch {
+            // Verificar autenticación antes de sincronizar
+            if (!authRepository.isLoggedIn()) {
+                android.util.Log.w("AsignaturasVM", "⚠️ Usuario no autenticado, no se puede sincronizar")
+                _error.value = "Sesión no válida. Por favor, inicia sesión nuevamente."
+                return@launch
+            }
+
             _isLoading.value = true
             _error.value = null
 
@@ -63,8 +100,16 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
                     android.util.Log.d("AsignaturasVM", "✅ Sincronización exitosa")
                 }
                 .onFailure { exception ->
-                    _error.value = exception.message
-                    android.util.Log.e("AsignaturasVM", "❌ Error sincronizando", exception)
+                    // No cerrar la sesión automáticamente, solo mostrar el error
+                    val errorMessage = when {
+                        exception.message?.contains("Usuario no autenticado", ignoreCase = true) == true ||
+                        exception.message?.contains("not authenticated", ignoreCase = true) == true ||
+                        exception.message?.contains("session", ignoreCase = true) == true ->
+                            "Sesión expirada. Por favor, inicia sesión nuevamente."
+                        else -> exception.message ?: "Error al sincronizar asignaturas"
+                    }
+                    _error.value = errorMessage
+                    android.util.Log.e("AsignaturasVM", "❌ Error sincronizando: ${exception.message}", exception)
                 }
 
             _isLoading.value = false
@@ -191,5 +236,14 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
      */
     fun limpiarError() {
         _error.value = null
+    }
+
+    /**
+     * Obtiene el código de acceso de una asignatura para copiar.
+     * Retorna el código si existe, null en caso contrario.
+     */
+    fun obtenerCodigoParaCopiar(asignaturaId: String): String? {
+        val asignatura = asignaturas.value?.find { it.id == asignaturaId }
+        return asignatura?.codigoAcceso
     }
 }

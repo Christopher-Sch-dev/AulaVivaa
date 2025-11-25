@@ -1,7 +1,10 @@
 package cl.duocuc.aulaviva.data.repository
 
+import cl.duocuc.aulaviva.domain.repository.IAsignaturasRepository
+
 import android.util.Log
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaDao
+import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
 import cl.duocuc.aulaviva.data.local.AsignaturaDao
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
@@ -21,12 +24,12 @@ class AsignaturasRepository(
     private val asignaturaDao: AsignaturaDao,
     private val alumnoAsignaturaDao: AlumnoAsignaturaDao,
     private val supabaseRepository: SupabaseAsignaturaRepository
-) {
+) : IAsignaturasRepository {
 
     /**
      * Obtiene asignaturas del docente actual (Flow para LiveData).
      */
-    fun obtenerAsignaturasDocente(): Flow<List<Asignatura>> {
+    override fun obtenerAsignaturasDocente(): Flow<List<Asignatura>> {
         val docenteId = SupabaseAuthManager.getCurrentUserId() ?: ""
 
         // Leer de Room (offline-first)
@@ -48,7 +51,7 @@ class AsignaturasRepository(
     /**
      * Sincroniza asignaturas desde Supabase.
      */
-    suspend fun sincronizarAsignaturas(): Result<Unit> {
+    override suspend fun sincronizarAsignaturas(): Result<Unit> {
         val docenteId = SupabaseAuthManager.getCurrentUserId()
             ?: return Result.failure(Exception("Usuario no autenticado"))
 
@@ -66,7 +69,7 @@ class AsignaturasRepository(
     /**
      * Sincroniza los alumnos inscritos en una asignatura.
      */
-    suspend fun sincronizarInscritos(asignaturaId: String): Result<Unit> {
+    override suspend fun sincronizarInscritos(asignaturaId: String): Result<Unit> {
         Log.d("AsignaturasRepo", "🔄 Sincronizando inscritos para: $asignaturaId")
 
         return try {
@@ -81,7 +84,7 @@ class AsignaturasRepository(
     /**
      * Crea una nueva asignatura.
      */
-    suspend fun crearAsignatura(
+    override suspend fun crearAsignatura(
         nombre: String,
         descripcion: String
     ): Result<Asignatura> {
@@ -97,7 +100,7 @@ class AsignaturasRepository(
         val now = java.time.Instant.now().toString()
 
         val asignatura = Asignatura(
-            id = java.util.UUID.randomUUID().toString(),
+            id = cl.duocuc.aulaviva.utils.IdUtils.generateId(),
             nombre = nombre,
             codigoAcceso = codigoTemporal,
             docenteId = docenteId,
@@ -112,7 +115,7 @@ class AsignaturasRepository(
     /**
      * Genera código único para una asignatura.
      */
-    suspend fun generarCodigo(asignaturaId: String): Result<String> {
+    override suspend fun generarCodigo(asignaturaId: String): Result<String> {
         Log.d("AsignaturasRepo", "🔑 Generando código para: $asignaturaId")
         return supabaseRepository.generarCodigo(asignaturaId)
     }
@@ -120,7 +123,7 @@ class AsignaturasRepository(
     /**
      * Actualiza una asignatura existente.
      */
-    suspend fun actualizarAsignatura(asignatura: Asignatura): Result<Asignatura> {
+    override suspend fun actualizarAsignatura(asignatura: Asignatura): Result<Asignatura> {
         Log.d("AsignaturasRepo", "✏️ Actualizando asignatura: ${asignatura.id}")
         return supabaseRepository.actualizarAsignatura(asignatura)
     }
@@ -128,7 +131,7 @@ class AsignaturasRepository(
     /**
      * Elimina una asignatura.
      */
-    suspend fun eliminarAsignatura(asignaturaId: String): Result<Unit> {
+    override suspend fun eliminarAsignatura(asignaturaId: String): Result<Unit> {
         Log.d("AsignaturasRepo", "🗑️ Eliminando asignatura: $asignaturaId")
         return supabaseRepository.eliminarAsignatura(asignaturaId)
     }
@@ -136,7 +139,7 @@ class AsignaturasRepository(
     /**
      * Obtiene una asignatura específica por ID.
      */
-    suspend fun obtenerAsignaturaPorId(asignaturaId: String): Asignatura? {
+    override suspend fun obtenerAsignaturaPorId(asignaturaId: String): Asignatura? {
         val entity = asignaturaDao.obtenerAsignaturaPorId(asignaturaId)
         return entity?.let {
             Asignatura(
@@ -149,5 +152,12 @@ class AsignaturasRepository(
                 updatedAt = it.updatedAt
             )
         }
+    }
+
+    /**
+     * Expone las inscripciones (AlumnoAsignaturaEntity) como Flow para la UI (docente).
+     */
+    override fun obtenerInscritosFlow(asignaturaId: String): Flow<List<AlumnoAsignaturaEntity>> {
+        return alumnoAsignaturaDao.obtenerInscripcionesPorAsignatura(asignaturaId)
     }
 }

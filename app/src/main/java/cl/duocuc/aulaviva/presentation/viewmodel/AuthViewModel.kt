@@ -3,7 +3,10 @@ package cl.duocuc.aulaviva.presentation.viewmodel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import cl.duocuc.aulaviva.data.repository.AuthRepository
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
 
 /**
  * ViewModel para manejar la lógica de autenticación
@@ -11,7 +14,7 @@ import cl.duocuc.aulaviva.data.repository.AuthRepository
  */
 class AuthViewModel : ViewModel() {
 
-    private val repository = AuthRepository()
+    private val repository: IAuthRepository = RepositoryProvider.provideAuthRepository()
 
     // LiveData para el estado de carga
     private val _isLoading = MutableLiveData<Boolean>()
@@ -44,18 +47,17 @@ class AuthViewModel : ViewModel() {
         _isLoading.value = true
         _error.value = null
 
-        repository.login(
-            email = email,
-            password = password,
-            onSuccess = {
+        // Use viewModelScope to call suspend repository method
+        viewModelScope.launch {
+            val result = repository.login(email, password)
+            result.fold(onSuccess = {
                 _isLoading.value = false
                 _loginSuccess.value = true
-            },
-            onError = { errorMsg ->
+            }, onFailure = { e ->
                 _isLoading.value = false
-                _error.value = "Error de login: $errorMsg"
-            }
-        )
+                _error.value = "Error de login: ${e.message}"
+            })
+        }
     }
 
     // Registro
@@ -63,24 +65,31 @@ class AuthViewModel : ViewModel() {
         _isLoading.value = true
         _error.value = null
 
-        repository.register(
-            email = email,
-            password = password,
-            rol = rol,  // Paso el rol seleccionado
-            onSuccess = {
+        viewModelScope.launch {
+            val result = repository.register(email, password, rol)
+            result.fold(onSuccess = {
                 _isLoading.value = false
                 _registerSuccess.value = true
-            },
-            onError = { errorMsg ->
+            }, onFailure = { e ->
                 _isLoading.value = false
-                _error.value = errorMsg
-            }
-        )
+                if (e.message == "pending_confirmation") {
+                    _error.value = "Cuenta creada. Revisa tu email para confirmar la cuenta."
+                } else {
+                    _error.value = e.message
+                }
+            })
+        }
     }
 
     // Logout
     fun logout() {
-        repository.logout()
+        viewModelScope.launch {
+            try {
+                repository.logout()
+            } catch (_: Exception) {
+                // ignore
+            }
+        }
     }
 
     // Obtener usuario actual

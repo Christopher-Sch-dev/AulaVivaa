@@ -7,11 +7,11 @@ import retrofit2.http.Query
 
 /**
  * 🤖 Interfaz Retrofit para Gemini API
- * Modelo: gemini-2.5-pro (vigente noviembre 2025)
+ * Modelo: gemini-2.5-flash (más rápido, menor consumo de tokens)
  */
 interface GeminiApiService {
 
-    @POST("v1beta/models/gemini-2.5-pro:generateContent")
+    @POST("v1beta/models/gemini-2.5-flash-lite:generateContent")
     suspend fun generateContent(
         @Query("key") apiKey: String,
         @Body request: GeminiRequest

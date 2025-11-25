@@ -10,25 +10,26 @@ import cl.duocuc.aulaviva.R
 /**
  * Helper para manejar notificaciones push en la app.
  * Este es uno de los RECURSOS NATIVOS de Android que uso.
- * 
+ *
  * Las notificaciones mejoran la experiencia porque:
  * - Avisan al usuario de eventos importantes
  * - Funcionan incluso si la app está cerrada
  * - Son parte del sistema operativo Android
- * 
+ *
  * Pensamiento: Las notificaciones son clave en apps educativas.
  * El profe puede avisar de una clase nueva, o el alumno recibe recordatorios.
  */
 class NotificationHelper(private val context: Context) {
-    
+
+    private val appContext = context.applicationContext
     private val CHANNEL_ID = "aulaviva_channel"
     private val CHANNEL_NAME = "Notificaciones Aula Viva"
-    private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    
+    private val notificationManager = appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
     init {
         crearCanalNotificaciones()
     }
-    
+
     /**
      * Crea el canal de notificaciones (obligatorio desde Android 8.0)
      * Los canales permiten que el usuario controle qué notificaciones recibe.
@@ -48,7 +49,7 @@ class NotificationHelper(private val context: Context) {
             notificationManager.createNotificationChannel(channel)
         }
     }
-    
+
     /**
      * Envía una notificación simple.
      * @param titulo: Título de la notificación
@@ -56,7 +57,7 @@ class NotificationHelper(private val context: Context) {
      * @param icono: ID del icono (opcional)
      */
     fun enviarNotificacion(
-        titulo: String, 
+        titulo: String,
         mensaje: String,
         icono: Int = R.drawable.ic_launcher_foreground
     ) {
@@ -71,14 +72,14 @@ class NotificationHelper(private val context: Context) {
                 NotificationCompat.BigTextStyle()
                     .bigText(mensaje)
             )
-        
-        // Genero un ID único basado en el tiempo para que no se reemplacen
-        val notificationId = System.currentTimeMillis().toInt()
-        
+
+        // Genero un ID único incremental seguro para evitar overflow
+        val notificationId = NotificationHelper.idCounter.incrementAndGet()
+
         // Muestro la notificación
         notificationManager.notify(notificationId, builder.build())
     }
-    
+
     /**
      * Envía una notificación de bienvenida personalizada
      */
@@ -88,7 +89,7 @@ class NotificationHelper(private val context: Context) {
             mensaje = "Hola $nombreUsuario, estás listo para gestionar tus clases"
         )
     }
-    
+
     /**
      * Notificación cuando se crea una clase nueva
      */
@@ -98,7 +99,7 @@ class NotificationHelper(private val context: Context) {
             mensaje = "\"$nombreClase\" está lista para tus estudiantes"
         )
     }
-    
+
     /**
      * Notificación de recordatorio
      */
@@ -107,5 +108,9 @@ class NotificationHelper(private val context: Context) {
             titulo = "Recordatorio 🔔",
             mensaje = mensaje
         )
+    }
+
+    companion object {
+        private val idCounter = java.util.concurrent.atomic.AtomicInteger((System.currentTimeMillis() % 1000).toInt())
     }
 }

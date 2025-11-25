@@ -6,10 +6,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.model.Asignatura
-import cl.duocuc.aulaviva.data.repository.AlumnoRepository
-import cl.duocuc.aulaviva.data.supabase.SupabaseAlumnoRepository
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
+import cl.duocuc.aulaviva.domain.repository.IAlumnoRepository
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
+import cl.duocuc.aulaviva.domain.repository.IStorageRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -19,15 +21,16 @@ import kotlinx.coroutines.launch
 class AlumnoViewModel(application: Application) : AndroidViewModel(application) {
 
     // Repository
-    private val database = AppDatabase.getDatabase(application)
-    private val repository = AlumnoRepository(
-        alumnoAsignaturaDao = database.alumnoAsignaturaDao(),
-        asignaturaDao = database.asignaturaDao(),
-        supabaseRepository = SupabaseAlumnoRepository(
-            alumnoAsignaturaDao = database.alumnoAsignaturaDao(),
-            asignaturaDao = database.asignaturaDao()
-        )
-    )
+    private val repository: IAlumnoRepository = RepositoryProvider.provideAlumnoRepository(application)
+    private val authRepository: IAuthRepository = RepositoryProvider.provideAuthRepository()
+    // Centralized storage repo (for future uploads/downloads)
+    private val storageRepository: IStorageRepository = RepositoryProvider.provideStorageRepository(application)
+
+    private val _logoutEvent = MutableLiveData<Boolean>()
+    val logoutEvent: LiveData<Boolean> = _logoutEvent
+
+    private val _userEmail = MutableLiveData<String?>()
+    val userEmail: LiveData<String?> = _userEmail
 
     // LiveData para asignaturas inscritas (automática desde Room)
     val asignaturasInscritas: LiveData<List<Asignatura>> = repository.obtenerAsignaturasInscritas().asLiveData()
@@ -43,7 +46,20 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
     val inscripcionExitosa: LiveData<Asignatura?> = _inscripcionExitosa
 
     init {
-        sincronizarAsignaturasInscritas()
+        // Inicializar user info y verificar autenticación antes de sincronizar
+        viewModelScope.launch {
+            // Pequeño delay para asegurar que la sesión esté completamente establecida
+            delay(200)
+
+            if (authRepository.isLoggedIn()) {
+                // Obtener email del usuario
+                _userEmail.value = authRepository.getCurrentUserEmail()
+                // Sincronizar asignaturas
+                sincronizarAsignaturasInscritas()
+            } else {
+                android.util.Log.w("AlumnoVM", "⚠️ Usuario no autenticado, omitiendo sincronización inicial")
+            }
+        }
     }
 
     /**
@@ -51,6 +67,13 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
      */
     fun sincronizarAsignaturasInscritas() {
         viewModelScope.launch {
+            // Verificar autenticación antes de sincronizar
+            if (!authRepository.isLoggedIn()) {
+                android.util.Log.w("AlumnoVM", "⚠️ Usuario no autenticado, no se puede sincronizar")
+                _error.value = "Sesión no válida. Por favor, inicia sesión nuevamente."
+                return@launch
+            }
+
             _isLoading.value = true
             _error.value = null
 
@@ -59,8 +82,16 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
                     android.util.Log.d("AlumnoVM", "✅ Sincronización exitosa")
                 }
                 .onFailure { exception ->
-                    _error.value = exception.message
-                    android.util.Log.e("AlumnoVM", "❌ Error sincronizando", exception)
+                    // No cerrar la sesión automáticamente, solo mostrar el error
+                    val errorMessage = when {
+                        exception.message?.contains("Usuario no autenticado", ignoreCase = true) == true ||
+                        exception.message?.contains("not authenticated", ignoreCase = true) == true ||
+                        exception.message?.contains("session", ignoreCase = true) == true ->
+                            "Sesión expirada. Por favor, inicia sesión nuevamente."
+                        else -> exception.message ?: "Error al sincronizar asignaturas"
+                    }
+                    _error.value = errorMessage
+                    android.util.Log.e("AlumnoVM", "❌ Error sincronizando: ${exception.message}", exception)
                 }
 
             _isLoading.value = false
@@ -83,17 +114,41 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
 
             repository.inscribirConCodigo(codigo)
                 .onSuccess { asignatura ->
-                    _inscripcionExitosa.value = asignatura
                     android.util.Log.d("AlumnoVM", "✅ Inscrito en: ${asignatura.nombre}")
-                    sincronizarAsignaturasInscritas()
+                    // Marcar la inscripción como exitosa inmediatamente para actualizar la UI
+                    _inscripcionExitosa.value = asignatura
+                    // Sincronizar las asignaturas en background sin bloquear la UI
+                    // Esto actualiza la lista local con los datos más recientes de Supabase
+                    viewModelScope.launch {
+                        try {
+                            repository.sincronizarAsignaturasInscritas()
+                                .onSuccess {
+                                    android.util.Log.d("AlumnoVM", "✅ Sincronización después de inscripción exitosa")
+                                }
+                                .onFailure { e ->
+                                    android.util.Log.w("AlumnoVM", "⚠️ Error sincronizando después de inscripción (no crítico)", e)
+                                    // No mostrar error al usuario porque la inscripción ya fue exitosa
+                                    // La sincronización es una operación secundaria
+                                }
+                        } catch (e: Exception) {
+                            android.util.Log.w("AlumnoVM", "⚠️ Excepción sincronizando después de inscripción (no crítico)", e)
+                            // No mostrar error al usuario porque la inscripción ya fue exitosa
+                            // La sincronización es una operación secundaria
+                        }
+                    }
                 }
                 .onFailure { exception ->
-                    _error.value = when (exception.message) {
-                        "Código inválido" -> "❌ El código ingresado no existe"
-                        "Ya estás inscrito en esta asignatura" -> "⚠️ Ya estás inscrito en esta asignatura"
-                        else -> "❌ Error: ${exception.message}"
+                    android.util.Log.e("AlumnoVM", "❌ Error inscribiendo: ${exception.message}", exception)
+                    _error.value = when {
+                        exception.message?.contains("Código inválido", ignoreCase = true) == true ||
+                        exception.message?.contains("no encontrado", ignoreCase = true) == true ->
+                            "❌ El código ingresado no existe"
+                        exception.message?.contains("Ya estás inscrito", ignoreCase = true) == true ->
+                            "⚠️ Ya estás inscrito en esta asignatura"
+                        exception.message?.contains("Usuario no autenticado", ignoreCase = true) == true ->
+                            "❌ Sesión expirada. Por favor, inicia sesión nuevamente"
+                        else -> "❌ Error: ${exception.message ?: "Error desconocido"}"
                     }
-                    android.util.Log.e("AlumnoVM", "❌ Error inscribiendo", exception)
                 }
 
             _isLoading.value = false
@@ -119,6 +174,17 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
                 }
 
             _isLoading.value = false
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            try {
+                authRepository.logout()
+            } catch (_: Exception) {
+                // ignore
+            }
+            _logoutEvent.postValue(true)
         }
     }
 

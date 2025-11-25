@@ -1,6 +1,8 @@
 package cl.duocuc.aulaviva.data.repository
 
-import android.content.Context
+import cl.duocuc.aulaviva.domain.repository.IClaseRepository
+
+import android.app.Application
 import android.net.Uri
 import android.util.Log
 import cl.duocuc.aulaviva.data.local.AppDatabase
@@ -30,17 +32,18 @@ import kotlinx.coroutines.withContext
  * - Si no hay internet, guardo en Room con sincronizado=false
  * - Cuando vuelve internet, subo lo pendiente
  */
-class ClaseRepository(context: Context) {
+class ClaseRepository(private val application: Application) : IClaseRepository {
 
     private val uid: String get() = SupabaseAuthManager.getCurrentUserId() ?: ""
 
     // Referencia al DAO de Room (BD local)
-    private val claseDao: ClaseDao = AppDatabase.getDatabase(context).claseDao()
+    private val db = AppDatabase.getDatabase(application)
+    private val claseDao: ClaseDao = db.claseDao()
 
     // Referencia al repository de Supabase
     private val supabaseRepo = SupabaseClaseRepository(claseDao)
 
-    private val appContext = context.applicationContext
+    private val appContext = application.applicationContext
 
     /**
      * Mapeo local Clase -> ClaseEntity controlando el flag de sincronización.
@@ -61,7 +64,7 @@ class ClaseRepository(context: Context) {
      * Obtiene las clases del usuario desde Room (local).
      * Flow emite automáticamente cuando los datos cambian.
      */
-    fun obtenerClasesLocal(): Flow<List<Clase>> {
+    override fun obtenerClasesLocal(): Flow<List<Clase>> {
         return claseDao.obtenerClasesPorUsuario(uid).map { entities ->
             entities.map { entity ->
                 Clase(
@@ -81,7 +84,7 @@ class ClaseRepository(context: Context) {
     /**
      * Obtiene clases de una asignatura específica (Flow para LiveData).
      */
-    fun obtenerClasesPorAsignatura(asignaturaId: String): Flow<List<Clase>> {
+    override fun obtenerClasesPorAsignatura(asignaturaId: String): Flow<List<Clase>> {
         return claseDao.obtenerClasesPorAsignatura(asignaturaId).map { entities ->
             entities.map { entity ->
                 Clase(
@@ -101,7 +104,7 @@ class ClaseRepository(context: Context) {
     /**
      * Obtiene clases de múltiples asignaturas (para alumnos inscritos).
      */
-    fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): Flow<List<Clase>> {
+    override fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): Flow<List<Clase>> {
         if (asignaturasIds.isEmpty()) {
             return kotlinx.coroutines.flow.flowOf(emptyList())
         }
@@ -125,7 +128,7 @@ class ClaseRepository(context: Context) {
     /**
      * Obtiene una clase específica por ID desde Room.
      */
-    suspend fun obtenerClasePorId(claseId: String): Clase? {
+    override suspend fun obtenerClasePorId(claseId: String): Clase? {
         return try {
             val entity = claseDao.obtenerClasePorId(claseId)
             if (entity != null) {
@@ -148,7 +151,7 @@ class ClaseRepository(context: Context) {
     /**
      * Sincroniza clases desde Supabase a Room.
      */
-    suspend fun sincronizarDesdeSupabase() {
+    override suspend fun sincronizarDesdeSupabase() {
         try {
             // PASO 1: Subir clases pendientes desde Room a Supabase
             val clasesNoSincronizadas = claseDao.obtenerNoSincronizadas()
@@ -215,9 +218,29 @@ class ClaseRepository(context: Context) {
     }
 
     /**
+     * Sincroniza (descarga) clases para una asignatura específica.
+     * Esto evita tocar otras clases locales y es seguro para vistas de alumnos.
+     */
+    override suspend fun sincronizarClasesPorAsignatura(asignaturaId: String) {
+        try {
+            val result = supabaseRepo.obtenerClasesPorAsignatura(asignaturaId)
+            result.fold(
+                onSuccess = {
+                    Log.d("ClaseRepository", "✅ Sincronizadas ${it.size} clases para asignatura $asignaturaId")
+                },
+                onFailure = { error ->
+                    Log.e("ClaseRepository", "❌ Error sincronizando clases por asignatura", error)
+                }
+            )
+        } catch (e: Exception) {
+            Log.e("ClaseRepository", "❌ Excepción sincronizando por asignatura", e)
+        }
+    }
+
+    /**
      * Crea una nueva clase.
      */
-    suspend fun crearClase(
+    override suspend fun crearClase(
         clase: Clase,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
@@ -267,12 +290,13 @@ class ClaseRepository(context: Context) {
     /**
      * Wrapper no-suspend para crearClase
      */
-    fun crearClaseAsync(
+    override fun crearClaseAsync(
         clase: Clase,
         onSuccess: () -> Unit,
-        onError: (String) -> Unit
+        onError: (String) -> Unit,
+        scope: CoroutineScope
     ) {
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch {
             crearClase(clase, onSuccess, onError)
         }
     }
@@ -280,7 +304,7 @@ class ClaseRepository(context: Context) {
     /**
      * Actualiza una clase existente.
      */
-    suspend fun actualizarClase(
+    override suspend fun actualizarClase(
         claseId: String,
         nombre: String,
         descripcion: String,
@@ -343,7 +367,7 @@ class ClaseRepository(context: Context) {
     /**
      * Método sobrecargado para actualizar clase usando objeto Clase
      */
-    suspend fun actualizarClase(clase: Clase) {
+    override suspend fun actualizarClase(clase: Clase) {
         try {
             val result = supabaseRepo.actualizarClase(clase)
             result.fold(
@@ -378,7 +402,7 @@ class ClaseRepository(context: Context) {
     /**
      * Elimina una clase.
      */
-    suspend fun eliminarClase(
+    override suspend fun eliminarClase(
         claseId: String,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
@@ -407,7 +431,7 @@ class ClaseRepository(context: Context) {
     /**
      * Método sobrecargado para eliminar clase usando solo el ID
      */
-    suspend fun eliminarClase(claseId: String) {
+    override suspend fun eliminarClase(claseId: String) {
         try {
             val result = supabaseRepo.eliminarClase(claseId)
             result.fold(
@@ -428,7 +452,7 @@ class ClaseRepository(context: Context) {
     /**
      * Limpia todas las clases locales (útil al cerrar sesión)
      */
-    suspend fun limpiarLocal() {
+    override suspend fun limpiarLocal() {
         claseDao.eliminarTodas()
     }
 
@@ -437,10 +461,11 @@ class ClaseRepository(context: Context) {
      */
     suspend fun crearClaseDePrueba(onSuccess: () -> Unit, onError: (String) -> Unit) {
         try {
-            val claseDemoId = "clase_demo_${'$'}{System.currentTimeMillis()}"
+            val claseDemoId = "clase_demo_${System.currentTimeMillis()}"
             val nombreArchivoDemo = "clase_demo.pdf"
-            // TODO: Replace with actual Uri from assets, e.g., Uri.parse("android.resource://" + appContext.packageName + "/raw/clase_demo")
-            val dummyAssetUri: Uri = Uri.EMPTY // Placeholder for asset Uri
+            // Usar URL externa por defecto. Para usar assets, descomentar y configurar:
+            // val assetUri = Uri.parse("android.resource://${appContext.packageName}/raw/clase_demo")
+            val dummyAssetUri: Uri = Uri.EMPTY // Placeholder para asset Uri (no implementado aún)
 
             var pdfUrl: String = "https://www.bluebooksoft.com/DISENO_PROGRAMACION_WEB/1366.pdf"
 
@@ -501,6 +526,21 @@ class ClaseRepository(context: Context) {
     }
 
     /**
+     * Comprueba si una asignatura tiene clases asociadas.
+     * Retorna `true` si existe al menos una clase para la asignatura.
+     */
+    override suspend fun tieneClases(asignaturaId: String): Boolean {
+        return try {
+            val clases = claseDao.obtenerClasesPorAsignaturaDirecto(asignaturaId)
+            clases.isNotEmpty()
+        } catch (e: Exception) {
+            Log.e("ClaseRepository", "❌ Error verificando clases para $asignaturaId", e)
+            // En caso de error, conservador: asumimos que sí tiene clases para evitar borrados accidentales
+            true
+        }
+    }
+
+    /**
      * Sube un PDF a Supabase Storage y retorna la URL pública.
      */
     suspend fun subirPdfASupabaseStorage(
@@ -509,19 +549,17 @@ class ClaseRepository(context: Context) {
     ): String = withContext(Dispatchers.IO) {
         try {
             Log.d("ClaseRepository", "📤 Iniciando subida de PDF: $nombreArchivo")
+            // Use centralized StorageRepository to perform uploads
+            val storageRepo = RepositoryProvider.provideStorageRepository(application)
+            val uploadResult = storageRepo.subirPdf(pdfUri, nombreArchivo)
 
-            val result = supabaseRepo.subirPdf(appContext, pdfUri, nombreArchivo)
-
-            result.fold(
-                onSuccess = { url ->
-                    Log.d("ClaseRepository", "✅ PDF subido exitosamente")
-                    return@withContext url
-                },
-                onFailure = { error ->
-                    Log.e("ClaseRepository", "❌ Error subiendo PDF", error)
-                    throw Exception(error.message ?: "Error subiendo PDF")
-                }
-            )
+            uploadResult.fold(onSuccess = { url ->
+                Log.d("ClaseRepository", "✅ PDF subido exitosamente")
+                return@withContext url
+            }, onFailure = { error ->
+                Log.e("ClaseRepository", "❌ Error subiendo PDF", error)
+                throw Exception(error.message ?: "Error subiendo PDF")
+            })
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error en subirPdfASupabaseStorage", e)
             throw Exception("Error subiendo PDF: ${'$'}{e.message}")

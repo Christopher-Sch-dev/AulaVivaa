@@ -7,8 +7,15 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import cl.duocuc.aulaviva.data.model.Clase
-import cl.duocuc.aulaviva.data.repository.ClaseRepository
-import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
+import cl.duocuc.aulaviva.domain.repository.IClaseRepository
+import cl.duocuc.aulaviva.domain.repository.IStorageRepository
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
+import cl.duocuc.aulaviva.domain.usecase.CrearClaseUseCase
+import cl.duocuc.aulaviva.domain.usecase.ObtenerClasesUseCase
+import cl.duocuc.aulaviva.domain.usecase.SincronizarClasesUseCase
+import cl.duocuc.aulaviva.domain.usecase.EliminarClaseUseCase
+import android.net.Uri
 import kotlinx.coroutines.launch
 
 /**
@@ -20,12 +27,20 @@ import kotlinx.coroutines.launch
  */
 class ClaseViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = ClaseRepository(application.applicationContext)
-    private val uid = SupabaseAuthManager.getCurrentUserId() ?: ""
+    private val repository: IClaseRepository = RepositoryProvider.provideClaseRepository(application)
+    private val storageRepository: IStorageRepository = RepositoryProvider.provideStorageRepository(application)
+    private val authRepository: IAuthRepository = RepositoryProvider.provideAuthRepository()
+    private val uid: String = authRepository.getCurrentUserId() ?: ""
+
+    // UseCases (incremental migration)
+    private val obtenerClasesUseCase = ObtenerClasesUseCase(repository)
+    private val sincronizarClasesUseCase = SincronizarClasesUseCase(repository)
+    private val crearClaseUseCase = CrearClaseUseCase(repository)
+    private val eliminarClaseUseCase = EliminarClaseUseCase(repository)
 
     // LiveData que lee directamente de Room usando Flow.
     // Cada vez que Room cambia, la UI se actualiza automáticamente.
-    val clases: LiveData<List<Clase>> = repository.obtenerClasesLocal().asLiveData()
+    val clases: LiveData<List<Clase>> = obtenerClasesUseCase().asLiveData()
 
     // LiveData para el estado de carga
     private val _isLoading = MutableLiveData<Boolean>()
@@ -47,11 +62,28 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                repository.sincronizarDesdeSupabase()  // Usa Supabase
+                sincronizarClasesUseCase()  // Usa Supabase vía UseCase
                 _isLoading.value = false
             } catch (_: Exception) {
                 _isLoading.value = false
                 // No muestro error porque Room sigue funcionando offline
+            }
+        }
+    }
+
+    /**
+     * Sincroniza sólo las clases de una asignatura (útil para alumnos).
+     */
+    fun sincronizarClasesPorAsignatura(asignaturaId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                sincronizarClasesUseCase.invokePorAsignatura(asignaturaId)
+            } catch (e: Exception) {
+                _error.value = e.message
+                android.util.Log.e("ClaseVM", "❌ Error sincronizando por asignatura", e)
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -86,7 +118,7 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
 
         _isLoading.value = true
         val nuevaClase = Clase(
-            id = java.util.UUID.randomUUID().toString(), // UUID único para evitar duplicados
+            id = cl.duocuc.aulaviva.utils.IdUtils.generateId(), // UUID único para evitar duplicados
             nombre = nombre.trim(),
             descripcion = descripcion.trim(),
             fecha = fecha.trim(),
@@ -97,8 +129,8 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         viewModelScope.launch {
-            repository.crearClase(
-                clase = nuevaClase,
+            crearClaseUseCase(
+                nuevaClase,
                 onSuccess = {
                     _isLoading.value = false
                     _operationSuccess.value = "Clase creada exitosamente"
@@ -161,17 +193,84 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
         _isLoading.value = true
 
         viewModelScope.launch {
-            repository.eliminarClase(
-                claseId = claseId,
-                onSuccess = {
+            eliminarClaseUseCase(claseId, onSuccess = {
+                _isLoading.value = false
+                _operationSuccess.value = "Clase eliminada"
+            }, onError = { errorMsg ->
+                _isLoading.value = false
+                _error.value = errorMsg
+            })
+        }
+    }
+
+    /**
+     * Sube un PDF y crea la clase (upload + crear).
+     * La UI delega aquí en lugar de hacer la subida directamente.
+     */
+    fun subirPdfYCrearClase(
+        uri: Uri,
+        nombreArchivo: String,
+        nombre: String,
+        descripcion: String,
+        fecha: String,
+        asignaturaId: String
+    ) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val uploadResult = storageRepository.subirPdf(uri, nombreArchivo)
+                uploadResult.fold(onSuccess = { url ->
+                    crearClase(
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        fecha = fecha,
+                        archivoPdfUrl = url,
+                        archivoPdfNombre = nombreArchivo,
+                        asignaturaId = asignaturaId
+                    )
+                }, onFailure = { ex ->
                     _isLoading.value = false
-                    _operationSuccess.value = "Clase eliminada"
-                },
-                onError = { errorMsg ->
+                    _error.value = "Error subiendo PDF: ${ex.message}"
+                })
+            } catch (e: Exception) {
+                _isLoading.value = false
+                _error.value = "Error subiendo PDF: ${e.message}"
+            }
+        }
+    }
+
+    /**
+     * Sube un PDF y actualiza la clase existente.
+     */
+    fun subirPdfYActualizarClase(
+        uri: Uri,
+        nombreArchivo: String,
+        claseId: String,
+        nombre: String,
+        descripcion: String,
+        fecha: String
+    ) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val uploadResult = storageRepository.subirPdf(uri, nombreArchivo)
+                uploadResult.fold(onSuccess = { url ->
+                    actualizarClase(
+                        claseId = claseId,
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        fecha = fecha,
+                        archivoPdfUrl = url,
+                        archivoPdfNombre = nombreArchivo
+                    )
+                }, onFailure = { ex ->
                     _isLoading.value = false
-                    _error.value = errorMsg
-                }
-            )
+                    _error.value = "Error subiendo PDF: ${ex.message}"
+                })
+            } catch (e: Exception) {
+                _isLoading.value = false
+                _error.value = "Error subiendo PDF: ${e.message}"
+            }
         }
     }
 
@@ -206,7 +305,7 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
      * @return LiveData con la lista de clases de la asignatura
      */
     fun obtenerClasesPorAsignatura(asignaturaId: String): LiveData<List<Clase>> {
-        return repository.obtenerClasesPorAsignatura(asignaturaId).asLiveData()
+        return obtenerClasesUseCase(asignaturaId).asLiveData()
     }
 
     /**
@@ -216,7 +315,7 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
      * @return LiveData con la lista de clases de todas las asignaturas
      */
     fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): LiveData<List<Clase>> {
-        return repository.obtenerClasesPorAsignaturas(asignaturasIds).asLiveData()
+        return obtenerClasesUseCase(asignaturasIds).asLiveData()
     }
 
     /**

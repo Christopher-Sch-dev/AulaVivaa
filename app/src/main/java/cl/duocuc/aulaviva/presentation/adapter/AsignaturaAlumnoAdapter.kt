@@ -2,18 +2,18 @@ package cl.duocuc.aulaviva.presentation.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import cl.duocuc.aulaviva.databinding.ItemAsignaturaAlumnoBinding
 import cl.duocuc.aulaviva.data.model.Asignatura
 
 /**
- * Adapter para mostrar asignaturas en el panel del alumno
+ * ListAdapter para mostrar asignaturas en el panel del alumno de forma eficiente.
  */
 class AsignaturaAlumnoAdapter(
     private val onAsignaturaClick: (Asignatura) -> Unit
-) : RecyclerView.Adapter<AsignaturaAlumnoAdapter.ViewHolder>() {
-
-    private var asignaturas: List<Asignatura> = emptyList()
+) : ListAdapter<Asignatura, AsignaturaAlumnoAdapter.ViewHolder>(AsignaturaDiff()) {
 
     inner class ViewHolder(private val binding: ItemAsignaturaAlumnoBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -39,13 +39,15 @@ class AsignaturaAlumnoAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(asignaturas[position])
+        holder.bind(getItem(position))
     }
 
-    override fun getItemCount() = asignaturas.size
-
     fun updateList(nuevasAsignaturas: List<Asignatura>) {
-        asignaturas = nuevasAsignaturas
-        notifyDataSetChanged()
+        submitList(nuevasAsignaturas)
+    }
+
+    class AsignaturaDiff : DiffUtil.ItemCallback<Asignatura>() {
+        override fun areItemsTheSame(oldItem: Asignatura, newItem: Asignatura): Boolean = oldItem.id == newItem.id
+        override fun areContentsTheSame(oldItem: Asignatura, newItem: Asignatura): Boolean = oldItem == newItem
     }
 }
