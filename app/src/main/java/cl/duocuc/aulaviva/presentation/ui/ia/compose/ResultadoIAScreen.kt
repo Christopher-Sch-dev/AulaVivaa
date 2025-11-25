@@ -202,19 +202,21 @@ fun MensajeChatCard(mensaje: MensajeChat) {
         }
     ) {
         Card(
-            modifier = Modifier.widthIn(max = 280.dp),
-            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .widthIn(max = if (mensaje.esUsuario) 280.dp else 320.dp) // ✅ Más ancho para IA
+                .fillMaxWidth(0.85f), // ✅ Usar 85% del ancho disponible
+            shape = RoundedCornerShape(16.dp), // ✅ Bordes más redondeados
             colors = CardDefaults.cardColors(
                 containerColor = if (mensaje.esUsuario) {
                     MaterialTheme.colorScheme.primary
                 } else {
-                    MaterialTheme.colorScheme.surface
+                    MaterialTheme.colorScheme.surfaceVariant // ✅ Mejor contraste
                 }
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp) // ✅ Más elevación
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(20.dp) // ✅ Más padding para mejor legibilidad
             ) {
                 Text(
                     text = if (mensaje.esUsuario) "👤 Tú:" else "🤖 AulaViva IA:",

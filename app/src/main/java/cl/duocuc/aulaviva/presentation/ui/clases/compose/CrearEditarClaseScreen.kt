@@ -4,6 +4,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -79,16 +80,15 @@ fun CrearEditarClaseScreen(
         }
     }
 
-    // Observar resultados y cerrar automáticamente al editar
+    // ✅ Observar resultados y cerrar automáticamente al crear o editar
     LaunchedEffect(operationSuccess) {
         operationSuccess?.let { mensaje ->
             scope.launch {
                 snackbarHostState.showSnackbar(mensaje)
-                // Si es edición, cerrar automáticamente después de mostrar el mensaje
-                if (claseId != null) {
-                    kotlinx.coroutines.delay(800) // Esperar para que se vea el mensaje
-                    (context as? android.app.Activity)?.finish()
-                }
+                // Cerrar automáticamente después de mostrar el mensaje (tanto crear como editar)
+                kotlinx.coroutines.delay(800) // Esperar para que se vea el mensaje
+                (context as? android.app.Activity)?.setResult(android.app.Activity.RESULT_OK)
+                (context as? android.app.Activity)?.finish()
                 viewModel.clearMessages()
             }
         }
@@ -166,7 +166,7 @@ fun CrearEditarClaseScreen(
                 shape = RoundedCornerShape(12.dp)
             )
 
-            // Campo Fecha
+            // ✅ Campo Fecha - Abre selector automáticamente al hacer click
             OutlinedTextField(
                 value = fecha,
                 onValueChange = { },
@@ -183,7 +183,12 @@ fun CrearEditarClaseScreen(
                 },
                 isError = fechaError != null,
                 supportingText = fechaError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { // ✅ Abrir selector automáticamente al hacer click en el campo
+                        onMostrarDatePicker()
+                        fechaError = null
+                    },
                 shape = RoundedCornerShape(12.dp)
             )
 

@@ -47,6 +47,8 @@ fun DocenteAsignaturasScreen(
     val scope = rememberCoroutineScope()
     val asignaturas: List<Asignatura> by viewModel.asignaturas.observeAsState(emptyList())
     val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
+    val operationSuccess: String? by viewModel.operationSuccess.observeAsState()
+    val codigoGenerado: String? by viewModel.codigoGenerado.observeAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showCrearDialog by remember { mutableStateOf(false) }
@@ -55,6 +57,24 @@ fun DocenteAsignaturasScreen(
 
     LaunchedEffect(Unit) {
         viewModel.sincronizarAsignaturas()
+    }
+
+    // ✅ Mostrar mensaje con código al crear asignatura
+    LaunchedEffect(operationSuccess, codigoGenerado) {
+        operationSuccess?.let { mensaje ->
+            scope.launch {
+                val mensajeCompleto = if (codigoGenerado != null) {
+                    "✅ $mensaje\n📋 Código: $codigoGenerado"
+                } else {
+                    "✅ $mensaje"
+                }
+                snackbarHostState.showSnackbar(
+                    message = mensajeCompleto,
+                    duration = SnackbarDuration.Long
+                )
+                viewModel.limpiarCodigoGenerado()
+            }
+        }
     }
 
     // Manejar pull-to-refresh

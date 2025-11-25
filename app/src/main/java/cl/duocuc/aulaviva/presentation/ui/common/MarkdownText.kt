@@ -48,9 +48,10 @@ private fun parseMarkdown(
                     }
                     withStyle(
                         style = SpanStyle(
-                            fontSize = 20.sp,
+                            fontSize = 22.sp, // ✅ Más grande
                             fontWeight = FontWeight.Bold,
-                            color = colorScheme.primary
+                            color = colorScheme.primary,
+                            letterSpacing = 0.5.sp // ✅ Mejor espaciado
                         )
                     ) {
                         append(headerText)
@@ -72,9 +73,10 @@ private fun parseMarkdown(
                     }
                     withStyle(
                         style = SpanStyle(
-                            fontSize = 18.sp,
+                            fontSize = 20.sp, // ✅ Más grande
                             fontWeight = FontWeight.Bold,
-                            color = colorScheme.primary
+                            color = colorScheme.primary,
+                            letterSpacing = 0.3.sp
                         )
                     ) {
                         append(headerText)
@@ -94,7 +96,8 @@ private fun parseMarkdown(
                         withStyle(
                             style = SpanStyle(
                                 fontWeight = FontWeight.Bold,
-                                color = colorScheme.onSurface
+                                color = colorScheme.onSurface,
+                                fontSize = 15.sp // ✅ Más grande para negritas
                             )
                         ) {
                             append(boldText)
@@ -145,8 +148,10 @@ private fun parseMarkdown(
                         withStyle(
                             style = SpanStyle(
                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                background = colorScheme.surfaceVariant,
-                                color = colorScheme.onSurfaceVariant
+                                background = colorScheme.secondaryContainer, // ✅ Mejor contraste
+                                color = colorScheme.onSecondaryContainer,
+                                fontSize = 14.sp, // ✅ Tamaño adecuado
+                                fontWeight = FontWeight.Medium
                             )
                         ) {
                             append(codeText)

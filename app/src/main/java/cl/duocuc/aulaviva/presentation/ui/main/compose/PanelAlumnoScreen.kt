@@ -39,6 +39,7 @@ fun PanelAlumnoScreen(
     val logoutEvent: Boolean by viewModel.logoutEvent.observeAsState(false)
 
     var showInscripcionDialog by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
     var codigoInscripcion by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -83,7 +84,7 @@ fun PanelAlumnoScreen(
             TopAppBar(
                 title = { Text("Panel Alumno") },
                 actions = {
-                    IconButton(onClick = { viewModel.logout() }) {
+                    IconButton(onClick = { showLogoutDialog = true }) {
                         Icon(Icons.Default.ExitToApp, "Cerrar sesión")
                     }
                 },
