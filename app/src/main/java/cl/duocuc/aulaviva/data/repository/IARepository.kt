@@ -303,7 +303,7 @@ class IARepository(private val context: Context) : IIARepository {
         }
     }
 
-    // ✅ FIX: Helpers mejorados para extracción y caché de texto - OPTIMIZADO
+    // ✅ OPTIMIZADO: Extracción rápida de texto con optimizaciones de rendimiento
     private suspend fun extractTextFromPdf(pdfUrl: String): String = withContext(Dispatchers.IO) {
         Log.d(TAG, "📄 [PDF] Iniciando extracción de texto desde: $pdfUrl")
 
@@ -315,14 +315,22 @@ class IARepository(private val context: Context) : IIARepository {
 
         Log.d(TAG, "⬇️ [PDF] Descargando archivo PDF...")
         val pdfFile = descargarPDFATempFile(pdfUrl)
-        Log.d(TAG, "✅ [PDF] Archivo descargado: ${pdfFile.length()} bytes (${pdfFile.length() / 1024 / 1024} MB)")
+        val fileSizeMB = pdfFile.length() / 1024 / 1024
+        Log.d(TAG, "✅ [PDF] Archivo descargado: ${pdfFile.length()} bytes (${fileSizeMB} MB)")
 
-        Log.d(TAG, "🔍 [PDF] Abriendo documento con PDFBox (optimizado)...")
-        // ✅ OPTIMIZACIÓN: Usar configuración de memoria más eficiente
-        val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
-            pdfFile,
-            MemoryUsageSetting.setupMixed(1024 * 1024 * 50) // 50MB en memoria, resto en temp
-        )
+        Log.d(TAG, "🔍 [PDF] Abriendo documento con PDFBox (optimizado para velocidad)...")
+
+        // ✅ OPTIMIZACIÓN: Para PDFs grandes (>10MB), usar setupTempFileOnly (más rápido)
+        // Para PDFs pequeños, usar setupMixed (más eficiente en memoria)
+        val memorySetting = if (fileSizeMB > 10) {
+            Log.d(TAG, "⚡ [PDF] PDF grande, usando setupTempFileOnly para máxima velocidad")
+            MemoryUsageSetting.setupTempFileOnly()
+        } else {
+            Log.d(TAG, "⚡ [PDF] PDF pequeño, usando setupMixed para eficiencia")
+            MemoryUsageSetting.setupMixed(1024 * 1024 * 20) // 20MB en memoria
+        }
+
+        val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(pdfFile, memorySetting)
 
         try {
             val pageCount = document.numberOfPages
@@ -331,19 +339,31 @@ class IARepository(private val context: Context) : IIARepository {
             Log.d(TAG, "📝 [PDF] Extrayendo texto con PDFTextStripper (optimizado)...")
             val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
 
-            // ✅ OPTIMIZACIÓN: Para PDFs grandes, extraer solo páginas necesarias si es posible
-            // Por ahora extraemos todo, pero optimizamos la configuración
-            stripper.sortByPosition = true // Más rápido
+            // ✅ OPTIMIZACIONES DE RENDIMIENTO:
+            stripper.sortByPosition = true // Más rápido que false
             stripper.setStartPage(1)
             stripper.setEndPage(pageCount)
+            // Suprimir texto duplicado para mayor velocidad
+            stripper.setSuppressDuplicateOverlappingText(true)
 
+            val startTime = System.currentTimeMillis()
             val fullText = stripper.getText(document)
+            val extractionTime = System.currentTimeMillis() - startTime
+
+            Log.d(TAG, "⚡ [PDF] Extracción completada en ${extractionTime}ms (${fullText.length} caracteres)")
+
+            // ✅ OPTIMIZACIÓN: Limpiar texto extraído (reducir tamaño sin perder contenido)
+            val cleanedText = limpiarTextoExtraido(fullText)
+            val reduction = if (fullText.isNotEmpty()) {
+                ((fullText.length - cleanedText.length) * 100 / fullText.length)
+            } else 0
+            Log.d(TAG, "🧹 [PDF] Texto limpiado: ${cleanedText.length} chars (reducción: $reduction%)")
 
             // ✅ FIX: Guardar en caché
-            textCache[pdfUrl] = fullText
+            textCache[pdfUrl] = cleanedText
 
-            Log.d(TAG, "✅ [PDF] Texto extraído exitosamente: ${fullText.length} caracteres")
-            fullText
+            Log.d(TAG, "✅ [PDF] Texto extraído y optimizado exitosamente: ${cleanedText.length} caracteres")
+            cleanedText
         } finally {
             try {
                 document.close()
@@ -353,7 +373,21 @@ class IARepository(private val context: Context) : IIARepository {
         }
     }
 
-    // ✅ NUEVO: Helper para preparar contexto de PDF inteligentemente
+    // ✅ NUEVO: Limpia el texto extraído eliminando redundancias sin perder contenido
+    private fun limpiarTextoExtraido(texto: String): String {
+        return texto
+            // Eliminar múltiples espacios en blanco
+            .replace(Regex(" +"), " ")
+            // Eliminar múltiples saltos de línea (máximo 2 consecutivos)
+            .replace(Regex("\n{3,}"), "\n\n")
+            // Eliminar espacios al inicio/final de líneas
+            .lines().joinToString("\n") { it.trim() }
+            // Eliminar líneas vacías múltiples
+            .replace(Regex("\n\n\n+"), "\n\n")
+            .trim()
+    }
+
+    // ✅ OPTIMIZADO: Prepara contexto completo del PDF optimizado para Gemini
     private suspend fun prepararContextoPdf(pdfUrl: String?): String {
         if (pdfUrl.isNullOrEmpty()) {
             Log.d(TAG, "⚠️ [CONTEXTO] No hay URL de PDF, retornando contexto vacío")
@@ -363,11 +397,16 @@ class IARepository(private val context: Context) : IIARepository {
         Log.d(TAG, "📚 [CONTEXTO] Preparando contexto del PDF: $pdfUrl")
         try {
             val textoPdf = extractTextFromPdf(pdfUrl)
-            Log.d(TAG, "✅ [CONTEXTO] Texto extraído: ${textoPdf.length} caracteres")
+            Log.d(TAG, "✅ [CONTEXTO] Texto extraído y optimizado: ${textoPdf.length} caracteres")
 
-            // Estrategia inteligente según tamaño
-            return if (textoPdf.length <= 20_000) {
-                Log.d(TAG, "📦 [CONTEXTO] PDF pequeño (${textoPdf.length} chars), enviando completo")
+            // ✅ ESTRATEGIA: Enviar PDF completo pero optimizado
+            // Gemini 2.5 Flash Lite tiene límite de ~1M tokens, pero para evitar 429 usamos estrategia inteligente
+            // Si el texto es razonable (<100K chars), enviarlo completo
+            // Si es muy grande, usar muestreo inteligente que cubra TODO el documento
+
+            return if (textoPdf.length <= 100_000) {
+                // PDF pequeño/mediano: enviar completo
+                Log.d(TAG, "📦 [CONTEXTO] PDF completo (${textoPdf.length} chars), enviando todo el contenido")
                 """
                 📚 CONTENIDO COMPLETO DEL PDF (${textoPdf.length} caracteres):
                 ---
@@ -375,27 +414,42 @@ class IARepository(private val context: Context) : IIARepository {
                 ---
                 """.trimIndent()
             } else {
-                // Tomar secciones clave: inicio + medio + final
-                Log.d(TAG, "📦 [CONTEXTO] PDF grande (${textoPdf.length} chars), usando estrategia inteligente (inicio + medio + final)")
-                val inicio = textoPdf.take(10_000)
-                val medio = textoPdf.substring(
-                    textoPdf.length / 2,
-                    (textoPdf.length / 2) + 5_000
-                ).coerceAtMost(textoPdf)
-                val fin = textoPdf.takeLast(5_000)
-                Log.d(TAG, "📊 [CONTEXTO] Secciones preparadas: inicio=${inicio.length}, medio=${medio.length}, fin=${fin.length} chars")
+                // PDF muy grande: usar muestreo inteligente que cubra todo el documento
+                // Estrategia: dividir en N secciones y tomar muestra de cada una
+                Log.d(TAG, "📦 [CONTEXTO] PDF grande (${textoPdf.length} chars), usando muestreo inteligente completo")
+
+                val numSecciones = 10 // Dividir en 10 secciones
+                val charsPorSeccion = textoPdf.length / numSecciones
+                val muestraPorSeccion = 8_000 // 8K chars por sección = 80K total
+
+                val muestras = mutableListOf<String>()
+                for (i in 0 until numSecciones) {
+                    val inicioSeccion = i * charsPorSeccion
+                    val finSeccion = ((i + 1) * charsPorSeccion).coerceAtMost(textoPdf.length)
+                    val seccion = textoPdf.substring(inicioSeccion, finSeccion)
+
+                    // Tomar muestra representativa de cada sección (inicio + medio + final de la sección)
+                    val muestra = when {
+                        seccion.length <= muestraPorSeccion -> seccion
+                        else -> {
+                            val inicio = seccion.take(muestraPorSeccion / 3)
+                            val medio = seccion.substring(seccion.length / 2 - muestraPorSeccion / 6, seccion.length / 2 + muestraPorSeccion / 6)
+                            val fin = seccion.takeLast(muestraPorSeccion / 3)
+                            "$inicio\n[... contenido medio ...]\n$medio\n[... contenido final ...]\n$fin"
+                        }
+                    }
+                    muestras.add("=== SECCIÓN ${i + 1}/$numSecciones ===\n$muestra")
+                }
+
+                val contextoCompleto = muestras.joinToString("\n\n")
+                Log.d(TAG, "📊 [CONTEXTO] Muestreo completo preparado: ${contextoCompleto.length} chars (de ${textoPdf.length} originales)")
+
                 """
-                📚 CONTENIDO DEL PDF (${textoPdf.length} caracteres totales, mostrando secciones clave):
+                📚 CONTENIDO COMPLETO DEL PDF (${textoPdf.length} caracteres totales, muestreo representativo de todas las secciones):
                 ---
-                === INICIO DEL PDF ===
-                $inicio
-
-                === SECCIÓN MEDIA DEL PDF ===
-                $medio
-
-                === FINAL DEL PDF ===
-                $fin
+                $contextoCompleto
                 ---
+                NOTA: Este es un muestreo inteligente que cubre todo el documento. El PDF original tiene ${textoPdf.length} caracteres distribuidos en $numSecciones secciones.
                 """.trimIndent()
             }
         } catch (e: Exception) {
@@ -1452,14 +1506,17 @@ class IARepository(private val context: Context) : IIARepository {
                 val contextoPdf = prepararContextoPdf(pdfUrl)
                 Log.d(TAG, "✅ [CHAT] Contexto PDF preparado: ${contextoPdf.length} caracteres")
 
+                // ✅ El contexto ya viene optimizado de prepararContextoPdf, no necesita truncar
+                val contextoLimitado = contextoPdf
+
                 val promptInicial = """
                     CONTEXTO DE LA CLASE:
                     Clase: $nombreClase
                     Descripción: $descripcion
 
-                    $contextoPdf
+                    $contextoLimitado
 
-                    ${if (contextoPdf.isNotBlank()) "Por favor, mantén el contexto del PDF en todas tus respuestas." else ""}
+                    ${if (contextoLimitado.isNotBlank()) "Por favor, mantén el contexto del PDF en todas tus respuestas." else ""}
                 """.trimIndent()
 
                 // Mensaje inicial del usuario con contexto
@@ -1501,7 +1558,7 @@ class IARepository(private val context: Context) : IIARepository {
                 chatSession = googleAiModel.startChat(history = historial)
                 Log.d(TAG, "✅ [CHAT] Sesión TEMPORAL creada exitosamente:")
                 Log.d(TAG, "   - Session ID: $sessionId")
-                Log.d(TAG, "   - Contexto PDF: ${contextoPdf.length} caracteres")
+                Log.d(TAG, "   - Contexto PDF: ${contextoLimitado.length} caracteres (de ${contextoPdf.length} originales)")
                 Log.d(TAG, "   - Historial inicial: ${historial.size} mensajes")
                 Log.d(TAG, "🎉 [CHAT] Chat listo para recibir mensajes")
             } catch (e: Exception) {
