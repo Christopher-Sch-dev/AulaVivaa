@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,6 +41,7 @@ fun PanelAlumnoScreen(
     val error: String? by viewModel.error.observeAsState()
     val inscripcionExitosa: Asignatura? by viewModel.inscripcionExitosa.observeAsState()
     val logoutEvent: Boolean by viewModel.logoutEvent.observeAsState(false)
+    val userEmail: String? by viewModel.userEmail.observeAsState()
 
     var showInscripcionDialog by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -123,74 +125,138 @@ fun PanelAlumnoScreen(
                         .fillMaxSize()
                         .padding(paddingValues),
                     contentPadding = PaddingValues(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Header card
+                    // Card de bienvenida
                     item {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                         ) {
                             Column(
                                 modifier = Modifier.padding(24.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
+                                // Icono de bienvenida
+                                Card(
+                                    modifier = Modifier.size(64.dp),
+                                    shape = RoundedCornerShape(32.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "👨‍🎓",
+                                            fontSize = 32.sp
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Mensaje de bienvenida
+                                Text(
+                                    text = "👨‍🎓 Bienvenido ${userEmail?.substringBefore("@") ?: "Alumno"}",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Text(
+                                    text = "Gestiona tus asignaturas inscritas",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+                                )
+
+                                HorizontalDivider(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 16.dp),
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                )
+
+                                // Información y botón de inscripción unidos
                                 Text(
                                     text = "📚 Mis Asignaturas",
-                                    style = MaterialTheme.typography.headlineMedium,
+                                    style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
+
                                 Spacer(modifier = Modifier.height(8.dp))
+
                                 Text(
                                     text = "Inscríbete con el código que te proporcionó tu profesor",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(bottom = 16.dp)
                                 )
+
+                                // Botón de inscripción integrado
+                                Button(
+                                    onClick = { showInscripcionDialog = true },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    elevation = ButtonDefaults.buttonElevation(
+                                        defaultElevation = 4.dp,
+                                        pressedElevation = 6.dp
+                                    )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Inscribirse con código",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
 
-                    // Botón de inscripción
-                    item {
-                        Card(
-                            onClick = { showInscripcionDialog = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primary
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(24.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.Add,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimary
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    text = "Inscribirse con código",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                            }
+                    // Separador visual antes de las asignaturas
+                    if (asignaturas.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Título de sección para las asignaturas
+                            Text(
+                                text = "Asignaturas Inscritas",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
 
@@ -240,7 +306,9 @@ fun PanelAlumnoScreen(
                                     intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
                                     context.startActivity(intent)
                                 },
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 6.dp)
                             )
                         }
                     }

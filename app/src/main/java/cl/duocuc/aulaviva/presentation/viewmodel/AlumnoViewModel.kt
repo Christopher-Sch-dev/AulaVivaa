@@ -29,6 +29,9 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
     private val _logoutEvent = MutableLiveData<Boolean>()
     val logoutEvent: LiveData<Boolean> = _logoutEvent
 
+    private val _userEmail = MutableLiveData<String?>()
+    val userEmail: LiveData<String?> = _userEmail
+
     // LiveData para asignaturas inscritas (automática desde Room)
     val asignaturasInscritas: LiveData<List<Asignatura>> = repository.obtenerAsignaturasInscritas().asLiveData()
 
@@ -43,13 +46,15 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
     val inscripcionExitosa: LiveData<Asignatura?> = _inscripcionExitosa
 
     init {
-        // Verificar autenticación antes de sincronizar
+        // Inicializar user info y verificar autenticación antes de sincronizar
         viewModelScope.launch {
             // Pequeño delay para asegurar que la sesión esté completamente establecida
             delay(200)
 
-            // Solo sincronizar si el usuario está autenticado
             if (authRepository.isLoggedIn()) {
+                // Obtener email del usuario
+                _userEmail.value = authRepository.getCurrentUserEmail()
+                // Sincronizar asignaturas
                 sincronizarAsignaturasInscritas()
             } else {
                 android.util.Log.w("AlumnoVM", "⚠️ Usuario no autenticado, omitiendo sincronización inicial")
