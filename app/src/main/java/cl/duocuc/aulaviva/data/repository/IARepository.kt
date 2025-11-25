@@ -38,7 +38,7 @@ class IARepository(private val context: Context) : IIARepository {
 
     companion object {
         private const val TAG = "AulaViva_IA"
-        private const val MAX_PDF_SIZE = 50_000_000L // 50 MB
+        private const val MAX_PDF_SIZE = 100_000_000L // 100 MB (actualizado según requerimiento)
         private const val PDF_CHUNK_SIZE = 8_000 // Aumentado para mejor contexto
     }
 
@@ -99,6 +99,7 @@ class IARepository(private val context: Context) : IIARepository {
     }
 
     private suspend fun llamarGemini(prompt: String): String {
+        Log.d(TAG, "💬 [GEMINI] Iniciando llamada a Gemini (prompt: ${prompt.length} caracteres)")
         return withContext(Dispatchers.IO) {
             val start = System.currentTimeMillis()
             // Timeout global para toda la operación (reintentos incluidos)
@@ -119,7 +120,7 @@ class IARepository(private val context: Context) : IIARepository {
                                     temperature = 0.6f, topP = 0.9f, maxOutputTokens = 4096
                                 )
                             )
-                            Log.d(TAG, "🔁 Gemini attempt ${intento + 1} — enviando petición")
+                            Log.d(TAG, "🔁 [GEMINI] Intento ${intento + 1}/$maxIntentos — enviando petición a Gemini")
                             val response = geminiService.generateContent(GEMINI_API_KEY, request)
                             if (response.isSuccessful) {
                                 val text = response.body()
@@ -133,7 +134,7 @@ class IARepository(private val context: Context) : IIARepository {
                                     val elapsed = System.currentTimeMillis() - start
                                     Log.d(
                                         TAG,
-                                        "✅ Gemini responded in ${elapsed} ms (attempt ${intento + 1})"
+                                        "✅ [GEMINI] Respuesta recibida en ${elapsed}ms (intento ${intento + 1}): ${text.length} caracteres"
                                     )
                                     resultado = text
                                     break
@@ -203,13 +204,18 @@ class IARepository(private val context: Context) : IIARepository {
                         }
                     }
 
-                    resultado
+                    val finalResult = resultado
                         ?: run {
                             val errMsg = ultimoError?.message ?: "Desconocido"
+                            Log.e(TAG, "❌ [GEMINI] Error después de todos los intentos: $errMsg")
                             throw Exception("Error Gemini: $errMsg")
                         }
+
+                    Log.d(TAG, "✅ [GEMINI] Llamada completada exitosamente: ${finalResult.length} caracteres")
+                    finalResult
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "❌ [GEMINI] Error en llamarGemini: ${e.message}", e)
                 // Propagar el error para manejo superior
                 throw e
             }
@@ -217,10 +223,16 @@ class IARepository(private val context: Context) : IIARepository {
     }
 
     override suspend fun analizarPdfConIA(nombreClase: String, pdfUrl: String?): String {
-        if (pdfUrl.isNullOrEmpty()) return "⚠️ No se proporcionó URL del PDF"
+        Log.d(TAG, "🚀 [IA] Iniciando analizarPdfConIA - Clase: $nombreClase")
+        if (pdfUrl.isNullOrEmpty()) {
+            Log.w(TAG, "⚠️ [IA] No se proporcionó URL del PDF")
+            return "⚠️ No se proporcionó URL del PDF"
+        }
         return try {
+            Log.d(TAG, "⏱️ [IA] Timeout configurado: 180 segundos")
             withTimeout(180_000L) {
                 withContext(Dispatchers.IO) {
+                    Log.d(TAG, "📝 [IA] Construyendo prompt de análisis...")
                     val prompt = """
                         ROL: Eres un analista de contenido educativo con experiencia en evaluación de materiales pedagógicos.
 
@@ -278,41 +290,53 @@ class IARepository(private val context: Context) : IIARepository {
                         - Identificación de valor pedagógico real
                     """.trimIndent()
 
-                    analizarPDFInteligente(pdfUrl, prompt)
+                    Log.d(TAG, "📤 [IA] Enviando análisis a Gemini...")
+                    val resultado = analizarPDFInteligente(pdfUrl, prompt)
+                    Log.d(TAG, "✅ [IA] Análisis recibido: ${resultado.length} caracteres")
+                    Log.d(TAG, "🎉 [IA] analizarPdfConIA completado exitosamente")
+                    resultado
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en analizarPdfConIA: ${e.message}")
+            Log.e(TAG, "❌ [IA] Error en analizarPdfConIA: ${e.message}", e)
             "⚠️ Error analizando PDF: ${e.message ?: "Desconocido"}"
         }
     }
 
     // ✅ FIX: Helpers mejorados para extracción y caché de texto
     private suspend fun extractTextFromPdf(pdfUrl: String): String = withContext(Dispatchers.IO) {
+        Log.d(TAG, "📄 [PDF] Iniciando extracción de texto desde: $pdfUrl")
+
         // Verificar caché primero
         textCache[pdfUrl]?.let { cached ->
-            Log.d(TAG, "✅ Usando texto desde caché: ${cached.length} chars")
+            Log.d(TAG, "✅ [PDF] Texto encontrado en caché: ${cached.length} caracteres")
             return@withContext cached
         }
 
+        Log.d(TAG, "⬇️ [PDF] Descargando archivo PDF...")
         val pdfFile = descargarPDFATempFile(pdfUrl)
+        Log.d(TAG, "✅ [PDF] Archivo descargado: ${pdfFile.length()} bytes (${pdfFile.length() / 1024 / 1024} MB)")
+
+        Log.d(TAG, "🔍 [PDF] Abriendo documento con PDFBox...")
         val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
             pdfFile,
             MemoryUsageSetting.setupTempFileOnly()
         )
 
         try {
+            Log.d(TAG, "📝 [PDF] Extrayendo texto con PDFTextStripper...")
             val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
             val fullText = stripper.getText(document)
 
             // ✅ FIX: Guardar en caché
             textCache[pdfUrl] = fullText
 
-            Log.d(TAG, "✅ Texto extraído del PDF: ${fullText.length} caracteres")
+            Log.d(TAG, "✅ [PDF] Texto extraído exitosamente: ${fullText.length} caracteres")
             fullText
         } finally {
             try {
                 document.close()
+                Log.d(TAG, "🔒 [PDF] Documento cerrado")
             } catch (_: Exception) {
             }
         }
@@ -320,13 +344,19 @@ class IARepository(private val context: Context) : IIARepository {
 
     // ✅ NUEVO: Helper para preparar contexto de PDF inteligentemente
     private suspend fun prepararContextoPdf(pdfUrl: String?): String {
-        if (pdfUrl.isNullOrEmpty()) return ""
+        if (pdfUrl.isNullOrEmpty()) {
+            Log.d(TAG, "⚠️ [CONTEXTO] No hay URL de PDF, retornando contexto vacío")
+            return ""
+        }
 
+        Log.d(TAG, "📚 [CONTEXTO] Preparando contexto del PDF: $pdfUrl")
         try {
             val textoPdf = extractTextFromPdf(pdfUrl)
+            Log.d(TAG, "✅ [CONTEXTO] Texto extraído: ${textoPdf.length} caracteres")
 
             // Estrategia inteligente según tamaño
             return if (textoPdf.length <= 20_000) {
+                Log.d(TAG, "📦 [CONTEXTO] PDF pequeño (${textoPdf.length} chars), enviando completo")
                 """
                 📚 CONTENIDO COMPLETO DEL PDF (${textoPdf.length} caracteres):
                 ---
@@ -335,12 +365,14 @@ class IARepository(private val context: Context) : IIARepository {
                 """.trimIndent()
             } else {
                 // Tomar secciones clave: inicio + medio + final
+                Log.d(TAG, "📦 [CONTEXTO] PDF grande (${textoPdf.length} chars), usando estrategia inteligente (inicio + medio + final)")
                 val inicio = textoPdf.take(10_000)
                 val medio = textoPdf.substring(
                     textoPdf.length / 2,
                     (textoPdf.length / 2) + 5_000
                 ).coerceAtMost(textoPdf)
                 val fin = textoPdf.takeLast(5_000)
+                Log.d(TAG, "📊 [CONTEXTO] Secciones preparadas: inicio=${inicio.length}, medio=${medio.length}, fin=${fin.length} chars")
                 """
                 📚 CONTENIDO DEL PDF (${textoPdf.length} caracteres totales, mostrando secciones clave):
                 ---
@@ -356,7 +388,7 @@ class IARepository(private val context: Context) : IIARepository {
                 """.trimIndent()
             }
         } catch (e: Exception) {
-            Log.w(TAG, "⚠️ Error preparando contexto PDF: ${e.message}")
+            Log.e(TAG, "❌ [CONTEXTO] Error preparando contexto PDF: ${e.message}", e)
             return ""
         }
     }
@@ -534,40 +566,49 @@ class IARepository(private val context: Context) : IIARepository {
     }
 
     private suspend fun descargarPDFATempFile(url: String): File = withContext(Dispatchers.IO) {
+        Log.d(TAG, "⬇️ [PDF] Iniciando descarga desde: $url")
+
         // ✅ FIX: Verificar caché primero
         pdfCache[url]?.let { cachedFile ->
             if (cachedFile.exists()) {
-                Log.d(TAG, "✅ Usando PDF desde caché: ${cachedFile.length()} bytes")
+                Log.d(TAG, "✅ [PDF] Usando PDF desde caché: ${cachedFile.length()} bytes (${cachedFile.length() / 1024 / 1024} MB)")
                 return@withContext cachedFile
             } else {
+                Log.d(TAG, "🗑️ [PDF] Archivo en caché no existe, limpiando entrada...")
                 pdfCache.remove(url) // Limpiar entrada inválida
             }
         }
 
-        Log.d(TAG, "⬇️ Descargando PDF desde: $url")
+        Log.d(TAG, "🌐 [PDF] Realizando petición HTTP...")
         try {
             return@withContext withTimeout(60_000L) {
                 val request = okhttp3.Request.Builder().url(url).get().build()
                 val response = okHttpClient.newCall(request).execute()
                 try {
-                    if (!response.isSuccessful) throw java.io.IOException("HTTP error descargando PDF: código ${response.code}")
+                    Log.d(TAG, "📡 [PDF] Respuesta HTTP recibida: código ${response.code}")
+                    if (!response.isSuccessful) {
+                        throw java.io.IOException("HTTP error descargando PDF: código ${response.code}")
+                    }
                     val body = response.body ?: throw java.io.IOException("Body vacío")
 
                     // ✅ FIX: Validar tamaño antes de descargar
                     val contentLength = body.contentLength()
+                    Log.d(TAG, "📊 [PDF] Tamaño del archivo: ${contentLength} bytes (${contentLength / 1024 / 1024} MB)")
                     if (contentLength > MAX_PDF_SIZE) {
                         throw java.io.IOException("PDF demasiado grande: ${contentLength / 1024 / 1024} MB (máximo ${MAX_PDF_SIZE / 1024 / 1024} MB)")
                     }
 
+                    Log.d(TAG, "💾 [PDF] Guardando archivo temporal...")
                     val tempFile = File.createTempFile("aulaviva_pdf_", ".pdf", context.cacheDir)
                     FileOutputStream(tempFile).use { out ->
                         body.byteStream().use { input -> input.copyTo(out) }
                     }
 
-                    Log.d(TAG, "✅ PDF descargado: ${tempFile.length()} bytes")
+                    Log.d(TAG, "✅ [PDF] PDF descargado exitosamente: ${tempFile.length()} bytes (${tempFile.length() / 1024 / 1024} MB)")
 
                     // ✅ FIX: Guardar en caché
                     pdfCache[url] = tempFile
+                    Log.d(TAG, "💾 [PDF] PDF guardado en caché")
 
                     tempFile
                 } finally {
@@ -575,7 +616,7 @@ class IARepository(private val context: Context) : IIARepository {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error descargando PDF: ${e.message}")
+            Log.e(TAG, "❌ [PDF] Error descargando PDF: ${e.message}", e)
             throw e
         }
     }
@@ -690,9 +731,13 @@ class IARepository(private val context: Context) : IIARepository {
         descripcion: String,
         pdfUrl: String?
     ): String {
+        Log.d(TAG, "🚀 [IA] Iniciando generarIdeasParaClase - Clase: $nombreClase")
         return try {
+            Log.d(TAG, "📚 [IA] Preparando contexto del PDF...")
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            Log.d(TAG, "✅ [IA] Contexto preparado: ${contextoPdf.length} caracteres")
 
+            Log.d(TAG, "💬 [IA] Construyendo prompt para Gemini...")
             val prompt = """
                 $contextoPdf
 
@@ -721,9 +766,13 @@ class IARepository(private val context: Context) : IIARepository {
                 - Lenguaje profesional pero accesible para docentes
             """.trimIndent()
 
-            llamarGemini(prompt)
+            Log.d(TAG, "📤 [IA] Enviando petición a Gemini (prompt: ${prompt.length} chars)...")
+            val resultado = llamarGemini(prompt)
+            Log.d(TAG, "✅ [IA] Respuesta recibida de Gemini: ${resultado.length} caracteres")
+            Log.d(TAG, "🎉 [IA] generarIdeasParaClase completado exitosamente")
+            resultado
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en generarIdeasParaClase: ${e.message}")
+            Log.e(TAG, "❌ [IA] Error en generarIdeasParaClase: ${e.message}", e)
             "⚠️ Error generando ideas: ${e.message ?: "Desconocido"}"
         }
     }
@@ -743,8 +792,11 @@ class IARepository(private val context: Context) : IIARepository {
         duracion: String,
         pdfUrl: String?
     ): String {
+        Log.d(TAG, "🚀 [IA] Iniciando estructurarClasePorTiempo - Clase: $nombreClase, Duración: $duracion")
         return try {
+            Log.d(TAG, "📚 [IA] Preparando contexto del PDF...")
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            Log.d(TAG, "✅ [IA] Contexto preparado: ${contextoPdf.length} caracteres")
 
             val prompt = """
                 $contextoPdf
@@ -796,9 +848,13 @@ class IARepository(private val context: Context) : IIARepository {
                 - Adaptable al contexto chileno
             """.trimIndent()
 
-            llamarGemini(prompt)
+            Log.d(TAG, "📤 [IA] Enviando petición a Gemini...")
+            val resultado = llamarGemini(prompt)
+            Log.d(TAG, "✅ [IA] Respuesta recibida: ${resultado.length} caracteres")
+            Log.d(TAG, "🎉 [IA] estructurarClasePorTiempo completado exitosamente")
+            resultado
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en estructurarClasePorTiempo: ${e.message}")
+            Log.e(TAG, "❌ [IA] Error en estructurarClasePorTiempo: ${e.message}", e)
             "⚠️ Error estructurando clase: ${e.message ?: "Desconocido"}"
         }
     }
@@ -808,9 +864,15 @@ class IARepository(private val context: Context) : IIARepository {
         descripcion: String,
         pdfUrl: String?
     ): String {
-        if (pdfUrl.isNullOrEmpty()) return "⚠️ No se proporcionó URL del PDF"
+        Log.d(TAG, "🚀 [IA] Iniciando resumirContenidoPdf - Clase: $nombre")
+        if (pdfUrl.isNullOrEmpty()) {
+            Log.w(TAG, "⚠️ [IA] No se proporcionó URL del PDF")
+            return "⚠️ No se proporcionó URL del PDF"
+        }
         return try {
+            Log.d(TAG, "📚 [IA] Preparando contexto del PDF...")
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            Log.d(TAG, "✅ [IA] Contexto preparado: ${contextoPdf.length} caracteres")
 
             val prompt = """
                 $contextoPdf
@@ -849,9 +911,13 @@ class IARepository(private val context: Context) : IIARepository {
                 - SIN REDUNDANCIA: Cada palabra debe aportar valor
             """.trimIndent()
 
-            llamarGemini(prompt)
+            Log.d(TAG, "📤 [IA] Enviando petición a Gemini...")
+            val resultado = llamarGemini(prompt)
+            Log.d(TAG, "✅ [IA] Resumen recibido: ${resultado.length} caracteres")
+            Log.d(TAG, "🎉 [IA] resumirContenidoPdf completado exitosamente")
+            resultado
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en resumirContenidoPdf: ${e.message}")
+            Log.e(TAG, "❌ [IA] Error en resumirContenidoPdf: ${e.message}", e)
             "⚠️ Error generando resumen: ${e.message ?: "Desconocido"}"
         }
     }
@@ -861,8 +927,11 @@ class IARepository(private val context: Context) : IIARepository {
         descripcion: String,
         pdfUrl: String?
     ): String {
+        Log.d(TAG, "🚀 [IA] Iniciando generarGuiaPresentacion - Clase: $nombre")
         return try {
+            Log.d(TAG, "📚 [IA] Preparando contexto del PDF...")
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            Log.d(TAG, "✅ [IA] Contexto preparado: ${contextoPdf.length} caracteres")
 
             val prompt = """
                 $contextoPdf
@@ -923,9 +992,13 @@ class IARepository(private val context: Context) : IIARepository {
                 - Anticipación de posibles dudas
             """.trimIndent()
 
-            llamarGemini(prompt)
+            Log.d(TAG, "📤 [IA] Enviando petición a Gemini...")
+            val resultado = llamarGemini(prompt)
+            Log.d(TAG, "✅ [IA] Guía recibida: ${resultado.length} caracteres")
+            Log.d(TAG, "🎉 [IA] generarGuiaPresentacion completado exitosamente")
+            resultado
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en generarGuiaPresentacion: ${e.message}")
+            Log.e(TAG, "❌ [IA] Error en generarGuiaPresentacion: ${e.message}", e)
             "⚠️ Error generando guía: ${e.message ?: "Desconocido"}"
         }
     }
@@ -935,8 +1008,11 @@ class IARepository(private val context: Context) : IIARepository {
         descripcion: String,
         pdfUrl: String?
     ): String {
+        Log.d(TAG, "🚀 [IA] Iniciando generarEjerciciosParaAlumno - Clase: $nombre")
         return try {
+            Log.d(TAG, "📚 [IA] Preparando contexto del PDF...")
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            Log.d(TAG, "✅ [IA] Contexto preparado: ${contextoPdf.length} caracteres")
 
             val prompt = """
                 $contextoPdf
@@ -1029,9 +1105,13 @@ class IARepository(private val context: Context) : IIARepository {
                 - Contenido 100% basado en el material del PDF
             """.trimIndent()
 
-            llamarGemini(prompt)
+            Log.d(TAG, "📤 [IA] Enviando petición a Gemini...")
+            val resultado = llamarGemini(prompt)
+            Log.d(TAG, "✅ [IA] Ejercicios recibidos: ${resultado.length} caracteres")
+            Log.d(TAG, "🎉 [IA] generarEjerciciosParaAlumno completado exitosamente")
+            resultado
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en generarEjerciciosParaAlumno: ${e.message}")
+            Log.e(TAG, "❌ [IA] Error en generarEjerciciosParaAlumno: ${e.message}", e)
             "⚠️ Error generando ejercicios: ${e.message ?: "Desconocido"}"
         }
     }
@@ -1041,8 +1121,11 @@ class IARepository(private val context: Context) : IIARepository {
         descripcion: String,
         pdfUrl: String?
     ): String {
+        Log.d(TAG, "🚀 [IA] Iniciando crearResumenEstudioParaAlumno - Clase: $nombre")
         return try {
+            Log.d(TAG, "📚 [IA] Preparando contexto del PDF...")
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            Log.d(TAG, "✅ [IA] Contexto preparado: ${contextoPdf.length} caracteres")
 
             val prompt = """
                 $contextoPdf
@@ -1155,9 +1238,13 @@ class IARepository(private val context: Context) : IIARepository {
                 - 100% basado en el contenido del PDF
             """.trimIndent()
 
-            llamarGemini(prompt)
+            Log.d(TAG, "📤 [IA] Enviando petición a Gemini...")
+            val resultado = llamarGemini(prompt)
+            Log.d(TAG, "✅ [IA] Resumen recibido: ${resultado.length} caracteres")
+            Log.d(TAG, "🎉 [IA] crearResumenEstudioParaAlumno completado exitosamente")
+            resultado
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en crearResumenEstudioParaAlumno: ${e.message}")
+            Log.e(TAG, "❌ [IA] Error en crearResumenEstudioParaAlumno: ${e.message}", e)
             "⚠️ Error creando resumen: ${e.message ?: "Desconocido"}"
         }
     }
@@ -1167,8 +1254,11 @@ class IARepository(private val context: Context) : IIARepository {
         descripcion: String,
         pdfUrl: String?
     ): String {
+        Log.d(TAG, "🚀 [IA] Iniciando generarActividadesInteractivas - Clase: $nombreClase")
         return try {
+            Log.d(TAG, "📚 [IA] Preparando contexto del PDF...")
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            Log.d(TAG, "✅ [IA] Contexto preparado: ${contextoPdf.length} caracteres")
 
             val prompt = """
                 $contextoPdf
@@ -1227,9 +1317,13 @@ class IARepository(private val context: Context) : IIARepository {
                 - Instrucciones claras y ejecutables
             """.trimIndent()
 
-            llamarGemini(prompt)
+            Log.d(TAG, "📤 [IA] Enviando petición a Gemini...")
+            val resultado = llamarGemini(prompt)
+            Log.d(TAG, "✅ [IA] Actividades recibidas: ${resultado.length} caracteres")
+            Log.d(TAG, "🎉 [IA] generarActividadesInteractivas completado exitosamente")
+            resultado
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en generarActividadesInteractivas: ${e.message}")
+            Log.e(TAG, "❌ [IA] Error en generarActividadesInteractivas: ${e.message}", e)
             "⚠️ Error generando actividades: ${e.message ?: "Desconocido"}"
         }
     }
@@ -1239,8 +1333,11 @@ class IARepository(private val context: Context) : IIARepository {
         descripcion: String,
         pdfUrl: String?
     ): String {
+        Log.d(TAG, "🚀 [IA] Iniciando explicarConceptosParaAlumno - Clase: $nombreClase")
         return try {
+            Log.d(TAG, "📚 [IA] Preparando contexto del PDF...")
             val contextoPdf = prepararContextoPdf(pdfUrl)
+            Log.d(TAG, "✅ [IA] Contexto preparado: ${contextoPdf.length} caracteres")
 
             val prompt = """
                 $contextoPdf
@@ -1313,9 +1410,13 @@ class IARepository(private val context: Context) : IIARepository {
                 - Explicaciones que construyan comprensión progresiva
             """.trimIndent()
 
-            llamarGemini(prompt)
+            Log.d(TAG, "📤 [IA] Enviando petición a Gemini...")
+            val resultado = llamarGemini(prompt)
+            Log.d(TAG, "✅ [IA] Explicación recibida: ${resultado.length} caracteres")
+            Log.d(TAG, "🎉 [IA] explicarConceptosParaAlumno completado exitosamente")
+            resultado
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en explicarConceptosParaAlumno: ${e.message}")
+            Log.e(TAG, "❌ [IA] Error en explicarConceptosParaAlumno: ${e.message}", e)
             "⚠️ Error explicando conceptos: ${e.message ?: "Desconocido"}"
         }
     }
@@ -1326,6 +1427,7 @@ class IARepository(private val context: Context) : IIARepository {
         pdfUrl: String?,
         respuestaInicial: String
     ) {
+        Log.d(TAG, "🆕 [CHAT] Iniciando chat con contexto - Clase: $nombreClase")
         withContext(Dispatchers.IO) {
             try {
                 // ✅ FIX: NO restaurar sesiones antiguas, SIEMPRE crear sesión TEMPORAL nueva
@@ -1335,7 +1437,9 @@ class IARepository(private val context: Context) : IIARepository {
                 val historial = mutableListOf<com.google.ai.client.generativeai.type.Content>()
 
                 // ✅ FIX: Incluir el texto completo del PDF en el contexto inicial
+                Log.d(TAG, "📚 [CHAT] Preparando contexto del PDF para el chat...")
                 val contextoPdf = prepararContextoPdf(pdfUrl)
+                Log.d(TAG, "✅ [CHAT] Contexto PDF preparado: ${contextoPdf.length} caracteres")
 
                 val promptInicial = """
                     CONTEXTO DE LA CLASE:
@@ -1382,21 +1486,28 @@ class IARepository(private val context: Context) : IIARepository {
                 )
 
                 // Crear sesión de chat con historial inicial
+                Log.d(TAG, "💬 [CHAT] Iniciando sesión de chat con Gemini (historial: ${historial.size} mensajes)...")
                 chatSession = googleAiModel.startChat(history = historial)
-                Log.d(TAG, "✅ [CHAT] Sesión TEMPORAL creada con id=$sessionId, contexto PDF incluido")
+                Log.d(TAG, "✅ [CHAT] Sesión TEMPORAL creada exitosamente:")
+                Log.d(TAG, "   - Session ID: $sessionId")
+                Log.d(TAG, "   - Contexto PDF: ${contextoPdf.length} caracteres")
+                Log.d(TAG, "   - Historial inicial: ${historial.size} mensajes")
+                Log.d(TAG, "🎉 [CHAT] Chat listo para recibir mensajes")
             } catch (e: Exception) {
-                Log.e(TAG, "❌ [CHAT] Error iniciando: ${e.message}")
+                Log.e(TAG, "❌ [CHAT] Error iniciando chat: ${e.message}", e)
                 chatSession = null
             }
         }
     }
 
     override suspend fun enviarMensajeChat(mensaje: String): String {
+        Log.d(TAG, "💬 [CHAT] Enviando mensaje al chat: ${mensaje.take(50)}...")
         return withContext(Dispatchers.IO) {
             if (chatSession != null) {
                 try {
                     // Persistir mensaje del usuario en BD si existe sesión
                     currentSessionId?.let { sid ->
+                        Log.d(TAG, "💾 [CHAT] Guardando mensaje del usuario en BD (sessionId: $sid)")
                         chatDao.insertMessage(
                             ChatMessageEntity(
                                 sessionId = sid,
@@ -1405,10 +1516,14 @@ class IARepository(private val context: Context) : IIARepository {
                             )
                         )
                     }
+                    Log.d(TAG, "📤 [CHAT] Enviando mensaje a Gemini...")
                     val response = chatSession!!.sendMessage(mensaje)
                     val texto = response.text ?: "Sin respuesta de la IA"
+                    Log.d(TAG, "✅ [CHAT] Respuesta recibida de Gemini: ${texto.length} caracteres")
+
                     // Persistir respuesta de la IA
                     currentSessionId?.let { sid ->
+                        Log.d(TAG, "💾 [CHAT] Guardando respuesta de la IA en BD...")
                         chatDao.insertMessage(
                             ChatMessageEntity(
                                 sessionId = sid,
@@ -1423,15 +1538,15 @@ class IARepository(private val context: Context) : IIARepository {
                             chatDao.updateSession(updated)
                         }
                     }
+                    Log.d(TAG, "🎉 [CHAT] Mensaje procesado exitosamente")
                     return@withContext texto
                 } catch (e: Exception) {
-                    Log.e(TAG, "❌ [CHAT] Error: ${e.message}"); throw e
+                    Log.e(TAG, "❌ [CHAT] Error enviando mensaje: ${e.message}", e)
+                    throw e
                 }
             } else {
-                Log.w(
-                    TAG,
-                    "⚠️ [CHAT] No hay sesión activa, fallback stateless"
-                ); return@withContext llamarGemini(mensaje)
+                Log.w(TAG, "⚠️ [CHAT] No hay sesión activa, usando fallback stateless")
+                return@withContext llamarGemini(mensaje)
             }
         }
     }
