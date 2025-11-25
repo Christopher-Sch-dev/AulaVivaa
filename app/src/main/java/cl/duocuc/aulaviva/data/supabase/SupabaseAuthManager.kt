@@ -159,11 +159,24 @@ object SupabaseAuthManager {
 
     /**
      * Verificar si hay una sesión activa.
+     * Verifica tanto el usuario actual como la sesión para asegurar persistencia correcta.
      */
     fun isLoggedIn(): Boolean {
         return try {
             val supabase = SupabaseClientProvider.getClient()
-            supabase.auth.currentUserOrNull() != null
+            // Verificar tanto el usuario como la sesión para asegurar que la sesión persiste
+            val user = supabase.auth.currentUserOrNull()
+            val session = supabase.auth.currentSessionOrNull()
+
+            val isLoggedIn = user != null || session != null
+
+            if (isLoggedIn) {
+                Log.d("SupabaseAuth", "✅ Sesión activa encontrada - User: ${user?.id}, Session: ${session != null}")
+            } else {
+                Log.d("SupabaseAuth", "⚠️ No hay sesión activa")
+            }
+
+            isLoggedIn
         } catch (e: Exception) {
             Log.e("SupabaseAuth", "Error verificando sesión", e)
             false
@@ -172,11 +185,18 @@ object SupabaseAuthManager {
 
     /**
      * Obtener UID del usuario actual.
+     * Intenta obtenerlo del usuario actual, y si no está disponible, lo obtiene de la sesión.
      */
     fun getCurrentUserId(): String? {
         return try {
             val supabase = SupabaseClientProvider.getClient()
-            supabase.auth.currentUserOrNull()?.id
+            val user = supabase.auth.currentUserOrNull()
+            if (user != null) {
+                return user.id
+            }
+            // Si no hay usuario, intentar obtener de la sesión
+            val session = supabase.auth.currentSessionOrNull()
+            session?.user?.id
         } catch (e: Exception) {
             Log.e("SupabaseAuth", "Error obteniendo UID", e)
             null
@@ -185,11 +205,18 @@ object SupabaseAuthManager {
 
     /**
      * Obtener email del usuario actual.
+     * Intenta obtenerlo del usuario actual, y si no está disponible, lo obtiene de la sesión.
      */
     fun getCurrentUserEmail(): String? {
         return try {
             val supabase = SupabaseClientProvider.getClient()
-            supabase.auth.currentUserOrNull()?.email
+            val user = supabase.auth.currentUserOrNull()
+            if (user != null) {
+                return user.email
+            }
+            // Si no hay usuario, intentar obtener de la sesión
+            val session = supabase.auth.currentSessionOrNull()
+            session?.user?.email
         } catch (e: Exception) {
             Log.e("SupabaseAuth", "Error obteniendo email", e)
             null

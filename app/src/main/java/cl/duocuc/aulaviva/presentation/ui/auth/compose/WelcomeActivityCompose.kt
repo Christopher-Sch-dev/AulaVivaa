@@ -15,6 +15,7 @@ import cl.duocuc.aulaviva.domain.repository.IAuthRepository
 import cl.duocuc.aulaviva.presentation.ui.main.compose.PanelAlumnoActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.main.compose.PanelPrincipalActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -35,11 +36,33 @@ class WelcomeActivityCompose : ComponentActivity() {
         // Verificar si existe una sesión persistente al iniciar la actividad
         // Si el usuario ya está autenticado, redirigir automáticamente al panel correspondiente
         lifecycleScope.launch {
-            if (authRepository.isLoggedIn()) {
+            // Esperar un poco más para dar tiempo a que Supabase restaure la sesión desde el almacenamiento
+            delay(300)
+
+            // Verificar sesión múltiples veces para asegurar que se restaure correctamente
+            var isAuthenticated = false
+            var attempts = 0
+            val maxAttempts = 3
+
+            while (attempts < maxAttempts && !isAuthenticated) {
+                isAuthenticated = authRepository.isLoggedIn()
+                if (!isAuthenticated) {
+                    attempts++
+                    if (attempts < maxAttempts) {
+                        delay(200) // Esperar un poco más antes de reintentar
+                    }
+                }
+            }
+
+            if (isAuthenticated) {
                 try {
+                    android.util.Log.d("WelcomeActivity", "✅ Sesión encontrada, obteniendo rol del usuario...")
+
                     // Obtener el rol del usuario desde el repositorio de autenticación
                     val resultRol = authRepository.obtenerRolUsuario()
                     val rol = resultRol.getOrNull() ?: "docente"
+
+                    android.util.Log.d("WelcomeActivity", "✅ Rol obtenido: $rol, redirigiendo al panel correspondiente")
 
                     // Crear Intent según el rol del usuario (docente o alumno)
                     val intent = when (rol.lowercase()) {
@@ -64,8 +87,10 @@ class WelcomeActivityCompose : ComponentActivity() {
                     return@launch
                 } catch (e: Exception) {
                     // Si falla la verificación, continuar mostrando la pantalla de bienvenida
-                    android.util.Log.e("WelcomeActivity", "Error verificando sesión", e)
+                    android.util.Log.e("WelcomeActivity", "❌ Error verificando sesión o obteniendo rol", e)
                 }
+            } else {
+                android.util.Log.d("WelcomeActivity", "⚠️ No hay sesión activa, mostrando pantalla de bienvenida")
             }
         }
 
