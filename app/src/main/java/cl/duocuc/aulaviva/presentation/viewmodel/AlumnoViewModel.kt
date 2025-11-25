@@ -82,17 +82,41 @@ class AlumnoViewModel(application: Application) : AndroidViewModel(application) 
 
             repository.inscribirConCodigo(codigo)
                 .onSuccess { asignatura ->
-                    _inscripcionExitosa.value = asignatura
                     android.util.Log.d("AlumnoVM", "✅ Inscrito en: ${asignatura.nombre}")
-                    sincronizarAsignaturasInscritas()
+                    // Marcar la inscripción como exitosa inmediatamente para actualizar la UI
+                    _inscripcionExitosa.value = asignatura
+                    // Sincronizar las asignaturas en background sin bloquear la UI
+                    // Esto actualiza la lista local con los datos más recientes de Supabase
+                    viewModelScope.launch {
+                        try {
+                            repository.sincronizarAsignaturasInscritas()
+                                .onSuccess {
+                                    android.util.Log.d("AlumnoVM", "✅ Sincronización después de inscripción exitosa")
+                                }
+                                .onFailure { e ->
+                                    android.util.Log.w("AlumnoVM", "⚠️ Error sincronizando después de inscripción (no crítico)", e)
+                                    // No mostrar error al usuario porque la inscripción ya fue exitosa
+                                    // La sincronización es una operación secundaria
+                                }
+                        } catch (e: Exception) {
+                            android.util.Log.w("AlumnoVM", "⚠️ Excepción sincronizando después de inscripción (no crítico)", e)
+                            // No mostrar error al usuario porque la inscripción ya fue exitosa
+                            // La sincronización es una operación secundaria
+                        }
+                    }
                 }
                 .onFailure { exception ->
-                    _error.value = when (exception.message) {
-                        "Código inválido" -> "❌ El código ingresado no existe"
-                        "Ya estás inscrito en esta asignatura" -> "⚠️ Ya estás inscrito en esta asignatura"
-                        else -> "❌ Error: ${exception.message}"
+                    android.util.Log.e("AlumnoVM", "❌ Error inscribiendo: ${exception.message}", exception)
+                    _error.value = when {
+                        exception.message?.contains("Código inválido", ignoreCase = true) == true ||
+                        exception.message?.contains("no encontrado", ignoreCase = true) == true ->
+                            "❌ El código ingresado no existe"
+                        exception.message?.contains("Ya estás inscrito", ignoreCase = true) == true ->
+                            "⚠️ Ya estás inscrito en esta asignatura"
+                        exception.message?.contains("Usuario no autenticado", ignoreCase = true) == true ->
+                            "❌ Sesión expirada. Por favor, inicia sesión nuevamente"
+                        else -> "❌ Error: ${exception.message ?: "Error desconocido"}"
                     }
-                    android.util.Log.e("AlumnoVM", "❌ Error inscribiendo", exception)
                 }
 
             _isLoading.value = false

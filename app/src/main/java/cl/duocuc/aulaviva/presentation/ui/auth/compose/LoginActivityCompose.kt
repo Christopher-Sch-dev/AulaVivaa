@@ -17,10 +17,11 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
 /**
- * LoginActivity migrada a Jetpack Compose
+ * Activity de inicio de sesión de la aplicación AulaViva.
  *
- * Versión Compose de LoginActivity con Material Design 3 completo.
- * Mantiene toda la funcionalidad original.
+ * Implementada con Jetpack Compose y Material Design 3.
+ * Maneja la autenticación de usuarios y redirige según su rol (docente/alumno).
+ * También implementa persistencia de sesión para evitar mostrar login si ya hay sesión activa.
  */
 class LoginActivityCompose : ComponentActivity() {
 
@@ -28,6 +29,43 @@ class LoginActivityCompose : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Verificar si existe una sesión persistente al iniciar la actividad
+        // Si el usuario ya está autenticado, redirigir automáticamente sin mostrar el login
+        lifecycleScope.launch {
+            if (authRepository.isLoggedIn()) {
+                try {
+                    // Obtener el rol del usuario desde el repositorio de autenticación
+                    val resultRol = authRepository.obtenerRolUsuario()
+                    val rol = resultRol.getOrNull() ?: "docente"
+
+                    // Crear Intent según el rol del usuario (docente o alumno)
+                    val intent = when (rol.lowercase()) {
+                        "docente" -> Intent(
+                            this@LoginActivityCompose,
+                            PanelPrincipalActivityCompose::class.java
+                        )
+                        "alumno" -> Intent(
+                            this@LoginActivityCompose,
+                            PanelAlumnoActivityCompose::class.java
+                        )
+                        else -> Intent(
+                            this@LoginActivityCompose,
+                            PanelPrincipalActivityCompose::class.java
+                        )
+                    }
+
+                    // Limpiar el stack de actividades y navegar al panel correspondiente
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                    return@launch
+                } catch (e: Exception) {
+                    // Si falla la verificación, continuar mostrando la pantalla de login
+                    android.util.Log.e("LoginActivity", "Error verificando sesión", e)
+                }
+            }
+        }
 
         setContent {
             AulaVivaTheme {
@@ -37,32 +75,36 @@ class LoginActivityCompose : ComponentActivity() {
                 ) {
                     LoginScreen(
                         onLoginSuccess = {
-                            // Verificar rol y redirigir
+                            // Callback ejecutado cuando el login es exitoso
+                            // Verificar el rol del usuario y redirigir al panel correspondiente
                             lifecycleScope.launch {
                                 try {
+                                    // Obtener el rol del usuario desde el repositorio
                                     val resultRol = authRepository.obtenerRolUsuario()
                                     val rol = resultRol.getOrNull() ?: "docente"
 
+                                    // Crear Intent según el rol del usuario
                                     val intent = when (rol.lowercase()) {
                                         "docente" -> Intent(
                                             this@LoginActivityCompose,
                                             PanelPrincipalActivityCompose::class.java
                                         )
-                                "alumno" -> Intent(
-                                    this@LoginActivityCompose,
-                                    PanelAlumnoActivityCompose::class.java
-                                )
+                                        "alumno" -> Intent(
+                                            this@LoginActivityCompose,
+                                            PanelAlumnoActivityCompose::class.java
+                                        )
                                         else -> Intent(
                                             this@LoginActivityCompose,
                                             PanelPrincipalActivityCompose::class.java
                                         )
                                     }
 
+                                    // Limpiar el stack de actividades y navegar al panel
                                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     startActivity(intent)
                                     finish()
                                 } catch (e: Exception) {
-                                    // Default a docente si falla
+                                    // Si falla la obtención del rol, redirigir al panel docente por defecto
                                     val intent = Intent(
                                         this@LoginActivityCompose,
                                         PanelPrincipalActivityCompose::class.java
@@ -79,6 +121,50 @@ class LoginActivityCompose : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    /**
+     * Maneja la navegación hacia atrás cuando el usuario presiona el botón de retroceso.
+     * Si el usuario está autenticado, redirige al panel correspondiente en lugar de retroceder.
+     * Si no está autenticado, permite la navegación normal hacia atrás.
+     */
+    override fun onBackPressed() {
+        if (authRepository.isLoggedIn()) {
+            // Usuario autenticado: redirigir al panel correspondiente en lugar de retroceder
+            lifecycleScope.launch {
+                try {
+                    // Obtener el rol del usuario y crear el Intent correspondiente
+                    val resultRol = authRepository.obtenerRolUsuario()
+                    val rol = resultRol.getOrNull() ?: "docente"
+
+                    val intent = when (rol.lowercase()) {
+                        "docente" -> Intent(
+                            this@LoginActivityCompose,
+                            PanelPrincipalActivityCompose::class.java
+                        )
+                        "alumno" -> Intent(
+                            this@LoginActivityCompose,
+                            PanelAlumnoActivityCompose::class.java
+                        )
+                        else -> Intent(
+                            this@LoginActivityCompose,
+                            PanelPrincipalActivityCompose::class.java
+                        )
+                    }
+
+                    // Limpiar el stack y navegar al panel
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                } catch (e: Exception) {
+                    // Si falla, permitir la navegación normal hacia atrás
+                    super.onBackPressed()
+                }
+            }
+        } else {
+            // Usuario no autenticado: permitir navegación normal hacia atrás
+            super.onBackPressed()
         }
     }
 }

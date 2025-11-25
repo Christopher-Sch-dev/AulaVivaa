@@ -62,16 +62,18 @@ fun DocenteAsignaturasScreen(
         viewModel.sincronizarAsignaturas()
     }
 
-    // ✅ Mostrar mensaje con código al crear asignatura (INMEDIATO, sin esperar)
+    // Mostrar mensaje de éxito con código generado cuando se crea una asignatura
+    // Se ejecuta inmediatamente sin esperar, para dar feedback rápido al usuario
     LaunchedEffect(operationSuccess, codigoGenerado) {
         operationSuccess?.let { mensaje ->
             scope.launch {
+                // Construir mensaje completo incluyendo el código si está disponible
                 val mensajeCompleto = if (codigoGenerado != null) {
                     "✅ $mensaje\n📋 Código: $codigoGenerado"
                 } else {
                     "✅ $mensaje"
                 }
-                // ✅ Mostrar snackbar inmediatamente, no esperar
+                // Mostrar snackbar inmediatamente para dar feedback al usuario
                 snackbarHostState.showSnackbar(
                     message = mensajeCompleto,
                     duration = SnackbarDuration.Long
@@ -259,7 +261,7 @@ fun DocenteAsignaturasScreen(
         )
     }
 
-    // ✅ Dialog editar asignatura
+    // Diálogo para editar el nombre y descripción de una asignatura existente
     if (showEditarDialog && asignaturaAEditar != null) {
         AlertDialog(
             onDismissRequest = {
@@ -295,7 +297,8 @@ fun DocenteAsignaturasScreen(
                             val asignaturaActualizada = asignaturaAEditar!!.copy(
                                 nombre = nombreAsignatura.trim(),
                                 descripcion = descripcionAsignatura.trim()
-                                // ✅ El código NO se actualiza, se mantiene igual
+                                // El código de acceso no se actualiza al editar, se mantiene igual
+                                // Solo se pueden modificar el nombre y la descripción
                             )
                             viewModel.actualizarAsignatura(asignaturaActualizada)
                             showEditarDialog = false
@@ -362,7 +365,7 @@ fun AsignaturaDocenteCard(
     onVerInscritos: () -> Unit,
     onCopiarCodigo: () -> Unit,
     onEliminar: () -> Unit,
-    onEditar: (Asignatura) -> Unit // ✅ Callback para editar
+    onEditar: (Asignatura) -> Unit // Callback ejecutado cuando el usuario selecciona editar una asignatura
 ) {
     val context = LocalContext.current
     var showMenu by remember { mutableStateOf(false) }

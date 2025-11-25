@@ -83,7 +83,8 @@ fun PanelAlumnoScreen(
         viewModel.sincronizarAsignaturasInscritas()
     }
 
-    // ✅ Manejar pull-to-refresh
+    // Callback para manejar el gesto de pull-to-refresh
+    // Sincroniza las asignaturas inscritas y muestra un mensaje de confirmación
     val onRefresh: () -> Unit = {
         viewModel.sincronizarAsignaturasInscritas()
         scope.launch {
@@ -110,7 +111,7 @@ fun PanelAlumnoScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            // ✅ Header grande con título y descripción
+            // Card header que muestra el título y descripción del panel de alumno
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -140,7 +141,8 @@ fun PanelAlumnoScreen(
                 }
             }
 
-            // ✅ Botón + gigante para agregar asignatura
+            // Card clickeable con botón grande para inscribirse en una asignatura con código
+            // Al hacer click, muestra el diálogo de inscripción
             Card(
                 onClick = { showInscripcionDialog = true },
                 modifier = Modifier
@@ -186,10 +188,38 @@ fun PanelAlumnoScreen(
                     CircularProgressIndicator()
                 }
             } else if (asignaturas.isEmpty()) {
-                EmptyState(
-                    onInscribirseClick = { showInscripcionDialog = true },
-                    modifier = Modifier.weight(1f)
-                )
+                // Estado vacío: mostrar mensaje informativo cuando no hay asignaturas inscritas
+                // No incluye botón porque el botón principal de inscripción ya está arriba
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "📚",
+                            style = MaterialTheme.typography.displayMedium
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No hay asignaturas inscritas",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Usa el botón de arriba para inscribirte con un código",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
             } else {
                 PullToRefreshContainer(
                     isRefreshing = isLoading,
@@ -217,7 +247,8 @@ fun PanelAlumnoScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ✅ Card de cerrar sesión visible
+            // Card clickeable para cerrar sesión, visible en la parte inferior de la pantalla
+            // Al hacer click, muestra un diálogo de confirmación antes de cerrar sesión
             Card(
                 onClick = { showLogoutDialog = true },
                 modifier = Modifier
@@ -290,42 +321,6 @@ fun PanelAlumnoScreen(
     }
 }
 
-@Composable
-fun EmptyState(
-    onInscribirseClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "📚",
-            style = MaterialTheme.typography.displayMedium
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "No tienes asignaturas inscritas",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Inscríbete con un código de acceso para comenzar",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onInscribirseClick) {
-            Icon(Icons.Default.Add, null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Inscribirse con código")
-        }
-    }
-}
 
 @Composable
 fun AsignaturaCard(

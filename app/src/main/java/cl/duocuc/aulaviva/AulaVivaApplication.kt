@@ -20,19 +20,22 @@ class AulaVivaApplication : Application() {
             val supabaseUrl = BuildConfig.SUPABASE_URL
             val supabaseAnonKey = BuildConfig.SUPABASE_ANON_KEY
 
-            // ✅ CAMBIO: Permitir arrancar app sin Supabase (modo offline)
+            // Verificar si las credenciales de Supabase están configuradas
+            // Si no están configuradas, la app puede funcionar en modo offline
             if (supabaseUrl.isEmpty() || supabaseAnonKey.isEmpty()) {
-                Log.w("AulaVivaApp", "⚠️ Credenciales Supabase no configuradas - Modo OFFLINE ONLY")
-                Log.w("AulaVivaApp", "⚠️ Configura SUPABASE_URL y SUPABASE_ANON_KEY en local.properties")
-                // No lanzar excepción, permitir que la app inicie
+                Log.w("AulaVivaApp", "Credenciales Supabase no configuradas - Modo OFFLINE ONLY")
+                Log.w("AulaVivaApp", "Configura SUPABASE_URL y SUPABASE_ANON_KEY en local.properties")
+                // No lanzar excepción, permitir que la app inicie en modo offline
             } else {
+                // Inicializar el cliente de Supabase con las credenciales proporcionadas
                 SupabaseClientProvider.initialize(supabaseUrl, supabaseAnonKey)
-                Log.i("AulaVivaApp", "✅ Aplicación inicializada con Supabase correctamente")
+                Log.i("AulaVivaApp", "Aplicación inicializada con Supabase correctamente")
             }
 
         } catch (e: Exception) {
-            Log.e("AulaVivaApp", "❌ Error inicializando aplicación", e)
-            // No lanzar excepción, permitir que la app continúe
+            // Capturar cualquier error durante la inicialización pero no bloquear el inicio de la app
+            Log.e("AulaVivaApp", "Error inicializando aplicación", e)
+            // No lanzar excepción, permitir que la app continúe funcionando
         }
     }
 }

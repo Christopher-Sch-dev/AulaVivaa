@@ -46,10 +46,12 @@ fun MarkdownText(
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
 
-    // ✅ Crear instancia de Markwon con configuración profesional
-    // Usar remember para evitar recrear la instancia en cada recomposición (optimización de rendimiento)
+    // Crear instancia de Markwon con configuración completa de plugins
+    // Usar remember con context y colorScheme como keys para evitar recrear la instancia
+    // en cada recomposición, mejorando el rendimiento
     val markwon = remember(context, colorScheme) {
-        // Convertir colores de Compose a Android Color (int)
+        // Convertir colores de Material3 Compose (Color) a Android Color (Int)
+        // para que Markwon pueda utilizarlos en su configuración de tema
         val primaryColor = android.graphics.Color.valueOf(
             colorScheme.primary.red,
             colorScheme.primary.green,
@@ -79,17 +81,18 @@ fun MarkdownText(
         ).toArgb()
 
         Markwon.builder(context)
-            // ✅ Plugin de imágenes
+            // Plugin para renderizar imágenes en Markdown
             .usePlugin(ImagesPlugin.create())
-            // ✅ Plugin de links automáticos
+            // Plugin para convertir URLs y emails en links clickeables automáticamente
             .usePlugin(LinkifyPlugin.create())
-            // ✅ Plugin de tablas
+            // Plugin para renderizar tablas en formato Markdown
             .usePlugin(TablePlugin.create(context))
-            // ✅ Plugin de task lists
+            // Plugin para renderizar listas de tareas (checkboxes) en Markdown
             .usePlugin(TaskListPlugin.create(context))
-            // ✅ Plugin de strikethrough
+            // Plugin para renderizar texto tachado (strikethrough) en Markdown
             .usePlugin(StrikethroughPlugin.create())
-            // ✅ Configurar tema personalizado para mejor integración con Material3
+            // Configurar tema personalizado para integrar colores de Material3
+            // Esto asegura que el Markdown renderizado use los colores del tema actual
             .usePlugin(object : io.noties.markwon.AbstractMarkwonPlugin() {
                 override fun configureTheme(builder: MarkwonTheme.Builder) {
                     builder
@@ -110,32 +113,36 @@ fun MarkdownText(
     AndroidView(
         factory = { ctx ->
             TextView(ctx).apply {
-                // ✅ Configuración profesional del TextView
-                // Usar Material3 typography como base
-                textSize = 16f // Tamaño base (bodyMedium)
-                setLineSpacing(8f, 1.0f) // Espaciado entre líneas para mejor legibilidad
-                setPadding(0, 0, 0, 0) // Padding manejado por el Card contenedor
+                // Configurar tamaño de texto base equivalente a Material3 bodyMedium
+                textSize = 16f
+                // Configurar espaciado entre líneas para mejorar la legibilidad del Markdown
+                setLineSpacing(8f, 1.0f)
+                // No agregar padding aquí, el Card contenedor maneja el espaciado
+                setPadding(0, 0, 0, 0)
 
-                // ✅ Configuración de texto
-                setTextIsSelectable(true) // Permitir selección de texto
-                setTypeface(null, Typeface.NORMAL) // Tipo de letra normal
-                // Color de texto se maneja automáticamente por Markwon con el tema configurado
+                // Permitir que el usuario seleccione el texto renderizado
+                setTextIsSelectable(true)
+                // Usar tipo de letra normal (sin negrita ni cursiva por defecto)
+                setTypeface(null, Typeface.NORMAL)
+                // El color de texto se configura automáticamente por Markwon según el tema
 
-                // ✅ Configuración de links
-                linksClickable = true // Links clickeables
+                // Habilitar que los links en el Markdown sean clickeables
+                linksClickable = true
+                // Configurar el método de movimiento para que los links funcionen correctamente
                 movementMethod = android.text.method.LinkMovementMethod.getInstance()
 
-                // ✅ Configuración de scroll si es necesario
-                isVerticalScrollBarEnabled = false // El scroll lo maneja el contenedor
+                // Deshabilitar la barra de scroll vertical, el contenedor maneja el scroll
+                isVerticalScrollBarEnabled = false
 
-                // ✅ Configuración de ellipsis para texto largo
+                // Configurar ellipsis para texto muy largo (aunque normalmente no se usa)
                 ellipsize = TextUtils.TruncateAt.END
-                maxLines = Int.MAX_VALUE // Sin límite de líneas
+                // Permitir todas las líneas necesarias para mostrar el contenido completo
+                maxLines = Int.MAX_VALUE
             }
         },
         update = { textView ->
-            // ✅ Renderizar Markdown con Markwon
-            // Solo actualizar si el texto cambió (optimización)
+            // Renderizar el contenido Markdown usando Markwon
+            // Solo actualizar si el texto cambió para evitar renderizado innecesario
             if (textView.text?.toString() != text) {
                 markwon.setMarkdown(textView, text)
             }
