@@ -237,6 +237,7 @@ fun MensajeChatCard(mensaje: MensajeChat) {
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
+                    // ✅ Usar Markwon para renderizar Markdown (como antes)
                     cl.duocuc.aulaviva.presentation.ui.common.MarkdownText(
                         text = mensaje.contenido,
                         modifier = Modifier.fillMaxWidth()

@@ -206,8 +206,13 @@ dependencies {
     // Google Generative AI (Gemini) - Compatible con Ktor 2.3.12
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
-    // Markwon para renderizar Markdown
+    // Markwon para renderizar Markdown (implementación profesional)
     implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:image:4.6.2")
+    implementation("io.noties.markwon:linkify:4.6.2")
+    implementation("io.noties.markwon:ext-strikethrough:4.6.2")
+    implementation("io.noties.markwon:ext-tables:4.6.2")
+    implementation("io.noties.markwon:ext-tasklist:4.6.2")
 
     // PDFBox para Android (fallback si Firebase falla)
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")

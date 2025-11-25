@@ -1,223 +1,145 @@
 package cl.duocuc.aulaviva.presentation.ui.common
 
+import android.graphics.Typeface
+import android.text.TextUtils
+import android.widget.TextView
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
+import io.noties.markwon.Markwon
+import io.noties.markwon.core.MarkwonTheme
+import io.noties.markwon.image.ImagesPlugin
+import io.noties.markwon.linkify.LinkifyPlugin
+import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
+import io.noties.markwon.ext.tables.TablePlugin
+import io.noties.markwon.ext.tasklist.TaskListPlugin
 
 /**
- * Componente para renderizar texto Markdown básico en Compose
- * Soporta: **negrita**, *cursiva*, listas, encabezados, código
+ * Componente optimizado para renderizar Markdown usando Markwon
+ *
+ * Sigue principios de Clean Architecture:
+ * - Separación de responsabilidades: Solo renderiza, no procesa lógica
+ * - Reutilizable: Componente composable independiente
+ * - Configuración profesional: Plugins completos para mejor renderizado
+ *
+ * Soporta:
+ * - Encabezados (##, ###)
+ * - Negritas (**texto**)
+ * - Cursivas (*texto*)
+ * - Listas (•, -, 1.)
+ * - Código inline (`código`) y bloques (```código```)
+ * - Links automáticos
+ * - Tablas
+ * - Task lists
+ * - Strikethrough
+ * - Imágenes
  */
 @Composable
 fun MarkdownText(
     text: String,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
-    val annotatedString = parseMarkdown(text, colorScheme)
-    Text(
-        text = annotatedString,
-        style = MaterialTheme.typography.bodyMedium.copy(
-            lineHeight = 24.sp, // ✅ Mejor altura de línea para legibilidad
-            letterSpacing = 0.2.sp // ✅ Mejor espaciado entre letras
-        ),
-        modifier = modifier.fillMaxWidth(),
-        lineHeight = 24.sp // ✅ Altura de línea consistente
+
+    // ✅ Crear instancia de Markwon con configuración profesional
+    // Usar remember para evitar recrear la instancia en cada recomposición (optimización de rendimiento)
+    val markwon = remember(context, colorScheme) {
+        // Convertir colores de Compose a Android Color (int)
+        val primaryColor = android.graphics.Color.valueOf(
+            colorScheme.primary.red,
+            colorScheme.primary.green,
+            colorScheme.primary.blue,
+            colorScheme.primary.alpha
+        ).toArgb()
+
+        val surfaceVariantColor = android.graphics.Color.valueOf(
+            colorScheme.surfaceVariant.red,
+            colorScheme.surfaceVariant.green,
+            colorScheme.surfaceVariant.blue,
+            colorScheme.surfaceVariant.alpha
+        ).toArgb()
+
+        val onSurfaceVariantColor = android.graphics.Color.valueOf(
+            colorScheme.onSurfaceVariant.red,
+            colorScheme.onSurfaceVariant.green,
+            colorScheme.onSurfaceVariant.blue,
+            colorScheme.onSurfaceVariant.alpha
+        ).toArgb()
+
+        val outlineColor = android.graphics.Color.valueOf(
+            colorScheme.outline.red,
+            colorScheme.outline.green,
+            colorScheme.outline.blue,
+            colorScheme.outline.alpha
+        ).toArgb()
+
+        Markwon.builder(context)
+            // ✅ Plugin de imágenes
+            .usePlugin(ImagesPlugin.create())
+            // ✅ Plugin de links automáticos
+            .usePlugin(LinkifyPlugin.create())
+            // ✅ Plugin de tablas
+            .usePlugin(TablePlugin.create(context))
+            // ✅ Plugin de task lists
+            .usePlugin(TaskListPlugin.create(context))
+            // ✅ Plugin de strikethrough
+            .usePlugin(StrikethroughPlugin.create())
+            // ✅ Configurar tema personalizado para mejor integración con Material3
+            .usePlugin(object : io.noties.markwon.AbstractMarkwonPlugin() {
+                override fun configureTheme(builder: MarkwonTheme.Builder) {
+                    builder
+                        .headingBreakHeight(0) // Sin línea bajo encabezados
+                        .headingTextSizeMultipliers(floatArrayOf(1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f))
+                        .codeTextSize(14) // Tamaño de código
+                        .codeBackgroundColor(surfaceVariantColor)
+                        .codeTextColor(onSurfaceVariantColor)
+                        .linkColor(primaryColor)
+                        .blockQuoteColor(primaryColor)
+                        .listItemColor(primaryColor)
+                        .thematicBreakColor(outlineColor)
+                }
+            })
+            .build()
+    }
+
+    AndroidView(
+        factory = { ctx ->
+            TextView(ctx).apply {
+                // ✅ Configuración profesional del TextView
+                // Usar Material3 typography como base
+                textSize = 16f // Tamaño base (bodyMedium)
+                setLineSpacing(8f, 1.0f) // Espaciado entre líneas para mejor legibilidad
+                setPadding(0, 0, 0, 0) // Padding manejado por el Card contenedor
+
+                // ✅ Configuración de texto
+                setTextIsSelectable(true) // Permitir selección de texto
+                setTypeface(null, Typeface.NORMAL) // Tipo de letra normal
+                // Color de texto se maneja automáticamente por Markwon con el tema configurado
+
+                // ✅ Configuración de links
+                linksClickable = true // Links clickeables
+                movementMethod = android.text.method.LinkMovementMethod.getInstance()
+
+                // ✅ Configuración de scroll si es necesario
+                isVerticalScrollBarEnabled = false // El scroll lo maneja el contenedor
+
+                // ✅ Configuración de ellipsis para texto largo
+                ellipsize = TextUtils.TruncateAt.END
+                maxLines = Int.MAX_VALUE // Sin límite de líneas
+            }
+        },
+        update = { textView ->
+            // ✅ Renderizar Markdown con Markwon
+            // Solo actualizar si el texto cambió (optimización)
+            if (textView.text?.toString() != text) {
+                markwon.setMarkdown(textView, text)
+            }
+        },
+        modifier = modifier.fillMaxWidth()
     )
 }
-
-private fun parseMarkdown(
-    text: String,
-    colorScheme: androidx.compose.material3.ColorScheme
-): androidx.compose.ui.text.AnnotatedString {
-    return buildAnnotatedString {
-        var i = 0
-        while (i < text.length) {
-            when {
-                // Encabezados ##
-                text.startsWith("##", i) -> {
-                    val endLine = text.indexOf('\n', i)
-                    val headerText = if (endLine != -1) {
-                        text.substring(i + 2, endLine).trim()
-                    } else {
-                        text.substring(i + 2).trim()
-                    }
-                    withStyle(
-                        style = SpanStyle(
-                            fontSize = 22.sp, // ✅ Más grande
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.primary,
-                            letterSpacing = 0.5.sp // ✅ Mejor espaciado
-                        )
-                    ) {
-                        append(headerText)
-                    }
-                    if (endLine != -1) {
-                        append("\n\n") // ✅ Doble salto de línea para mejor separación
-                        i = endLine + 1
-                    } else {
-                        i = text.length
-                    }
-                }
-                // Encabezados ###
-                text.startsWith("###", i) -> {
-                    val endLine = text.indexOf('\n', i)
-                    val headerText = if (endLine != -1) {
-                        text.substring(i + 3, endLine).trim()
-                    } else {
-                        text.substring(i + 3).trim()
-                    }
-                    withStyle(
-                        style = SpanStyle(
-                            fontSize = 20.sp, // ✅ Más grande
-                            fontWeight = FontWeight.Bold,
-                            color = colorScheme.primary,
-                            letterSpacing = 0.3.sp
-                        )
-                    ) {
-                        append(headerText)
-                    }
-                    if (endLine != -1) {
-                        append("\n\n") // ✅ Doble salto de línea para mejor separación
-                        i = endLine + 1
-                    } else {
-                        i = text.length
-                    }
-                }
-                // Negrita **texto**
-                text.startsWith("**", i) && i + 2 < text.length -> {
-                    val endBold = text.indexOf("**", i + 2)
-                    if (endBold != -1) {
-                        val boldText = text.substring(i + 2, endBold)
-                        withStyle(
-                            style = SpanStyle(
-                                fontWeight = FontWeight.Bold,
-                                color = colorScheme.onSurface,
-                                fontSize = 15.sp // ✅ Más grande para negritas
-                            )
-                        ) {
-                            append(boldText)
-                        }
-                        i = endBold + 2
-                    } else {
-                        append(text[i])
-                        i++
-                    }
-                }
-                // Cursiva *texto*
-                text[i] == '*' && i + 1 < text.length && text[i + 1] != '*' -> {
-                    val endItalic = text.indexOf('*', i + 1)
-                    if (endItalic != -1) {
-                        val italicText = text.substring(i + 1, endItalic)
-                        withStyle(
-                            style = SpanStyle(
-                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                            )
-                        ) {
-                            append(italicText)
-                        }
-                        i = endItalic + 1
-                    } else {
-                        append(text[i])
-                        i++
-                    }
-                }
-                // Lista con bullet •
-                text.startsWith("•", i) || text.startsWith("-", i) -> {
-                    // ✅ Agregar espacio antes de la lista si no hay salto de línea previo
-                    if (i > 0 && text[i - 1] != '\n') {
-                        append("\n")
-                    }
-                    withStyle(
-                        style = SpanStyle(
-                            color = colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp // ✅ Más grande para bullets
-                        )
-                    ) {
-                        append("  • ")
-                    }
-                    i++
-                    // Saltar espacios después del bullet
-                    while (i < text.length && text[i] == ' ') i++
-                }
-                // ✅ Listas numeradas (1. 2. 3.)
-                i < text.length && text[i].isDigit() && i + 1 < text.length &&
-                text[i + 1] == '.' && (i == 0 || text[i - 1] == '\n' || text[i - 1] == ' ') -> {
-                    // Agregar espacio antes si no hay salto de línea
-                    if (i > 0 && text[i - 1] != '\n') {
-                        append("\n")
-                    }
-                    // Encontrar el final del número y punto
-                    var j = i
-                    while (j < text.length && text[j] != '\n' && text[j] != ' ') j++
-                    val numero = text.substring(i, j)
-                    withStyle(
-                        style = SpanStyle(
-                            color = colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                    ) {
-                        append("$numero ")
-                    }
-                    i = j
-                    // Saltar espacios después
-                    while (i < text.length && text[i] == ' ') i++
-                }
-                // Código `texto`
-                text[i] == '`' && i + 1 < text.length -> {
-                    val endCode = text.indexOf('`', i + 1)
-                    if (endCode != -1) {
-                        val codeText = text.substring(i + 1, endCode)
-                        withStyle(
-                            style = SpanStyle(
-                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                                background = colorScheme.secondaryContainer, // ✅ Mejor contraste
-                                color = colorScheme.onSecondaryContainer,
-                                fontSize = 14.sp, // ✅ Tamaño adecuado
-                                fontWeight = FontWeight.Medium
-                            )
-                        ) {
-                            append(codeText)
-                        }
-                        i = endCode + 1
-                    } else {
-                        append(text[i])
-                        i++
-                    }
-                }
-                // Separador ---
-                text.startsWith("---", i) -> {
-                    append("\n\n") // ✅ Espacio antes del separador
-                    withStyle(
-                        style = SpanStyle(
-                            color = colorScheme.outline,
-                            fontSize = 12.sp
-                        )
-                    ) {
-                        append("─────────────────────────")
-                    }
-                    append("\n\n") // ✅ Espacio después del separador
-                    i += 3
-                    // Saltar hasta el siguiente salto de línea
-                    while (i < text.length && text[i] != '\n') i++
-                    if (i < text.length) i++
-                }
-                else -> {
-                    append(text[i])
-                    i++
-                }
-            }
-        }
-    }
-}
-
