@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.People
@@ -52,6 +53,8 @@ fun DocenteAsignaturasScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showCrearDialog by remember { mutableStateOf(false) }
+    var showEditarDialog by remember { mutableStateOf(false) }
+    var asignaturaAEditar by remember { mutableStateOf<Asignatura?>(null) }
     var nombreAsignatura by remember { mutableStateOf("") }
     var descripcionAsignatura by remember { mutableStateOf("") }
 
@@ -59,7 +62,7 @@ fun DocenteAsignaturasScreen(
         viewModel.sincronizarAsignaturas()
     }
 
-    // ✅ Mostrar mensaje con código al crear asignatura
+    // ✅ Mostrar mensaje con código al crear asignatura (INMEDIATO, sin esperar)
     LaunchedEffect(operationSuccess, codigoGenerado) {
         operationSuccess?.let { mensaje ->
             scope.launch {
@@ -68,6 +71,7 @@ fun DocenteAsignaturasScreen(
                 } else {
                     "✅ $mensaje"
                 }
+                // ✅ Mostrar snackbar inmediatamente, no esperar
                 snackbarHostState.showSnackbar(
                     message = mensajeCompleto,
                     duration = SnackbarDuration.Long
@@ -168,6 +172,12 @@ fun DocenteAsignaturasScreen(
                                         }
                                     }
                                 },
+                                onEditar = { asignatura ->
+                                    asignaturaAEditar = asignatura
+                                    nombreAsignatura = asignatura.nombre
+                                    descripcionAsignatura = asignatura.descripcion
+                                    showEditarDialog = true
+                                },
                                 onEliminar = {
                                     viewModel.verificarTieneClases(asignatura.id) { tieneClases ->
                                         if (tieneClases) {
@@ -248,6 +258,68 @@ fun DocenteAsignaturasScreen(
             }
         )
     }
+
+    // ✅ Dialog editar asignatura
+    if (showEditarDialog && asignaturaAEditar != null) {
+        AlertDialog(
+            onDismissRequest = { 
+                showEditarDialog = false
+                asignaturaAEditar = null
+                nombreAsignatura = ""
+                descripcionAsignatura = ""
+            },
+            title = { Text("Editar Asignatura") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = nombreAsignatura,
+                        onValueChange = { nombreAsignatura = it },
+                        label = { Text(context.getString(R.string.nombre_asignatura)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(Constants.PADDING_SMALL_DP.dp))
+                    OutlinedTextField(
+                        value = descripcionAsignatura,
+                        onValueChange = { descripcionAsignatura = it },
+                        label = { Text(context.getString(R.string.descripcion_asignatura)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (nombreAsignatura.isNotBlank() && asignaturaAEditar != null) {
+                            val asignaturaActualizada = asignaturaAEditar!!.copy(
+                                nombre = nombreAsignatura.trim(),
+                                descripcion = descripcionAsignatura.trim()
+                                // ✅ El código NO se actualiza, se mantiene igual
+                            )
+                            viewModel.actualizarAsignatura(asignaturaActualizada)
+                            showEditarDialog = false
+                            asignaturaAEditar = null
+                            nombreAsignatura = ""
+                            descripcionAsignatura = ""
+                        }
+                    }
+                ) {
+                    Text("Guardar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { 
+                    showEditarDialog = false
+                    asignaturaAEditar = null
+                    nombreAsignatura = ""
+                    descripcionAsignatura = ""
+                }) {
+                    Text(context.getString(R.string.cancelar))
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -289,7 +361,8 @@ fun AsignaturaDocenteCard(
     onVerClases: () -> Unit,
     onVerInscritos: () -> Unit,
     onCopiarCodigo: () -> Unit,
-    onEliminar: () -> Unit
+    onEliminar: () -> Unit,
+    onEditar: (Asignatura) -> Unit // ✅ Callback para editar
 ) {
     val context = LocalContext.current
     var showMenu by remember { mutableStateOf(false) }
@@ -339,6 +412,14 @@ fun AsignaturaDocenteCard(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false }
                     ) {
+                        DropdownMenuItem(
+                            text = { Text("Editar asignatura") },
+                            onClick = {
+                                onEditar(asignatura)
+                                showMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Default.Edit, null) }
+                        )
                         DropdownMenuItem(
                             text = { Text(context.getString(R.string.copiar_codigo)) },
                             onClick = {

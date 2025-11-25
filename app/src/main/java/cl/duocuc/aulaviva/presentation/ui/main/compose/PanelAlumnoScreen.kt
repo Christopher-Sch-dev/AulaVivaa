@@ -4,7 +4,9 @@ import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExitToApp
@@ -19,7 +21,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import cl.duocuc.aulaviva.utils.Constants
+import cl.duocuc.aulaviva.presentation.ui.common.PullToRefreshContainer
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.activity.compose.AlumnoClasesActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.auth.compose.LoginActivityCompose
@@ -78,72 +83,176 @@ fun PanelAlumnoScreen(
         viewModel.sincronizarAsignaturasInscritas()
     }
 
+    // ✅ Manejar pull-to-refresh
+    val onRefresh: () -> Unit = {
+        viewModel.sincronizarAsignaturasInscritas()
+        scope.launch {
+            delay(Constants.REFRESH_DELAY_MS)
+            snackbarHostState.showSnackbar("Datos actualizados")
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Panel Alumno") },
-                actions = {
-                    IconButton(onClick = { showLogoutDialog = true }) {
-                        Icon(Icons.Default.ExitToApp, "Cerrar sesión")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showInscripcionDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, "Inscribirse con código")
-            }
         }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
         ) {
-            if (isLoading && asignaturas.isEmpty()) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
+            // ✅ Header grande con título y descripción
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "📚 Mis Asignaturas",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Inscríbete con el código que te proporcionó tu profesor",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            // ✅ Botón + gigante para agregar asignatura
+            Card(
+                onClick = { showInscripcionDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Inscribirse con código",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+
+            // Lista de asignaturas con pull-to-refresh
+            if (isLoading && asignaturas.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
             } else if (asignaturas.isEmpty()) {
                 EmptyState(
                     onInscribirseClick = { showInscripcionDialog = true },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.weight(1f)
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                PullToRefreshContainer(
+                    isRefreshing = isLoading,
+                    onRefresh = onRefresh
                 ) {
-                    items(asignaturas) { asignatura ->
-                        AsignaturaCard(
-                            asignatura = asignatura,
-                            onClick = {
-                                val intent = Intent(context, AlumnoClasesActivityCompose::class.java)
-                                intent.putExtra("ASIGNATURA_ID", asignatura.id)
-                                intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
-                                context.startActivity(intent)
-                            }
-                        )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(asignaturas) { asignatura ->
+                            AsignaturaCard(
+                                asignatura = asignatura,
+                                onClick = {
+                                    val intent = Intent(context, AlumnoClasesActivityCompose::class.java)
+                                    intent.putExtra("ASIGNATURA_ID", asignatura.id)
+                                    intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
                     }
                 }
             }
 
-            if (isLoading) {
-                LinearProgressIndicator(
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ✅ Card de cerrar sesión visible
+            Card(
+                onClick = { showLogoutDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                )
+                        .padding(20.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.ExitToApp,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Cerrar Sesión",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 

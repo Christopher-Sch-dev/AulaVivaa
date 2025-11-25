@@ -25,8 +25,12 @@ fun MarkdownText(
     val annotatedString = parseMarkdown(text, colorScheme)
     Text(
         text = annotatedString,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = modifier.fillMaxWidth()
+        style = MaterialTheme.typography.bodyMedium.copy(
+            lineHeight = 24.sp, // ✅ Mejor altura de línea para legibilidad
+            letterSpacing = 0.2.sp // ✅ Mejor espaciado entre letras
+        ),
+        modifier = modifier.fillMaxWidth(),
+        lineHeight = 24.sp // ✅ Altura de línea consistente
     )
 }
 
@@ -57,7 +61,7 @@ private fun parseMarkdown(
                         append(headerText)
                     }
                     if (endLine != -1) {
-                        append("\n")
+                        append("\n\n") // ✅ Doble salto de línea para mejor separación
                         i = endLine + 1
                     } else {
                         i = text.length
@@ -82,7 +86,7 @@ private fun parseMarkdown(
                         append(headerText)
                     }
                     if (endLine != -1) {
-                        append("\n")
+                        append("\n\n") // ✅ Doble salto de línea para mejor separación
                         i = endLine + 1
                     } else {
                         i = text.length
@@ -128,16 +132,45 @@ private fun parseMarkdown(
                 }
                 // Lista con bullet •
                 text.startsWith("•", i) || text.startsWith("-", i) -> {
+                    // ✅ Agregar espacio antes de la lista si no hay salto de línea previo
+                    if (i > 0 && text[i - 1] != '\n') {
+                        append("\n")
+                    }
                     withStyle(
                         style = SpanStyle(
                             color = colorScheme.primary,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp // ✅ Más grande para bullets
                         )
                     ) {
                         append("  • ")
                     }
                     i++
                     // Saltar espacios después del bullet
+                    while (i < text.length && text[i] == ' ') i++
+                }
+                // ✅ Listas numeradas (1. 2. 3.)
+                i < text.length && text[i].isDigit() && i + 1 < text.length &&
+                text[i + 1] == '.' && (i == 0 || text[i - 1] == '\n' || text[i - 1] == ' ') -> {
+                    // Agregar espacio antes si no hay salto de línea
+                    if (i > 0 && text[i - 1] != '\n') {
+                        append("\n")
+                    }
+                    // Encontrar el final del número y punto
+                    var j = i
+                    while (j < text.length && text[j] != '\n' && text[j] != ' ') j++
+                    val numero = text.substring(i, j)
+                    withStyle(
+                        style = SpanStyle(
+                            color = colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    ) {
+                        append("$numero ")
+                    }
+                    i = j
+                    // Saltar espacios después
                     while (i < text.length && text[i] == ' ') i++
                 }
                 // Código `texto`
@@ -164,15 +197,16 @@ private fun parseMarkdown(
                 }
                 // Separador ---
                 text.startsWith("---", i) -> {
-                    append("\n")
+                    append("\n\n") // ✅ Espacio antes del separador
                     withStyle(
                         style = SpanStyle(
-                            color = colorScheme.outline
+                            color = colorScheme.outline,
+                            fontSize = 12.sp
                         )
                     ) {
                         append("─────────────────────────")
                     }
-                    append("\n")
+                    append("\n\n") // ✅ Espacio después del separador
                     i += 3
                     // Saltar hasta el siguiente salto de línea
                     while (i < text.length && text[i] != '\n') i++

@@ -80,15 +80,15 @@ fun CrearEditarClaseScreen(
         }
     }
 
-    // ✅ Observar resultados y cerrar automáticamente al crear o editar
+    // ✅ Observar resultados y cerrar automáticamente al crear o editar (INMEDIATO)
     LaunchedEffect(operationSuccess) {
         operationSuccess?.let { mensaje ->
             scope.launch {
-                snackbarHostState.showSnackbar(mensaje)
-                // Cerrar automáticamente después de mostrar el mensaje (tanto crear como editar)
-                kotlinx.coroutines.delay(800) // Esperar para que se vea el mensaje
+                // ✅ Navegar inmediatamente, mostrar snackbar en background
                 (context as? android.app.Activity)?.setResult(android.app.Activity.RESULT_OK)
                 (context as? android.app.Activity)?.finish()
+                // Mostrar snackbar después de navegar (se verá en la pantalla anterior)
+                snackbarHostState.showSnackbar(mensaje)
                 viewModel.clearMessages()
             }
         }
