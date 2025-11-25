@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.PresentToAll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -181,7 +182,7 @@ fun DetalleClaseScreen(
                                             iaViewModel.analizarPdfConIA(clase.nombre, clase.archivoPdfUrl)
                                         }
                                     },
-                                    enabled = !isLoading
+                                    enabled = isLoading == false
                                 ) {
                                     if (isLoading) {
                                         CircularProgressIndicator(
@@ -242,7 +243,7 @@ fun DetalleClaseScreen(
                                 )
                             }
                         },
-                        enabled = !isLoading
+                        enabled = isLoading == false
                     )
 
                     IAButton(
@@ -275,14 +276,14 @@ fun DetalleClaseScreen(
                                 )
                             }
                         },
-                        enabled = !isLoading
+                        enabled = isLoading == false
                     )
 
                     IAButton(
                         icon = Icons.Default.Schedule,
                         text = "⏱️ Estructurar por Tiempo",
                         onClick = { showDuracionDialog = true },
-                        enabled = !isLoading
+                        enabled = isLoading == false
                     )
 
                     IAButton(
@@ -314,11 +315,11 @@ fun DetalleClaseScreen(
                                 )
                             }
                         },
-                        enabled = !isLoading
+                        enabled = isLoading == false
                     )
 
                     IAButton(
-                        icon = Icons.Default.PresentationChart,
+                        icon = Icons.Default.PresentToAll,
                         text = "🎤 Guía de Presentación",
                         onClick = {
                             ejecutarIA(
@@ -346,7 +347,7 @@ fun DetalleClaseScreen(
                                 )
                             }
                         },
-                        enabled = !isLoading
+                        enabled = isLoading == false
                     )
 
                     IAButton(
@@ -378,7 +379,7 @@ fun DetalleClaseScreen(
                                 )
                             }
                         },
-                        enabled = !isLoading
+                        enabled = isLoading == false
                     )
                 }
             } else {
@@ -422,7 +423,7 @@ fun DetalleClaseScreen(
                                 )
                             }
                         },
-                        enabled = !isLoading
+                        enabled = isLoading == false
                     )
 
                     IAButton(
@@ -454,7 +455,7 @@ fun DetalleClaseScreen(
                                 )
                             }
                         },
-                        enabled = !isLoading
+                        enabled = isLoading == false
                     )
 
                     IAButton(
@@ -486,7 +487,7 @@ fun DetalleClaseScreen(
                                 )
                             }
                         },
-                        enabled = !isLoading
+                        enabled = isLoading == false
                     )
                 }
             }
@@ -580,7 +581,6 @@ fun IAButton(
     }
 }
 
-@Composable
 fun ejecutarIA(
     iaViewModel: IAViewModel,
     lifecycleOwner: LifecycleOwner,
@@ -589,22 +589,19 @@ fun ejecutarIA(
     onError: (String) -> Unit,
     llamadaIA: () -> androidx.lifecycle.LiveData<Result<String>>
 ) {
-    DisposableEffect(Unit) {
-        isLoading(true)
-        val live = llamadaIA()
-        val observer = Observer<Result<String>> { result ->
-            isLoading(false)
-            if (result.isSuccess) {
-                onSuccess(result.getOrNull() ?: "")
-            } else {
-                onError(result.exceptionOrNull()?.message ?: "Error desconocido")
-            }
+    isLoading(true)
+    val live = llamadaIA()
+    var observer: androidx.lifecycle.Observer<Result<String>>? = null
+    observer = androidx.lifecycle.Observer<Result<String>> { result ->
+        isLoading(false)
+        if (result.isSuccess) {
+            onSuccess(result.getOrNull() ?: "")
+        } else {
+            onError(result.exceptionOrNull()?.message ?: "Error desconocido")
         }
-        live.observe(lifecycleOwner, observer)
-        onDispose {
-            live.removeObserver(observer)
-        }
+        observer?.let { live.removeObserver(it) }
     }
+    live.observe(lifecycleOwner, observer)
 }
 
 fun mostrarResultadoIA(

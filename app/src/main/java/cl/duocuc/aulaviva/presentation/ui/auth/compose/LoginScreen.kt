@@ -22,9 +22,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cl.duocuc.aulaviva.presentation.ui.auth.WelcomeActivity
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTheme
 import cl.duocuc.aulaviva.presentation.viewmodel.AuthViewModel
 
@@ -54,9 +54,9 @@ fun LoginScreen(
     var passwordError by remember { mutableStateOf<String?>(null) }
 
     // Estados del ViewModel
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
-    val loginSuccess by viewModel.loginSuccess.collectAsStateWithLifecycle()
+    val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
+    val error: String? by viewModel.error.observeAsState()
+    val loginSuccess: Boolean by viewModel.loginSuccess.observeAsState(false)
 
     // Observar login exitoso
     LaunchedEffect(loginSuccess) {
@@ -260,7 +260,7 @@ fun LoginScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
-                enabled = !isLoading,
+                enabled = isLoading == false,
                 elevation = ButtonDefaults.buttonElevation(
                     defaultElevation = 4.dp,
                     pressedElevation = 6.dp

@@ -142,6 +142,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 
+    // LiveData para Compose
+    implementation("androidx.compose.runtime:runtime-livedata:1.7.5")
+
     // Navigation Compose
     implementation("androidx.navigation:navigation-compose:2.8.4")
 

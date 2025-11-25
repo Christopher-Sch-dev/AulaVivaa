@@ -14,7 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.ui.clases.compose.DetalleClaseActivityCompose
@@ -28,8 +29,8 @@ fun AlumnoClasesScreen(
     viewModel: ClaseViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val clases by viewModel.obtenerClasesPorAsignatura(asignaturaId).collectAsStateWithLifecycle(initialValue = emptyList())
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val clases: List<Clase> by viewModel.obtenerClasesPorAsignatura(asignaturaId).observeAsState(emptyList())
+    val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
 
     LaunchedEffect(Unit) {
         if (asignaturaId.isNotEmpty()) {
@@ -40,8 +41,12 @@ fun AlumnoClasesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(asignaturaNombre) },
-                subtitle = { Text("Clases") },
+                title = {
+                    Column {
+                        Text(asignaturaNombre)
+                        Text("Clases", style = MaterialTheme.typography.bodySmall)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { /* finish */ }) {
                         Icon(Icons.Default.ArrowBack, "Volver")
@@ -101,10 +106,9 @@ fun EmptyStateClasesAlumno(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        contentPadding = PaddingValues(32.dp)
+        verticalArrangement = Arrangement.Center
     ) {
         Text("📖", style = MaterialTheme.typography.displayMedium)
         Spacer(modifier = Modifier.height(16.dp))

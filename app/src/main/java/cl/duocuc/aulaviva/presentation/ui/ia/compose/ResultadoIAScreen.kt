@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Observer
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.DisposableEffect
 import cl.duocuc.aulaviva.presentation.viewmodel.IAViewModel
 import kotlinx.coroutines.launch
 
@@ -155,7 +156,8 @@ fun ResultadoIAScreen(
 
                             // Enviar a IA
                             val live = iaViewModel.enviarMensajeChat(mensaje)
-                            val observer = Observer<Result<String>> { result ->
+                            var observer: androidx.lifecycle.Observer<Result<String>>? = null
+                            observer = androidx.lifecycle.Observer<Result<String>> { result ->
                                 isLoading = false
                                 if (result.isSuccess) {
                                     val respuesta = result.getOrNull() ?: ""
@@ -168,12 +170,12 @@ fun ResultadoIAScreen(
                                         )
                                     }
                                 }
-                                live.removeObserver(observer)
+                                observer?.let { live.removeObserver(it) }
                             }
                             live.observe(lifecycleOwner, observer)
                         }
                     },
-                    enabled = mensajeTexto.isNotBlank() && mensajesRestantes > 0 && !isLoading
+                    enabled = mensajeTexto.isNotBlank() && mensajesRestantes > 0 && isLoading == false
                 ) {
                     Icon(Icons.Default.Send, "Enviar")
                 }

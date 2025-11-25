@@ -16,8 +16,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.activity.compose.AlumnoClasesActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.auth.compose.LoginActivityCompose
@@ -29,11 +31,12 @@ fun PanelAlumnoScreen(
     viewModel: AlumnoViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val asignaturas by viewModel.asignaturasInscritas.collectAsStateWithLifecycle(initialValue = emptyList())
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
-    val inscripcionExitosa by viewModel.inscripcionExitosa.collectAsStateWithLifecycle()
-    val logoutEvent by viewModel.logoutEvent.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val asignaturas: List<Asignatura> by viewModel.asignaturasInscritas.observeAsState(emptyList())
+    val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
+    val error: String? by viewModel.error.observeAsState()
+    val inscripcionExitosa: Asignatura? by viewModel.inscripcionExitosa.observeAsState()
+    val logoutEvent: Boolean by viewModel.logoutEvent.observeAsState(false)
 
     var showInscripcionDialog by remember { mutableStateOf(false) }
     var codigoInscripcion by remember { mutableStateOf("") }
@@ -51,15 +54,19 @@ fun PanelAlumnoScreen(
     // Mostrar errores
     LaunchedEffect(error) {
         error?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearError()
+            scope.launch {
+                snackbarHostState.showSnackbar(it)
+            }
+            viewModel.limpiarError()
         }
     }
 
     // Mostrar éxito de inscripción
     LaunchedEffect(inscripcionExitosa) {
-        inscripcionExitosa?.let {
-            snackbarHostState.showSnackbar("✓ Inscrito exitosamente en ${it.nombre}")
+        inscripcionExitosa?.let { asignatura ->
+            scope.launch {
+                snackbarHostState.showSnackbar("✓ Inscrito exitosamente en ${asignatura.nombre}")
+            }
             showInscripcionDialog = false
             codigoInscripcion = ""
         }
@@ -157,7 +164,7 @@ fun PanelAlumnoScreen(
                 Button(
                     onClick = {
                         if (codigoInscripcion.isNotBlank()) {
-                            viewModel.inscribirseConCodigo(codigoInscripcion.trim())
+                            viewModel.inscribirConCodigo(codigoInscripcion.trim())
                         }
                     }
                 ) {
@@ -179,10 +186,9 @@ fun EmptyState(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        contentPadding = PaddingValues(32.dp)
+        verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = "📚",

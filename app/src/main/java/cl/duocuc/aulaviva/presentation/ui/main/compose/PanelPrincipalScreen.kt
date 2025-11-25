@@ -23,7 +23,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.aulaviva.presentation.activity.compose.DocenteAsignaturasActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.auth.compose.LoginActivityCompose
@@ -39,9 +40,9 @@ fun PanelPrincipalScreen(
     val scrollState = rememberScrollState()
 
     // Estados del ViewModel
-    val userEmail by viewModel.userEmail.collectAsStateWithLifecycle()
-    val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
-    val logoutEvent by viewModel.logoutEvent.collectAsStateWithLifecycle()
+    val userEmail: String? by viewModel.userEmail.observeAsState()
+    val toastMessage: String? by viewModel.toastMessage.observeAsState()
+    val logoutEvent: Boolean by viewModel.logoutEvent.observeAsState(false)
 
     // Notificación helper
     val notificationHelper = remember { NotificationHelper(context) }

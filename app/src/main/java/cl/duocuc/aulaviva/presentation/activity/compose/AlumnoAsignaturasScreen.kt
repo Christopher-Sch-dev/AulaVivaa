@@ -8,6 +8,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,8 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.activity.compose.AlumnoClasesActivityCompose
 import cl.duocuc.aulaviva.presentation.viewmodel.AlumnoViewModel
@@ -27,8 +32,9 @@ fun AlumnoAsignaturasScreen(
     viewModel: AlumnoViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val asignaturas by viewModel.asignaturasInscritas.collectAsStateWithLifecycle(initialValue = emptyList())
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val asignaturas: List<Asignatura> by viewModel.asignaturasInscritas.observeAsState(emptyList())
+    val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showCodigoDialog by remember { mutableStateOf(false) }
@@ -38,10 +44,13 @@ fun AlumnoAsignaturasScreen(
         viewModel.sincronizarAsignaturasInscritas()
     }
 
-    LaunchedEffect(viewModel.error.collectAsStateWithLifecycle().value) {
-        viewModel.error.value?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearError()
+    val error: String? by viewModel.error.observeAsState()
+    LaunchedEffect(error) {
+        error?.let {
+            scope.launch {
+                snackbarHostState.showSnackbar(it)
+            }
+            viewModel.limpiarError()
         }
     }
 
@@ -98,8 +107,10 @@ fun AlumnoAsignaturasScreen(
                                 context.startActivity(intent)
                             },
                             onDarDeBaja = {
-                                viewModel.darDeBajaAsignatura(asignatura.id)
-                                snackbarHostState.showSnackbar("✓ Te has dado de baja de ${asignatura.nombre}")
+                                viewModel.darDeBaja(asignatura.id)
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("✓ Te has dado de baja de ${asignatura.nombre}")
+                                }
                             }
                         )
                     }
@@ -134,7 +145,7 @@ fun AlumnoAsignaturasScreen(
                 Button(
                     onClick = {
                         if (codigoIngresado.isNotBlank()) {
-                            viewModel.inscribirseConCodigo(codigoIngresado.trim())
+                            viewModel.inscribirConCodigo(codigoIngresado.trim())
                             showCodigoDialog = false
                             codigoIngresado = ""
                         }
@@ -158,10 +169,9 @@ fun EmptyStateAlumno(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        contentPadding = PaddingValues(32.dp)
+        verticalArrangement = Arrangement.Center
     ) {
         Text("📚", style = MaterialTheme.typography.displayMedium)
         Spacer(modifier = Modifier.height(16.dp))
@@ -237,7 +247,7 @@ fun AsignaturaAlumnoCard(
                 onVerClases()
                 showMenu = false
             },
-            leadingIcon = { Icon(Icons.Default.Book, null) }
+            leadingIcon = { Icon(Icons.Default.MenuBook, null) }
         )
         DropdownMenuItem(
             text = { Text("Dar de baja", color = MaterialTheme.colorScheme.error) },

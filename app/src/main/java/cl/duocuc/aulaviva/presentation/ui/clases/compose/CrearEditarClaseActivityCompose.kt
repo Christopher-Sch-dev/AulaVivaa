@@ -2,8 +2,8 @@ package cl.duocuc.aulaviva.presentation.ui.clases.compose
 
 import android.app.TimePickerDialog
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -15,7 +15,7 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import java.text.SimpleDateFormat
 import java.util.*
 
-class CrearEditarClaseActivityCompose : ComponentActivity() {
+class CrearEditarClaseActivityCompose : FragmentActivity() {
 
     private var onFechaSeleccionada: ((String) -> Unit)? = null
 

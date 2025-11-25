@@ -10,6 +10,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,8 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.activity.compose.DocenteClasesActivityCompose
 import cl.duocuc.aulaviva.presentation.activity.compose.InscritosActivityCompose
@@ -30,8 +36,9 @@ fun DocenteAsignaturasScreen(
     viewModel: AsignaturasViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val asignaturas by viewModel.asignaturas.collectAsStateWithLifecycle(initialValue = emptyList())
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val asignaturas: List<Asignatura> by viewModel.asignaturas.observeAsState(emptyList())
+    val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showCrearDialog by remember { mutableStateOf(false) }
@@ -104,11 +111,15 @@ fun DocenteAsignaturasScreen(
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                 val clip = ClipData.newPlainText("Código", asignatura.codigoAcceso)
                                 clipboard.setPrimaryClip(clip)
-                                snackbarHostState.showSnackbar("✓ Código copiado: ${asignatura.codigoAcceso}")
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("✓ Código copiado: ${asignatura.codigoAcceso}")
+                                }
                             },
                             onEliminar = {
                                 viewModel.eliminarAsignatura(asignatura.id)
-                                snackbarHostState.showSnackbar("✓ Asignatura eliminada")
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("✓ Asignatura eliminada")
+                                }
                             }
                         )
                     }
@@ -178,10 +189,9 @@ fun EmptyState(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        contentPadding = PaddingValues(32.dp)
+        verticalArrangement = Arrangement.Center
     ) {
         Text("📚", style = MaterialTheme.typography.displayMedium)
         Spacer(modifier = Modifier.height(16.dp))
@@ -264,7 +274,7 @@ fun AsignaturaDocenteCard(
                     onClick = onVerClases,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.Book, null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.MenuBook, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Clases")
                 }

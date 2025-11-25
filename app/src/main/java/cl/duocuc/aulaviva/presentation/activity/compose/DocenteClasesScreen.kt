@@ -7,6 +7,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,8 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.ui.clases.compose.CrearEditarClaseActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.clases.compose.DetalleClaseActivityCompose
@@ -29,20 +34,25 @@ fun DocenteClasesScreen(
     viewModel: ClaseViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val clases by viewModel.clases.collectAsStateWithLifecycle(initialValue = emptyList())
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val clases: List<Clase> by viewModel.obtenerClasesPorAsignatura(asignaturaId).observeAsState(emptyList())
+    val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        viewModel.cargarClasesPorAsignatura(asignaturaId)
+        viewModel.sincronizarClasesPorAsignatura(asignaturaId)
     }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(asignaturaNombre) },
-                subtitle = { Text("Gestionar Clases") },
+                title = {
+                    Column {
+                        Text(asignaturaNombre)
+                        Text("Gestionar Clases", style = MaterialTheme.typography.bodySmall)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { /* finish */ }) {
                         Icon(Icons.Default.ArrowBack, "Volver")
@@ -109,7 +119,9 @@ fun DocenteClasesScreen(
                             },
                             onEliminar = {
                                 viewModel.eliminarClase(clase.id)
-                                snackbarHostState.showSnackbar("✓ Clase eliminada")
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("✓ Clase eliminada")
+                                }
                             }
                         )
                     }
@@ -133,10 +145,9 @@ fun EmptyStateClases(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        contentPadding = PaddingValues(32.dp)
+        verticalArrangement = Arrangement.Center
     ) {
         Text("📖", style = MaterialTheme.typography.displayMedium)
         Spacer(modifier = Modifier.height(16.dp))

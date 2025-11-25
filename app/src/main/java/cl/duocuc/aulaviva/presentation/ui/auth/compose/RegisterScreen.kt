@@ -22,7 +22,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTheme
 import cl.duocuc.aulaviva.presentation.viewmodel.AuthViewModel
@@ -52,9 +53,9 @@ fun RegisterScreen(
     var passwordError by remember { mutableStateOf<String?>(null) }
 
     // Estados del ViewModel
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
-    val registerSuccess by viewModel.registerSuccess.collectAsStateWithLifecycle()
+    val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
+    val error: String? by viewModel.error.observeAsState()
+    val registerSuccess: Boolean by viewModel.registerSuccess.observeAsState(false)
 
     // Observar registro exitoso
     LaunchedEffect(registerSuccess) {
@@ -315,7 +316,7 @@ fun RegisterScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
-                enabled = !isLoading,
+                enabled = isLoading == false,
                 elevation = ButtonDefaults.buttonElevation(
                     defaultElevation = 4.dp,
                     pressedElevation = 6.dp

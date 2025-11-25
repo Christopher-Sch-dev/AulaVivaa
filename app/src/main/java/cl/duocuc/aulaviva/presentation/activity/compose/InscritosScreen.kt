@@ -13,8 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
 import cl.duocuc.aulaviva.presentation.viewmodel.InscritosViewModel
 import java.text.SimpleDateFormat
@@ -27,9 +29,10 @@ fun InscritosScreen(
     asignaturaNombre: String,
     viewModel: InscritosViewModel = viewModel()
 ) {
-    val inscritos by viewModel.obtenerInscritosLive(asignaturaId).collectAsStateWithLifecycle(initialValue = emptyList())
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val inscritos: List<AlumnoAsignaturaEntity> by viewModel.obtenerInscritosLive(asignaturaId).observeAsState(emptyList())
+    val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
+    val error: String? by viewModel.error.observeAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -38,7 +41,9 @@ fun InscritosScreen(
 
     LaunchedEffect(error) {
         error?.let {
-            snackbarHostState.showSnackbar(it)
+            scope.launch {
+                snackbarHostState.showSnackbar(it)
+            }
             viewModel.clearError()
         }
     }
@@ -47,8 +52,12 @@ fun InscritosScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Alumnos Inscritos") },
-                subtitle = { Text(asignaturaNombre) },
+                title = {
+                    Column {
+                        Text("Alumnos Inscritos")
+                        Text(asignaturaNombre, style = MaterialTheme.typography.bodySmall)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { /* finish */ }) {
                         Icon(Icons.Default.ArrowBack, "Volver")
@@ -122,10 +131,9 @@ fun EmptyStateInscritos(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        contentPadding = PaddingValues(32.dp)
+        verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = Icons.Default.Person,

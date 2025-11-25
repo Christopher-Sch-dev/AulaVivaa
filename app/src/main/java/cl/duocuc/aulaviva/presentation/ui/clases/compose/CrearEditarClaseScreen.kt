@@ -17,10 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
-import com.google.android.material.datepicker.MaterialDatePicker
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -50,9 +50,9 @@ fun CrearEditarClaseScreen(
     var descripcionError by remember { mutableStateOf<String?>(null) }
     var fechaError by remember { mutableStateOf<String?>(null) }
 
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val operationSuccess by viewModel.operationSuccess.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
+    val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
+    val operationSuccess: String? by viewModel.operationSuccess.observeAsState()
+    val error: String? by viewModel.error.observeAsState()
 
     // PDF picker
     val pickPdfLauncher = rememberLauncherForActivityResult(
@@ -101,8 +101,12 @@ fun CrearEditarClaseScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(if (claseId == null) "Nueva Clase" else "Editar Clase") },
-                subtitle = { Text(asignaturaNombre) },
+                title = {
+                    Column {
+                        Text(if (claseId == null) "Nueva Clase" else "Editar Clase")
+                        Text(asignaturaNombre, style = MaterialTheme.typography.bodySmall)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { /* finish */ }) {
                         Icon(Icons.Default.ArrowBack, "Volver")
@@ -286,7 +290,7 @@ fun CrearEditarClaseScreen(
                         }
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = !isLoading
+                    enabled = isLoading == false
                 ) {
                     if (isLoading) {
                         CircularProgressIndicator(
