@@ -1,0 +1,152 @@
+package cl.duocuc.aulaviva.presentation.ui.common
+
+import android.graphics.Typeface
+import android.text.TextUtils
+import android.widget.TextView
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
+import io.noties.markwon.Markwon
+import io.noties.markwon.core.MarkwonTheme
+import io.noties.markwon.image.ImagesPlugin
+import io.noties.markwon.linkify.LinkifyPlugin
+import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
+import io.noties.markwon.ext.tables.TablePlugin
+import io.noties.markwon.ext.tasklist.TaskListPlugin
+
+/**
+ * Componente optimizado para renderizar Markdown usando Markwon
+ *
+ * Sigue principios de Clean Architecture:
+ * - Separación de responsabilidades: Solo renderiza, no procesa lógica
+ * - Reutilizable: Componente composable independiente
+ * - Configuración profesional: Plugins completos para mejor renderizado
+ *
+ * Soporta:
+ * - Encabezados (##, ###)
+ * - Negritas (**texto**)
+ * - Cursivas (*texto*)
+ * - Listas (•, -, 1.)
+ * - Código inline (`código`) y bloques (```código```)
+ * - Links automáticos
+ * - Tablas
+ * - Task lists
+ * - Strikethrough
+ * - Imágenes
+ */
+@Composable
+fun MarkdownText(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
+
+    // Crear instancia de Markwon con configuración completa de plugins
+    // Usar remember con context y colorScheme como keys para evitar recrear la instancia
+    // en cada recomposición, mejorando el rendimiento
+    val markwon = remember(context, colorScheme) {
+        // Convertir colores de Material3 Compose (Color) a Android Color (Int)
+        // para que Markwon pueda utilizarlos en su configuración de tema
+        val primaryColor = android.graphics.Color.valueOf(
+            colorScheme.primary.red,
+            colorScheme.primary.green,
+            colorScheme.primary.blue,
+            colorScheme.primary.alpha
+        ).toArgb()
+
+        val surfaceVariantColor = android.graphics.Color.valueOf(
+            colorScheme.surfaceVariant.red,
+            colorScheme.surfaceVariant.green,
+            colorScheme.surfaceVariant.blue,
+            colorScheme.surfaceVariant.alpha
+        ).toArgb()
+
+        val onSurfaceVariantColor = android.graphics.Color.valueOf(
+            colorScheme.onSurfaceVariant.red,
+            colorScheme.onSurfaceVariant.green,
+            colorScheme.onSurfaceVariant.blue,
+            colorScheme.onSurfaceVariant.alpha
+        ).toArgb()
+
+        val outlineColor = android.graphics.Color.valueOf(
+            colorScheme.outline.red,
+            colorScheme.outline.green,
+            colorScheme.outline.blue,
+            colorScheme.outline.alpha
+        ).toArgb()
+
+        Markwon.builder(context)
+            // Plugin para renderizar imágenes en Markdown
+            .usePlugin(ImagesPlugin.create())
+            // Plugin para convertir URLs y emails en links clickeables automáticamente
+            .usePlugin(LinkifyPlugin.create())
+            // Plugin para renderizar tablas en formato Markdown
+            .usePlugin(TablePlugin.create(context))
+            // Plugin para renderizar listas de tareas (checkboxes) en Markdown
+            .usePlugin(TaskListPlugin.create(context))
+            // Plugin para renderizar texto tachado (strikethrough) en Markdown
+            .usePlugin(StrikethroughPlugin.create())
+            // Configurar tema personalizado para integrar colores de Material3
+            // Esto asegura que el Markdown renderizado use los colores del tema actual
+            .usePlugin(object : io.noties.markwon.AbstractMarkwonPlugin() {
+                override fun configureTheme(builder: MarkwonTheme.Builder) {
+                    builder
+                        .headingBreakHeight(0) // Sin línea bajo encabezados
+                        .headingTextSizeMultipliers(floatArrayOf(1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f))
+                        .codeTextSize(14) // Tamaño de código
+                        .codeBackgroundColor(surfaceVariantColor)
+                        .codeTextColor(onSurfaceVariantColor)
+                        .linkColor(primaryColor)
+                        .blockQuoteColor(primaryColor)
+                        .listItemColor(primaryColor)
+                        .thematicBreakColor(outlineColor)
+                }
+            })
+            .build()
+    }
+
+    AndroidView(
+        factory = { ctx ->
+            TextView(ctx).apply {
+                // Configurar tamaño de texto base equivalente a Material3 bodyMedium
+                textSize = 16f
+                // Configurar espaciado entre líneas para mejorar la legibilidad del Markdown
+                setLineSpacing(8f, 1.0f)
+                // No agregar padding aquí, el Card contenedor maneja el espaciado
+                setPadding(0, 0, 0, 0)
+
+                // Permitir que el usuario seleccione el texto renderizado
+                setTextIsSelectable(true)
+                // Usar tipo de letra normal (sin negrita ni cursiva por defecto)
+                setTypeface(null, Typeface.NORMAL)
+                // El color de texto se configura automáticamente por Markwon según el tema
+
+                // Habilitar que los links en el Markdown sean clickeables
+                linksClickable = true
+                // Configurar el método de movimiento para que los links funcionen correctamente
+                movementMethod = android.text.method.LinkMovementMethod.getInstance()
+
+                // Deshabilitar la barra de scroll vertical, el contenedor maneja el scroll
+                isVerticalScrollBarEnabled = false
+
+                // Configurar ellipsis para texto muy largo (aunque normalmente no se usa)
+                ellipsize = TextUtils.TruncateAt.END
+                // Permitir todas las líneas necesarias para mostrar el contenido completo
+                maxLines = Int.MAX_VALUE
+            }
+        },
+        update = { textView ->
+            // Renderizar el contenido Markdown usando Markwon
+            // Solo actualizar si el texto cambió para evitar renderizado innecesario
+            if (textView.text?.toString() != text) {
+                markwon.setMarkdown(textView, text)
+            }
+        },
+        modifier = modifier.fillMaxWidth()
+    )
+}

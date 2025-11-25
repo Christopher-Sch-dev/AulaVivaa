@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardBackgroundColor="@android:color/white"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Nombre de la asignatura -->
+        <TextView
+            android:id="@+id/textViewNombre"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Programación Orientada a Objetos"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textColor="#4F3BB8"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- Descripción -->
+        <TextView
+            android:id="@+id/textViewDescripcion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Curso avanzado de POO"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textColor="#666666"
+            android:textSize="14sp" />
+
+        <!-- Código de acceso (con icono inline) -->
+        <TextView
+            android:id="@+id/textViewCodigo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="📋 Código: POO2025-A1B2"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#2C2C2C"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <!-- Fecha de creación -->
+        <TextView
+            android:id="@+id/textViewFecha"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Creada: 15 Ene 2025"
+            android:textColor="#999999"
+            android:textSize="12sp" />
+
+        <!-- Botones de acción -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical">
+
+            <!-- Primera fila: Ver Clases y Ver Inscritos -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/buttonVerClases"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="Ver Clases"
+                    android:textAllCaps="false"
+                    android:textColor="#4F3BB8"
+                    android:textSize="12sp"
+                    app:strokeColor="#4F3BB8" />
+
+                <Button
+                    android:id="@+id/buttonVerInscritos"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="Inscritos"
+                    android:textAllCaps="false"
+                    android:textColor="#FF6F00"
+                    android:textSize="12sp"
+                    app:strokeColor="#FF6F00" />
+            </LinearLayout>
+
+            <!-- Segunda fila: Copiar Código y Eliminar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/buttonCopiarCodigo"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="8dp"
+                    android:minWidth="0dp"
+                    android:includeFontPadding="false"
+                    android:text="Copiar-Codigo"
+                    android:textAllCaps="false"
+                    android:textColor="#2E7D32"
+                    android:textSize="12sp"
+                    app:strokeColor="#2E7D32" />
+
+                <Button
+                    android:id="@+id/buttonEliminar"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="Eliminar"
+                    android:textAllCaps="false"
+                    android:textColor="#D32F2F"
+                    android:textSize="12sp"
+                    app:strokeColor="#D32F2F" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

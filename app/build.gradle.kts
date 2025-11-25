@@ -7,6 +7,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     kotlin("plugin.serialization") version "2.1.0"
+    id("com.google.gms.google-services")
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0"
 }
 
 
@@ -17,6 +19,16 @@ val localProperties = Properties()
 if (localPropertiesFile.exists()) {
     FileInputStream(localPropertiesFile).use { stream ->
         localProperties.load(stream)
+    }
+}
+
+// ✅ Leer keystore.properties para firma de APK release
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+
+if (keystorePropertiesFile.exists()) {
+    FileInputStream(keystorePropertiesFile).use { stream ->
+        keystoreProperties.load(stream)
     }
 }
 
@@ -43,8 +55,23 @@ android {
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
     }
 
+    // ✅ Configuración de firma para APK release
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                storeFile = file(keystoreProperties.getProperty("KEYSTORE_FILE") ?: "aulaviva-release.jks")
+                storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD")
+                keyAlias = keystoreProperties.getProperty("KEY_ALIAS")
+                keyPassword = keystoreProperties.getProperty("KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // ✅ Usar configuración de firma
+            signingConfig = signingConfigs.getByName("release")
+
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -65,6 +92,7 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+        compose = true
     }
 
     // ✅ CORRECCIÓN: Configurar lint para evitar bloqueos de archivos
@@ -90,12 +118,75 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.9.3")
     implementation("androidx.fragment:fragment-ktx:1.8.5")
 
+    // ========== JETPACK COMPOSE ==========
+    val composeBom = platform("androidx.compose:compose-bom:2024.11.00")
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    // Material Design 3 para Compose
+    implementation("androidx.compose.material3:material3")
+
+    // Material (para SwipeRefresh compatible con Material3)
+    // Forzar versión específica que incluye SwipeRefresh
+    implementation("androidx.compose.material:material:1.7.5")
+
+    // Foundation (layouts, gestures, etc.)
+    implementation("androidx.compose.foundation:foundation")
+
+    // UI Tooling (preview, etc.)
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // Integración con Activity
+    implementation("androidx.activity:activity-compose:1.9.3")
+
+    // Integración con ViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+
+    // LiveData para Compose
+    implementation("androidx.compose.runtime:runtime-livedata:1.7.5")
+
+    // Navigation Compose
+    implementation("androidx.navigation:navigation-compose:2.8.4")
+
+    // Icons extendidos Material
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // Coil para imágenes en Compose
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // SwipeRefreshLayout
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
     // ✅ SUPABASE (versiones estables en Maven Central)
     implementation("io.github.jan-tennert.supabase:postgrest-kt:2.6.1")
     implementation("io.github.jan-tennert.supabase:storage-kt:2.6.1")
     implementation("io.github.jan-tennert.supabase:gotrue-kt:2.6.1")
-    implementation("io.ktor:ktor-client-android:2.3.12")
-    implementation("io.ktor:ktor-client-core:2.3.12")
+
+    // Ktor dependencies (forzar versión 2.3.12 compatible con Supabase 2.6.1)
+    implementation("io.ktor:ktor-client-android:2.3.12") {
+        version {
+            strictly("2.3.12")
+        }
+    }
+    implementation("io.ktor:ktor-client-core:2.3.12") {
+        version {
+            strictly("2.3.12")
+        }
+    }
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.12") {
+        version {
+            strictly("2.3.12")
+        }
+    }
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12") {
+        version {
+            strictly("2.3.12")
+        }
+    }
 
     // Room (Base de datos local)
     implementation("androidx.room:room-runtime:2.6.1")
@@ -112,16 +203,39 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.code.gson:gson:2.13.2")
 
-    // Google Generative AI (Gemini)
+    // Google Generative AI (Gemini) - Compatible con Ktor 2.3.12
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
-
-    // Markwon para renderizar Markdown
+    // Markwon para renderizar Markdown (implementación profesional)
     implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:image:4.6.2")
+    implementation("io.noties.markwon:linkify:4.6.2")
+    implementation("io.noties.markwon:ext-strikethrough:4.6.2")
+    implementation("io.noties.markwon:ext-tables:4.6.2")
+    implementation("io.noties.markwon:ext-tasklist:4.6.2")
+
+    // PDFBox para Android (fallback si Firebase falla)
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 
 
     // Testing
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+
+    // MockK para mocking
+    testImplementation("io.mockk:mockk:1.13.8")
+    androidTestImplementation("io.mockk:mockk-android:1.13.8")
+
+    // Coroutines Testing
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+
+    // Architecture Components Testing
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+
+    // Room Testing
+    testImplementation("androidx.room:room-testing:2.6.1")
+
+    // Truth para assertions más legibles
+    testImplementation("com.google.truth:truth:1.1.5")
 }

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#F8FCFF"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Nombre de la asignatura -->
+    <TextView
+        android:id="@+id/textViewNombreAsignatura"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="Programación Orientada a Objetos"
+        android:textColor="#4F3BB8"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <!-- Instrucciones -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="Comparte este código con tus alumnos para que se inscriban:"
+        android:textColor="#666666"
+        android:textSize="14sp" />
+
+    <!-- Código de acceso destacado -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="#4F3BB8"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Código de Acceso"
+                android:textColor="@android:color/white"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/textViewCodigo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.15"
+                android:text="📋 POO2025-A1B2"
+                android:textAllCaps="true"
+                android:textColor="@android:color/white"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Nota de formato -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:gravity="center"
+        android:text="✅ Código en MAYÚSCULAS (como aparece en Supabase)"
+        android:textColor="#4F3BB8"
+        android:textSize="11sp"
+        android:textStyle="italic" />
+
+    <!-- Botón copiar: ancho adaptativo y centrado -->
+    <Button
+        android:id="@+id/buttonCopiar"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:paddingLeft="18dp"
+        android:paddingRight="18dp"
+        android:minWidth="0dp"
+        android:includeFontPadding="false"
+        android:backgroundTint="#6D5ACF"
+        android:text="Copiar"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <!-- Nota -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="💡 Los alumnos podrán ver tus clases una vez se inscriban con este código."
+        android:textColor="#999999"
+        android:textSize="12sp" />
+</LinearLayout>

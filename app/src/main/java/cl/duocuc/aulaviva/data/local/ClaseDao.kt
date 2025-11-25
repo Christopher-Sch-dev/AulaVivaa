@@ -41,6 +41,25 @@ interface ClaseDao {
     fun obtenerTodasLasClases(): Flow<List<ClaseEntity>>
 
     /**
+     * Obtiene clases de una asignatura específica.
+     */
+    @Query("SELECT * FROM clases WHERE asignaturaId = :asignaturaId ORDER BY fecha DESC")
+    fun obtenerClasesPorAsignatura(asignaturaId: String): Flow<List<ClaseEntity>>
+
+    /**
+     * Obtiene clases de una asignatura de forma directa (sin Flow).
+     * Usado para validaciones inmediatas.
+     */
+    @Query("SELECT * FROM clases WHERE asignaturaId = :asignaturaId")
+    suspend fun obtenerClasesPorAsignaturaDirecto(asignaturaId: String): List<ClaseEntity>
+
+    /**
+     * Obtiene clases de múltiples asignaturas (para alumnos inscritos).
+     */
+    @Query("SELECT * FROM clases WHERE asignaturaId IN (:asignaturasIds) ORDER BY fecha DESC")
+    fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): Flow<List<ClaseEntity>>
+
+    /**
      * Inserta o reemplaza una clase en la BD local.
      * onConflict = REPLACE significa que si el ID ya existe, lo actualiza.
      */
@@ -48,7 +67,7 @@ interface ClaseDao {
     suspend fun insertarClase(clase: ClaseEntity)
 
     /**
-     * Inserta múltiples clases de una vez (útil para sincronizar desde Firestore)
+     * Inserta múltiples clases de una vez (útil para sincronizar desde Supabase)
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarVarias(clases: List<ClaseEntity>)
@@ -72,7 +91,7 @@ interface ClaseDao {
     suspend fun eliminarTodas()
 
     /**
-     * Obtiene clases que aún no se han sincronizado con Firestore
+     * Obtiene clases que aún no se han sincronizado con Supabase
      * (útil cuando vuelve la conexión a internet)
      */
     @Query("SELECT * FROM clases WHERE sincronizado = 0")

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#F8FCFF"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Icono -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="🔑"
+        android:textSize="48sp" />
+
+    <!-- Título -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="Ingresa el código de acceso"
+        android:textColor="#4F3BB8"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <!-- Descripción -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="El docente te proporcionó un código único para acceder a su asignatura."
+        android:textColor="#666666"
+        android:textSize="14sp" />
+
+    <!-- Campo código -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutCodigo"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:hint="Código (ej: POO2025-A3F9)"
+        app:boxBackgroundColor="@android:color/white"
+        app:boxStrokeColor="#4F3BB8"
+        app:counterEnabled="true"
+        app:counterMaxLength="13"
+        app:startIconDrawable="@android:drawable/ic_menu_edit"
+        app:startIconTint="#4F3BB8">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editTextCodigo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapCharacters"
+            android:maxLength="13"
+            android:maxLines="1"
+            android:textAllCaps="true"
+            android:textColor="#2C2C2C"
+            android:textColorHint="#757575"
+            android:textSize="16sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Nota formato -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="💡 Formato válido: 3 letras + 4 dígitos + guion + 4 caracteres\nEjemplo: POO2025-A3F9"
+        android:textColor="#999999"
+        android:textSize="12sp" />
+</LinearLayout>

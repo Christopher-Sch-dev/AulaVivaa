@@ -1,0 +1,249 @@
+package cl.duocuc.aulaviva.presentation.viewmodel
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
+import cl.duocuc.aulaviva.data.repository.RepositoryProvider
+import cl.duocuc.aulaviva.data.model.Asignatura
+import cl.duocuc.aulaviva.domain.repository.IAsignaturasRepository
+import cl.duocuc.aulaviva.domain.repository.IAuthRepository
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import cl.duocuc.aulaviva.domain.repository.IClaseRepository
+import cl.duocuc.aulaviva.domain.repository.IStorageRepository
+
+/**
+ * ViewModel para gestión de asignaturas (DOCENTES).
+ * Maneja el estado de la UI y orquesta operaciones con el Repository.
+ */
+class AsignaturasViewModel(application: Application) : AndroidViewModel(application) {
+
+    // Repository
+    private val repository: IAsignaturasRepository = RepositoryProvider.provideAsignaturasRepository(application)
+    private val authRepository: IAuthRepository = RepositoryProvider.provideAuthRepository()
+
+    // LiveData para la lista de asignaturas (automática desde Room)
+    val asignaturas: LiveData<List<Asignatura>> = repository.obtenerAsignaturasDocente().asLiveData()
+
+    // Estados de carga
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> = _isLoading
+
+    private val _error = MutableLiveData<String?>()
+    val error: LiveData<String?> = _error
+
+    private val _operationSuccess = MutableLiveData<String?>()
+    val operationSuccess: LiveData<String?> = _operationSuccess
+
+    private val _codigoGenerado = MutableLiveData<String?>()
+    val codigoGenerado: LiveData<String?> = _codigoGenerado
+
+    init {
+        // Verificar autenticación antes de sincronizar
+        viewModelScope.launch {
+            // Pequeño delay para asegurar que la sesión esté completamente establecida
+            delay(200)
+
+            // Solo sincronizar si el usuario está autenticado
+            if (authRepository.isLoggedIn()) {
+                sincronizarAsignaturas()
+            } else {
+                android.util.Log.w("AsignaturasVM", "⚠️ Usuario no autenticado, omitiendo sincronización inicial")
+            }
+        }
+    }
+
+    // ClaseRepository para operaciones relacionadas con clases (ej.: verificar existencia)
+    private val claseRepository: IClaseRepository = RepositoryProvider.provideClaseRepository(application)
+    // Storage repo for any future file operations related to asignaturas/classes
+    private val storageRepository: IStorageRepository = RepositoryProvider.provideStorageRepository(application)
+
+    /**
+     * Verifica si una asignatura tiene clases (delegado al ClaseRepository).
+     * Función suspend para usar desde coroutines.
+     */
+    suspend fun tieneClases(asignaturaId: String): Boolean {
+        return claseRepository.tieneClases(asignaturaId)
+    }
+
+    /**
+     * Verifica si una asignatura tiene clases (versión no-suspend para usar desde UI).
+     * Usa viewModelScope para ejecutar la verificación.
+     */
+    fun verificarTieneClases(asignaturaId: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val tiene = claseRepository.tieneClases(asignaturaId)
+            onResult(tiene)
+        }
+    }
+
+    /**
+     * Sincroniza asignaturas desde Supabase.
+     */
+    fun sincronizarAsignaturas() {
+        viewModelScope.launch {
+            // Verificar autenticación antes de sincronizar
+            if (!authRepository.isLoggedIn()) {
+                android.util.Log.w("AsignaturasVM", "⚠️ Usuario no autenticado, no se puede sincronizar")
+                _error.value = "Sesión no válida. Por favor, inicia sesión nuevamente."
+                return@launch
+            }
+
+            _isLoading.value = true
+            _error.value = null
+
+            repository.sincronizarAsignaturas()
+                .onSuccess {
+                    android.util.Log.d("AsignaturasVM", "✅ Sincronización exitosa")
+                }
+                .onFailure { exception ->
+                    // No cerrar la sesión automáticamente, solo mostrar el error
+                    val errorMessage = when {
+                        exception.message?.contains("Usuario no autenticado", ignoreCase = true) == true ||
+                        exception.message?.contains("not authenticated", ignoreCase = true) == true ||
+                        exception.message?.contains("session", ignoreCase = true) == true ->
+                            "Sesión expirada. Por favor, inicia sesión nuevamente."
+                        else -> exception.message ?: "Error al sincronizar asignaturas"
+                    }
+                    _error.value = errorMessage
+                    android.util.Log.e("AsignaturasVM", "❌ Error sincronizando: ${exception.message}", exception)
+                }
+
+            _isLoading.value = false
+        }
+    }
+
+    /**
+     * Crea una nueva asignatura.
+     */
+    fun crearAsignatura(nombre: String, descripcion: String) {
+        if (nombre.isBlank()) {
+            _error.value = "El nombre no puede estar vacío"
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            repository.crearAsignatura(nombre, descripcion)
+                .onSuccess { asignatura ->
+                    android.util.Log.d("AsignaturasVM", "✅ Asignatura creada: ${asignatura.id}")
+
+                    // Generar código automáticamente SIN llamar a sincronizarAsignaturas después
+                    repository.generarCodigo(asignatura.id)
+                        .onSuccess { codigo ->
+                            android.util.Log.d("AsignaturasVM", "✅ Código generado: $codigo")
+                            _codigoGenerado.value = codigo
+                            _operationSuccess.value = "Asignatura creada exitosamente"
+                            _isLoading.value = false
+                        }
+                        .onFailure { exception ->
+                            android.util.Log.e("AsignaturasVM", "⚠️ Error generando código", exception)
+                            _operationSuccess.value = "Asignatura creada (sin código)"
+                            _isLoading.value = false
+                        }
+                }
+                .onFailure { exception ->
+                    _error.value = exception.message
+                    android.util.Log.e("AsignaturasVM", "❌ Error creando asignatura", exception)
+                    _isLoading.value = false
+                }
+        }
+    }
+
+    /**
+     * Genera código único para una asignatura (solo para botón manual).
+     */
+    fun generarCodigo(asignaturaId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _codigoGenerado.value = null
+
+            repository.generarCodigo(asignaturaId)
+                .onSuccess { codigo ->
+                    _codigoGenerado.value = codigo
+                    android.util.Log.d("AsignaturasVM", "✅ Código generado: $codigo")
+                    // NO llamar a sincronizarAsignaturas() aquí para evitar loops
+                }
+                .onFailure { exception ->
+                    _error.value = exception.message
+                    android.util.Log.e("AsignaturasVM", "❌ Error generando código", exception)
+                }
+
+            _isLoading.value = false
+        }
+    }
+
+    /**
+     * Actualiza una asignatura existente.
+     */
+    fun actualizarAsignatura(asignatura: Asignatura) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            repository.actualizarAsignatura(asignatura)
+                .onSuccess {
+                    android.util.Log.d("AsignaturasVM", "✅ Asignatura actualizada")
+                    _operationSuccess.value = "Asignatura actualizada"
+                    // ✅ NO llamar a sincronizarAsignaturas() - Room Flow se actualiza automáticamente
+                }
+                .onFailure { exception ->
+                    _error.value = exception.message
+                    android.util.Log.e("AsignaturasVM", "❌ Error actualizando", exception)
+                }
+
+            _isLoading.value = false
+        }
+    }
+
+    /**
+     * Elimina una asignatura.
+     */
+    fun eliminarAsignatura(asignaturaId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            repository.eliminarAsignatura(asignaturaId)
+                .onSuccess {
+                    android.util.Log.d("AsignaturasVM", "✅ Asignatura eliminada")
+                    _operationSuccess.value = "Asignatura eliminada"
+                    // ✅ NO llamar a sincronizarAsignaturas() - Room Flow se actualiza automáticamente
+                }
+                .onFailure { exception ->
+                    _error.value = exception.message
+                    android.util.Log.e("AsignaturasVM", "❌ Error eliminando", exception)
+                }
+
+            _isLoading.value = false
+        }
+    }
+
+    /**
+     * Limpia el código generado (después de mostrarlo).
+     */
+    fun limpiarCodigoGenerado() {
+        _codigoGenerado.value = null
+    }
+
+    /**
+     * Limpia el error.
+     */
+    fun limpiarError() {
+        _error.value = null
+    }
+
+    /**
+     * Obtiene el código de acceso de una asignatura para copiar.
+     * Retorna el código si existe, null en caso contrario.
+     */
+    fun obtenerCodigoParaCopiar(asignaturaId: String): String? {
+        val asignatura = asignaturas.value?.find { it.id == asignaturaId }
+        return asignatura?.codigoAcceso
+    }
+}

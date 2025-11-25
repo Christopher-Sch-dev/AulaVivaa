@@ -31,37 +31,89 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AulaViva">
+
+        <!-- Pantalla de bienvenida Compose - Punto de entrada de la app -->
         <activity
-            android:name=".presentation.ui.clases.ListaClasesActivity"
-            android:exported="false" />
-        <activity
-            android:name=".presentation.ui.clases.DetalleClaseActivity"
-            android:exported="false" />
-        <activity
-            android:name=".presentation.ui.main.PanelPrincipalActivity"
-            android:exported="false" />
-        <activity
-            android:name=".presentation.ui.main.PanelAlumnoActivity"
-            android:exported="false" />
-        <activity
-            android:name=".presentation.ui.auth.RegisterActivity"
-            android:exported="false" />
-        <activity
-            android:name=".presentation.ui.auth.LoginActivity"
-            android:exported="false" />
-        <!-- Pantalla de bienvenida - Punto de entrada de la app -->
-        <activity
-            android:name=".presentation.ui.auth.WelcomeActivity"
-            android:exported="true">
+            android:name=".presentation.ui.auth.compose.WelcomeActivityCompose"
+            android:exported="true"
+            android:theme="@style/Theme.AulaViva">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- LoginActivity Compose -->
         <activity
-            android:name=".presentation.ui.ia.ResultadoIAActivity"
-            android:exported="false" />
+            android:name=".presentation.ui.auth.compose.LoginActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- RegisterActivity Compose -->
+        <activity
+            android:name=".presentation.ui.auth.compose.RegisterActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- PanelPrincipalActivity Compose -->
+        <activity
+            android:name=".presentation.ui.main.compose.PanelPrincipalActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- PanelAlumnoActivity Compose -->
+        <activity
+            android:name=".presentation.ui.main.compose.PanelAlumnoActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- DocenteAsignaturasActivity Compose -->
+        <activity
+            android:name=".presentation.activity.compose.DocenteAsignaturasActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- AlumnoAsignaturasActivity Compose -->
+        <activity
+            android:name=".presentation.activity.compose.AlumnoAsignaturasActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- DocenteClasesActivity Compose -->
+        <activity
+            android:name=".presentation.activity.compose.DocenteClasesActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- AlumnoClasesActivity Compose -->
+        <activity
+            android:name=".presentation.activity.compose.AlumnoClasesActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- InscritosActivity Compose -->
+        <activity
+            android:name=".presentation.activity.compose.InscritosActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- DetalleClaseActivity Compose -->
+        <activity
+            android:name=".presentation.ui.clases.compose.DetalleClaseActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- CrearEditarClaseActivity Compose -->
+        <activity
+            android:name=".presentation.ui.clases.compose.CrearEditarClaseActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
+
+        <!-- ResultadoIAActivity Compose -->
+        <activity
+            android:name=".presentation.ui.ia.compose.ResultadoIAActivityCompose"
+            android:exported="false"
+            android:theme="@style/Theme.AulaViva" />
     </application>
 
 </manifest>

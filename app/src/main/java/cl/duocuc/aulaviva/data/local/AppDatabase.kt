@@ -10,21 +10,30 @@ import androidx.room.RoomDatabase
  * Esta es la BD que funciona sin internet, guardada en el celular.
  *
  * @Database indica las tablas (entities) y la versión de la BD.
- * version = 1 porque es la primera versión de mi esquema.
+ * version = 3 para incluir asignaturas y alumno_asignaturas.
  * exportSchema = false para no generar archivos de esquema (simplifica el desarrollo).
  *
  * Patrón Singleton: Solo existe UNA instancia de la BD en toda la app.
  * Esto evita problemas de múltiples conexiones y ahorra memoria.
  */
 @Database(
-    entities = [ClaseEntity::class],  // Lista de tablas (por ahora solo clases)
-    version = 2, // subo versión a 2 por cambios en el esquema (nuevos campos)
+    entities = [
+        ClaseEntity::class,
+        AsignaturaEntity::class,
+        AlumnoAsignaturaEntity::class,
+        cl.duocuc.aulaviva.data.local.ChatSessionEntity::class,
+        cl.duocuc.aulaviva.data.local.ChatMessageEntity::class
+    ],
+    version = 4, // Versión 4: añade tablas de chat para persistencia de sesiones
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    // Método abstracto que Room implementa automáticamente
+    // Métodos abstractos que Room implementa automáticamente
     abstract fun claseDao(): ClaseDao
+    abstract fun asignaturaDao(): AsignaturaDao
+    abstract fun alumnoAsignaturaDao(): AlumnoAsignaturaDao
+    abstract fun chatDao(): ChatDao
 
     companion object {
         // @Volatile asegura que los cambios sean visibles en todos los threads
