@@ -37,6 +37,7 @@ fun PanelPrincipalScreen(
     viewModel: PanelPrincipalViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
     // Estados del ViewModel
@@ -79,10 +80,28 @@ fun PanelPrincipalScreen(
         }
     }
 
-    // Mostrar toast
+    // Mostrar toast y notificación de bienvenida
     LaunchedEffect(toastMessage) {
-        toastMessage?.let {
-            // Toast se maneja en el ViewModel o con Snackbar
+        toastMessage?.let { mensaje ->
+            scope.launch {
+                snackbarHostState.showSnackbar(mensaje)
+            }
+            viewModel.toastMessage.value = null // Limpiar después de mostrar
+        }
+    }
+
+    // Mostrar notificación de bienvenida con Snackbar (solo una vez al cargar)
+    var bienvenidaMostrada by remember { mutableStateOf(false) }
+    LaunchedEffect(userEmail) {
+        if (!bienvenidaMostrada && userEmail != null) {
+            bienvenidaMostrada = true
+            val nombre = userEmail?.substringBefore("@") ?: "Usuario"
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "¡Bienvenido $nombre! 👋",
+                    duration = SnackbarDuration.Short
+                )
+            }
         }
     }
 
@@ -236,10 +255,23 @@ fun PanelPrincipalScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(16.dp))
+                    var isCreatingDemo by remember { mutableStateOf(false) }
+
+                    // Observar cuando se completa la creación de demo
+                    LaunchedEffect(toastMessage) {
+                        toastMessage?.let {
+                            isCreatingDemo = false
+                        }
+                    }
+
                     Button(
                         onClick = {
-                            viewModel.crearAsignaturaYClaseDemo()
+                            if (!isCreatingDemo) {
+                                isCreatingDemo = true
+                                viewModel.crearAsignaturaYClaseDemo()
+                            }
                         },
+                        enabled = !isCreatingDemo,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
@@ -253,11 +285,18 @@ fun PanelPrincipalScreen(
                             contentDescription = null
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Crear Demo",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                        if (isCreatingDemo) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Crear Demo",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(

@@ -108,7 +108,9 @@ fun CrearEditarClaseScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { /* finish */ }) {
+                    IconButton(onClick = {
+                        (context as? android.app.Activity)?.finish()
+                    }) {
                         Icon(Icons.Default.ArrowBack, "Volver")
                     }
                 },

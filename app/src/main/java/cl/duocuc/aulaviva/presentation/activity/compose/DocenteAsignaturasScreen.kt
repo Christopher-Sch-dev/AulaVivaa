@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.SwipeRefresh
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.MoreVert
@@ -40,6 +41,7 @@ fun DocenteAsignaturasScreen(
     val asignaturas: List<Asignatura> by viewModel.asignaturas.observeAsState(emptyList())
     val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
     val snackbarHostState = remember { SnackbarHostState() }
+    val isRefreshing = remember { mutableStateOf(false) }
 
     var showCrearDialog by remember { mutableStateOf(false) }
     var nombreAsignatura by remember { mutableStateOf("") }
@@ -49,13 +51,26 @@ fun DocenteAsignaturasScreen(
         viewModel.sincronizarAsignaturas()
     }
 
+    // Manejar pull-to-refresh
+    fun onRefresh() {
+        isRefreshing.value = true
+        viewModel.sincronizarAsignaturas()
+        scope.launch {
+            kotlinx.coroutines.delay(500)
+            isRefreshing.value = false
+            snackbarHostState.showSnackbar("✓ Datos actualizados")
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Mis Asignaturas") },
                 navigationIcon = {
-                    IconButton(onClick = { /* finish */ }) {
+                    IconButton(onClick = {
+                        (context as? android.app.Activity)?.finish()
+                    }) {
                         Icon(Icons.Default.ArrowBack, "Volver")
                     }
                 },
@@ -87,11 +102,15 @@ fun DocenteAsignaturasScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                SwipeRefresh(
+                    onRefresh = { onRefresh() },
+                    refreshing = isRefreshing.value
                 ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                     items(asignaturas) { asignatura ->
                         AsignaturaDocenteCard(
                             asignatura = asignatura,
@@ -116,13 +135,26 @@ fun DocenteAsignaturasScreen(
                                 }
                             },
                             onEliminar = {
-                                viewModel.eliminarAsignatura(asignatura.id)
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("✓ Asignatura eliminada")
+                                // Validar que no tenga clases antes de eliminar
+                                viewModel.verificarTieneClases(asignatura.id) { tieneClases ->
+                                    if (tieneClases) {
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(
+                                                "⚠️ No se puede eliminar: la asignatura tiene clases asociadas",
+                                                duration = SnackbarDuration.Long
+                                            )
+                                        }
+                                    } else {
+                                        viewModel.eliminarAsignatura(asignatura.id)
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar("✓ Asignatura eliminada")
+                                        }
+                                    }
                                 }
                             }
                         )
                     }
+                }
                 }
             }
 
@@ -259,8 +291,34 @@ fun AsignaturaDocenteCard(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Default.MoreVert, "Opciones")
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true }
+                    ) {
+                        Icon(Icons.Default.MoreVert, "Opciones")
+                    }
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Copiar código") },
+                            onClick = {
+                                onCopiarCodigo()
+                                showMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Default.ContentCopy, null) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Eliminar", color = MaterialTheme.colorScheme.error) },
+                            onClick = {
+                                onEliminar()
+                                showMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }
+                        )
+                    }
                 }
             }
 
@@ -288,28 +346,6 @@ fun AsignaturaDocenteCard(
                 }
             }
         }
-    }
-
-    DropdownMenu(
-        expanded = showMenu,
-        onDismissRequest = { showMenu = false }
-    ) {
-        DropdownMenuItem(
-            text = { Text("Copiar código") },
-            onClick = {
-                onCopiarCodigo()
-                showMenu = false
-            },
-            leadingIcon = { Icon(Icons.Default.ContentCopy, null) }
-        )
-        DropdownMenuItem(
-            text = { Text("Eliminar", color = MaterialTheme.colorScheme.error) },
-            onClick = {
-                onEliminar()
-                showMenu = false
-            },
-            leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }
-        )
     }
 }
 

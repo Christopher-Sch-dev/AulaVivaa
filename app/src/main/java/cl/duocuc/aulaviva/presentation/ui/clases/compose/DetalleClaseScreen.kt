@@ -62,7 +62,9 @@ fun DetalleClaseScreen(
             TopAppBar(
                 title = { Text("Detalle de Clase") },
                 navigationIcon = {
-                    IconButton(onClick = { /* finish */ }) {
+                    IconButton(onClick = {
+                        (context as? android.app.Activity)?.finish()
+                    }) {
                         Icon(Icons.Default.ArrowBack, "Volver")
                     }
                 },
@@ -146,56 +148,15 @@ fun DetalleClaseScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 12.dp)
                         )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Button(
+                            onClick = {
+                                PdfUtils.abrirPdfExterno(context, clase.archivoPdfUrl)
+                            },
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Button(
-                                onClick = {
-                                    PdfUtils.abrirPdfExterno(context, clase.archivoPdfUrl)
-                                }
-                            ) {
-                                Icon(Icons.Default.PictureAsPdf, null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Ver PDF")
-                            }
-                            if (!esAlumno) {
-                                Button(
-                                    onClick = {
-                                        ejecutarIA(
-                                            iaViewModel = iaViewModel,
-                                            lifecycleOwner = lifecycleOwner,
-                                            isLoading = { isLoading = it },
-                                            onSuccess = { contenido ->
-                                                mostrarResultadoIA(
-                                                    context,
-                                                    "📄 Análisis del material PDF",
-                                                    contenido,
-                                                    clase
-                                                )
-                                            },
-                                            onError = { error ->
-                                                scope.launch {
-                                                    snackbarHostState.showSnackbar(error)
-                                                }
-                                            }
-                                        ) {
-                                            iaViewModel.analizarPdfConIA(clase.nombre, clase.archivoPdfUrl)
-                                        }
-                                    },
-                                    enabled = isLoading == false
-                                ) {
-                                    if (isLoading) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(16.dp),
-                                            strokeWidth = 2.dp
-                                        )
-                                    } else {
-                                        Icon(Icons.Default.Analytics, null)
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Analizar PDF")
-                                }
-                            }
+                            Icon(Icons.Default.PictureAsPdf, null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Ver PDF")
                         }
                     }
                 }

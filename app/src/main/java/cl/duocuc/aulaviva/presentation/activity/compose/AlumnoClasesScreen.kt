@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.SwipeRefresh
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -29,8 +30,11 @@ fun AlumnoClasesScreen(
     viewModel: ClaseViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val clases: List<Clase> by viewModel.obtenerClasesPorAsignatura(asignaturaId).observeAsState(emptyList())
     val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val isRefreshing = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         if (asignaturaId.isNotEmpty()) {
@@ -38,7 +42,21 @@ fun AlumnoClasesScreen(
         }
     }
 
+    // Manejar pull-to-refresh
+    fun onRefresh() {
+        isRefreshing.value = true
+        if (asignaturaId.isNotEmpty()) {
+            viewModel.sincronizarClasesPorAsignatura(asignaturaId)
+        }
+        scope.launch {
+            kotlinx.coroutines.delay(500)
+            isRefreshing.value = false
+            snackbarHostState.showSnackbar("✓ Datos actualizados")
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -48,7 +66,9 @@ fun AlumnoClasesScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { /* finish */ }) {
+                    IconButton(onClick = {
+                        (context as? android.app.Activity)?.finish()
+                    }) {
                         Icon(Icons.Default.ArrowBack, "Volver")
                     }
                 },
@@ -71,11 +91,15 @@ fun AlumnoClasesScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                SwipeRefresh(
+                    onRefresh = { onRefresh() },
+                    refreshing = isRefreshing.value
                 ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                     items(clases) { clase ->
                         ClaseAlumnoCard(
                             clase = clase,
@@ -87,6 +111,7 @@ fun AlumnoClasesScreen(
                             }
                         )
                     }
+                }
                 }
             }
 

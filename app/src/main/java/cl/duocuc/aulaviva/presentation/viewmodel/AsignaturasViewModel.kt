@@ -50,9 +50,21 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
 
     /**
      * Verifica si una asignatura tiene clases (delegado al ClaseRepository).
+     * Función suspend para usar desde coroutines.
      */
     suspend fun tieneClases(asignaturaId: String): Boolean {
         return claseRepository.tieneClases(asignaturaId)
+    }
+
+    /**
+     * Verifica si una asignatura tiene clases (versión no-suspend para usar desde UI).
+     * Usa viewModelScope para ejecutar la verificación.
+     */
+    fun verificarTieneClases(asignaturaId: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val tiene = claseRepository.tieneClases(asignaturaId)
+            onResult(tiene)
+        }
     }
 
     /**

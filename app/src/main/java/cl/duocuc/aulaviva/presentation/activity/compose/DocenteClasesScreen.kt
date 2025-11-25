@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.SwipeRefresh
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.MoreVert
@@ -38,9 +39,21 @@ fun DocenteClasesScreen(
     val clases: List<Clase> by viewModel.obtenerClasesPorAsignatura(asignaturaId).observeAsState(emptyList())
     val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
     val snackbarHostState = remember { SnackbarHostState() }
+    val isRefreshing = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.sincronizarClasesPorAsignatura(asignaturaId)
+    }
+
+    // Manejar pull-to-refresh
+    fun onRefresh() {
+        isRefreshing.value = true
+        viewModel.sincronizarClasesPorAsignatura(asignaturaId)
+        scope.launch {
+            kotlinx.coroutines.delay(500)
+            isRefreshing.value = false
+            snackbarHostState.showSnackbar("✓ Datos actualizados")
+        }
     }
 
     Scaffold(
@@ -54,7 +67,9 @@ fun DocenteClasesScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { /* finish */ }) {
+                    IconButton(onClick = {
+                        (context as? android.app.Activity)?.finish()
+                    }) {
                         Icon(Icons.Default.ArrowBack, "Volver")
                     }
                 },
@@ -96,11 +111,15 @@ fun DocenteClasesScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                SwipeRefresh(
+                    onRefresh = { onRefresh() },
+                    refreshing = isRefreshing.value
                 ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                     items(clases) { clase ->
                         ClaseCard(
                             clase = clase,
@@ -125,6 +144,7 @@ fun DocenteClasesScreen(
                             }
                         )
                     }
+                }
                 }
             }
 
@@ -221,10 +241,11 @@ fun ClaseCard(
         }
     }
 
-    DropdownMenu(
-        expanded = showMenu,
-        onDismissRequest = { showMenu = false }
-    ) {
+    Box {
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false }
+        ) {
         DropdownMenuItem(
             text = { Text("Editar") },
             onClick = {
@@ -241,6 +262,7 @@ fun ClaseCard(
             },
             leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }
         )
+        }
     }
 }
 
