@@ -262,7 +262,7 @@ fun DocenteAsignaturasScreen(
     // ✅ Dialog editar asignatura
     if (showEditarDialog && asignaturaAEditar != null) {
         AlertDialog(
-            onDismissRequest = { 
+            onDismissRequest = {
                 showEditarDialog = false
                 asignaturaAEditar = null
                 nombreAsignatura = ""
@@ -309,7 +309,7 @@ fun DocenteAsignaturasScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { 
+                TextButton(onClick = {
                     showEditarDialog = false
                     asignaturaAEditar = null
                     nombreAsignatura = ""
