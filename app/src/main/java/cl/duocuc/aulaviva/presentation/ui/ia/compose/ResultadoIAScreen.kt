@@ -227,15 +227,19 @@ fun MensajeChatCard(mensaje: MensajeChat) {
                     },
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
-                Text(
-                    text = mensaje.contenido,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (mensaje.esUsuario) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    }
-                )
+                // ✅ Renderizar Markdown para respuestas de IA
+                if (mensaje.esUsuario) {
+                    Text(
+                        text = mensaje.contenido,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    cl.duocuc.aulaviva.presentation.ui.common.MarkdownText(
+                        text = mensaje.contenido,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }

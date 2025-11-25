@@ -233,25 +233,41 @@ class IARepository(private val context: Context) : IIARepository {
             withTimeout(180_000L) {
                 withContext(Dispatchers.IO) {
                     Log.d(TAG, "📝 [IA] Construyendo prompt de análisis...")
+                    Log.d(TAG, "📚 [IA] Preparando contexto del PDF para análisis...")
+                    val contextoPdf = prepararContextoPdf(pdfUrl)
+                    Log.d(TAG, "✅ [IA] Contexto preparado: ${contextoPdf.length} caracteres")
+
                     val prompt = """
+                        $contextoPdf
+
                         ROL: Eres un analista de contenido educativo con experiencia en evaluación de materiales pedagógicos.
 
                         TAREA:
-                        Analiza exhaustivamente este PDF para la clase "$nombreClase" y genera un informe pedagógico completo.
+                        Analiza exhaustivamente el PDF proporcionado arriba para la clase "$nombreClase" y genera un informe pedagógico completo.
+
+                        IMPORTANTE:
+                        - Primero identifica y menciona DATOS REALES del PDF (título, autor si está disponible, temas principales específicos)
+                        - Luego analiza el contenido de forma estructurada
+                        - Usa información ESPECÍFICA del PDF, NO genérica
 
                         FORMATO REQUERIDO:
 
                         **📊 Informe Pedagógico Completo**
 
+                        **📄 Información del Documento:**
+                        • **Título/Tema identificado:** [Nombre real del documento o tema principal extraído del PDF]
+                        • **Contenido principal:** [2-3 líneas con información específica del PDF, NO genérica]
+                        • **Alcance:** [Qué cubre específicamente este documento según su contenido]
+
                         **1. VISIÓN GENERAL**
-                        • Tema central del documento
-                        • Alcance y profundidad del contenido
-                        • Público objetivo identificado
+                        • Tema central del documento: [Información REAL del PDF]
+                        • Alcance y profundidad del contenido: [Basado en el contenido real]
+                        • Público objetivo identificado: [Según el contenido del PDF]
 
                         **2. ESTRUCTURA Y ORGANIZACIÓN**
-                        • Cómo está organizado el documento
-                        • Secciones principales y su secuencia lógica
-                        • Calidad de la progresión de contenidos
+                        • Cómo está organizado el documento: [Mencionar secciones REALES encontradas]
+                        • Secciones principales y su secuencia lógica: [Listar secciones específicas del PDF]
+                        • Calidad de la progresión de contenidos: [Evaluación basada en el contenido real]
 
                         **3. CONTENIDOS CLAVE**
                         [Para cada concepto importante:]
@@ -814,9 +830,22 @@ class IARepository(private val context: Context) : IIARepository {
                 ${if (contextoPdf.isNotBlank()) "• Material de referencia: PDF completo proporcionado arriba" else ""}
 
                 TAREA:
-                Genera 4 ideas pedagógicas innovadoras y aplicables para esta clase. ${if (contextoPdf.isNotBlank()) "Basa cada idea directamente en conceptos específicos del PDF." else ""}
+                Analiza el PDF proporcionado arriba y genera 4 ideas pedagógicas innovadoras y aplicables para esta clase.
 
-                FORMATO REQUERIDO para cada idea:
+                IMPORTANTE:
+                - Primero identifica y menciona DATOS REALES del PDF (título, temas principales específicos)
+                - Luego genera ideas basadas en contenido ESPECÍFICO del PDF, NO genéricas
+                - Cada idea debe aplicar directamente conceptos específicos encontrados en el documento
+
+                FORMATO REQUERIDO:
+
+                **📄 Información del Documento:**
+                • **Título/Tema identificado:** [Nombre real del documento o tema principal extraído del PDF]
+                • **Contenido principal:** [2-3 líneas con información específica del PDF, NO genérica]
+
+                **💡 IDEAS PEDAGÓGICAS:**
+
+                FORMATO para cada idea:
                 **Idea [N]: [Título descriptivo]**
                 • **Objetivo pedagógico:** [Qué aprenderán los estudiantes]
                 • **Contenido del PDF aplicado:** [Concepto/sección específica del material]
@@ -875,9 +904,19 @@ class IARepository(private val context: Context) : IIARepository {
                 ${if (contextoPdf.isNotBlank()) "• Material base: PDF completo proporcionado arriba" else ""}
 
                 TAREA:
-                Diseña una estructura temporal completa para esta clase, distribuyendo actividades de forma pedagógicamente efectiva. ${if (contextoPdf.isNotBlank()) "Integra directamente el contenido del PDF en cada segmento." else ""}
+                Analiza el PDF proporcionado arriba y diseña una estructura temporal completa para esta clase, distribuyendo actividades de forma pedagógicamente efectiva.
+
+                IMPORTANTE:
+                - Primero identifica y menciona DATOS REALES del PDF (título, temas principales específicos)
+                - Luego integra directamente el contenido ESPECÍFICO del PDF en cada segmento
+                - Usa información REAL del documento, NO genérica
 
                 FORMATO REQUERIDO:
+
+                **📄 Información del Documento:**
+                • **Título/Tema identificado:** [Nombre real del documento o tema principal extraído del PDF]
+                • **Contenido principal:** [2-3 líneas con información específica del PDF, NO genérica]
+
                 **📋 Plan de Clase - $nombreClase ($duracion)**
 
                 **1. INICIO (X min)**
@@ -945,35 +984,47 @@ class IARepository(private val context: Context) : IIARepository {
                 ROL: Eres un sintetizador de contenido académico especializado en extraer información clave.
 
                 TAREA:
-                Genera un resumen CONCISO Y EJECUTIVO del PDF para la clase "$nombre". Este resumen será usado por docentes para toma rápida de decisiones.
+                Analiza el PDF proporcionado arriba y genera un resumen CONCISO Y EJECUTIVO para la clase "$nombre".
+
+                IMPORTANTE:
+                - Primero identifica y menciona DATOS REALES del PDF (título, autor si está disponible, temas principales específicos)
+                - Luego sintetiza el contenido de forma estructurada
+                - Este resumen será usado por docentes para toma rápida de decisiones
 
                 FORMATO REQUERIDO (MÁXIMO 400 PALABRAS):
 
                 **📚 Resumen Ejecutivo**
 
+                **📄 Información del Documento:**
+                • **Título/Tema identificado:** [Nombre real del documento o tema principal extraído del PDF]
+                • **Contenido principal:** [2-3 líneas con información específica del PDF, NO genérica]
+                • **Alcance:** [Qué cubre específicamente este documento según su contenido]
+
                 **Tema principal:**
-                [1-2 líneas]
+                [1-2 líneas con información REAL del PDF, mencionando conceptos específicos encontrados]
 
                 **Conceptos clave:**
-                • [Concepto 1 + breve explicación]
-                • [Concepto 2 + breve explicación]
-                • [Concepto 3 + breve explicación]
-                • [Concepto 4 + breve explicación]
+                • [Concepto 1 REAL del PDF + breve explicación basada en el contenido]
+                • [Concepto 2 REAL del PDF + breve explicación basada en el contenido]
+                • [Concepto 3 REAL del PDF + breve explicación basada en el contenido]
+                • [Concepto 4 REAL del PDF + breve explicación basada en el contenido]
 
                 **Estructura del documento:**
-                [2-3 líneas describiendo cómo está organizado]
+                [2-3 líneas describiendo cómo está organizado REALMENTE el PDF, mencionando secciones específicas si las hay]
 
                 **Aplicabilidad pedagógica:**
-                [2-3 líneas sobre cómo usar este material en clase]
+                [2-3 líneas sobre cómo usar este material específico en clase, basado en el contenido real]
 
                 **Nivel de complejidad:**
-                [Básico/Intermedio/Avanzado + justificación en 1 línea]
+                [Básico/Intermedio/Avanzado + justificación en 1 línea basada en el contenido real del PDF]
 
                 CRITERIOS CRÍTICOS:
                 - BREVEDAD: Máximo 400 palabras total
-                - PRECISIÓN: Información exacta del PDF
-                - UTILIDAD: Enfocado en qué puede hacer el docente con esto
+                - PRECISIÓN: Información EXACTA y ESPECÍFICA del PDF (NO genérica)
+                - DATOS REALES: Menciona información concreta encontrada en el documento
+                - UTILIDAD: Enfocado en qué puede hacer el docente con este material específico
                 - SIN REDUNDANCIA: Cada palabra debe aportar valor
+                - ESTRUCTURA: Sigue EXACTAMENTE el formato proporcionado con todas las secciones
             """.trimIndent()
 
             Log.d(TAG, "📤 [IA] Enviando petición a Gemini...")
@@ -1009,9 +1060,18 @@ class IARepository(private val context: Context) : IIARepository {
                 ${if (contextoPdf.isNotBlank()) "• Material base: PDF completo proporcionado arriba" else ""}
 
                 TAREA:
-                Diseña una guía profesional para presentar/dictar esta clase de forma estructurada y atractiva. ${if (contextoPdf.isNotBlank()) "Utiliza el contenido específico del PDF para construir cada sección." else ""}
+                Analiza el PDF proporcionado arriba y diseña una guía profesional para presentar/dictar esta clase de forma estructurada y atractiva.
+
+                IMPORTANTE:
+                - Primero identifica y menciona DATOS REALES del PDF (título, temas principales específicos)
+                - Luego utiliza el contenido ESPECÍFICO del PDF para construir cada sección
+                - Usa información REAL del documento, NO genérica
 
                 FORMATO REQUERIDO:
+
+                **📄 Información del Documento:**
+                • **Título/Tema identificado:** [Nombre real del documento o tema principal extraído del PDF]
+                • **Contenido principal:** [2-3 líneas con información específica del PDF, NO genérica]
 
                 **🎯 Guía de Presentación: $nombre**
 
@@ -1092,9 +1152,18 @@ class IARepository(private val context: Context) : IIARepository {
                 AUDIENCIA: Estudiantes que necesitan practicar lo aprendido de forma autónoma.
 
                 TAREA:
-                Crea ejercicios prácticos variados con diferentes niveles de dificultad. ${if (contextoPdf.isNotBlank()) "Todos los ejercicios deben estar basados directamente en el contenido del PDF." else ""}
+                Analiza el PDF proporcionado arriba y crea ejercicios prácticos variados con diferentes niveles de dificultad.
+
+                IMPORTANTE:
+                - Primero identifica y menciona DATOS REALES del PDF (título, temas principales específicos)
+                - Luego crea ejercicios basados DIRECTAMENTE en el contenido ESPECÍFICO del PDF
+                - Todos los ejercicios deben usar información REAL del documento, NO genérica
 
                 FORMATO REQUERIDO:
+
+                **📄 Información del Documento:**
+                • **Título/Tema identificado:** [Nombre real del documento o tema principal extraído del PDF]
+                • **Contenido principal:** [2-3 líneas con información específica del PDF, NO genérica]
 
                 **✍️ Ejercicios de Práctica - $nombre**
 
@@ -1205,9 +1274,18 @@ class IARepository(private val context: Context) : IIARepository {
                 AUDIENCIA: Estudiantes que necesitan un resumen organizado para estudiar y repasar antes de evaluaciones.
 
                 TAREA:
-                Crea un resumen de estudio completo, organizado y fácil de repasar. ${if (contextoPdf.isNotBlank()) "Extrae y sintetiza el contenido clave del PDF de forma estructurada." else ""}
+                Analiza el PDF proporcionado arriba y crea un resumen de estudio completo, organizado y fácil de repasar.
+
+                IMPORTANTE:
+                - Primero identifica y menciona DATOS REALES del PDF (título, temas principales específicos)
+                - Luego extrae y sintetiza el contenido clave del PDF de forma estructurada
+                - Usa información ESPECÍFICA del documento, NO genérica
 
                 FORMATO REQUERIDO:
+
+                **📄 Información del Documento:**
+                • **Título/Tema identificado:** [Nombre real del documento o tema principal extraído del PDF]
+                • **Contenido principal:** [2-3 líneas con información específica del PDF, NO genérica]
 
                 **📖 Resumen de Estudio - $nombre**
 
@@ -1336,9 +1414,22 @@ class IARepository(private val context: Context) : IIARepository {
                 ${if (contextoPdf.isNotBlank()) "• Material fuente: PDF completo proporcionado arriba" else ""}
 
                 TAREA:
-                Diseña 3 actividades interactivas innovadoras que promuevan participación activa y aprendizaje significativo. ${if (contextoPdf.isNotBlank()) "Cada actividad debe aplicar directamente contenido específico del PDF." else ""}
+                Analiza el PDF proporcionado arriba y diseña 3 actividades interactivas innovadoras que promuevan participación activa y aprendizaje significativo.
 
-                FORMATO REQUERIDO para cada actividad:
+                IMPORTANTE:
+                - Primero identifica y menciona DATOS REALES del PDF (título, temas principales específicos)
+                - Luego diseña actividades que apliquen directamente contenido ESPECÍFICO del PDF
+                - Cada actividad debe usar información REAL del documento, NO genérica
+
+                FORMATO REQUERIDO:
+
+                **📄 Información del Documento:**
+                • **Título/Tema identificado:** [Nombre real del documento o tema principal extraído del PDF]
+                • **Contenido principal:** [2-3 líneas con información específica del PDF, NO genérica]
+
+                **🎮 ACTIVIDADES INTERACTIVAS:**
+
+                FORMATO para cada actividad:
 
                 **🎮 Actividad [N]: [Nombre atractivo]**
 
@@ -1417,9 +1508,18 @@ class IARepository(private val context: Context) : IIARepository {
                 AUDIENCIA: Estudiantes que están aprendiendo este tema por primera vez o reforzando conocimientos.
 
                 TAREA:
-                Explica los conceptos principales de este tema de forma clara, usando ejemplos cotidianos y lenguaje accesible. ${if (contextoPdf.isNotBlank()) "Basa cada explicación en el contenido específico del PDF." else ""}
+                Analiza el PDF proporcionado arriba y explica los conceptos principales de este tema de forma clara, usando ejemplos cotidianos y lenguaje accesible.
+
+                IMPORTANTE:
+                - Primero identifica y menciona DATOS REALES del PDF (título, temas principales específicos)
+                - Luego basa cada explicación en el contenido ESPECÍFICO del PDF
+                - Usa información REAL del documento, NO genérica
 
                 FORMATO REQUERIDO:
+
+                **📄 Información del Documento:**
+                • **Título/Tema identificado:** [Nombre real del documento o tema principal extraído del PDF]
+                • **Contenido principal:** [2-3 líneas con información específica del PDF, NO genérica]
 
                 **🎓 Explicación de Conceptos - $nombreClase**
 

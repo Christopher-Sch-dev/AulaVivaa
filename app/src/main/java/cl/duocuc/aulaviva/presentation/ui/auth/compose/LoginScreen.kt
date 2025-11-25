@@ -63,18 +63,17 @@ fun LoginScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Observar login exitoso y mostrar bienvenida
+    // Observar login exitoso y mostrar bienvenida + navegar automáticamente
     LaunchedEffect(loginSuccess) {
         if (loginSuccess) {
-            // Mostrar mensaje de bienvenida antes de navegar
+            // Mostrar mensaje de bienvenida y navegar automáticamente
             val nombre = email.substringBefore("@").takeIf { it.isNotEmpty() } ?: "Usuario"
             scope.launch {
                 snackbarHostState.showSnackbar(
                     message = "¡Bienvenido $nombre! 👋",
                     duration = SnackbarDuration.Short
                 )
-                // Esperar un momento para que se vea el mensaje
-                kotlinx.coroutines.delay(500)
+                // Navegar inmediatamente (el snackbar se verá en la siguiente pantalla)
                 onLoginSuccess()
             }
         }
