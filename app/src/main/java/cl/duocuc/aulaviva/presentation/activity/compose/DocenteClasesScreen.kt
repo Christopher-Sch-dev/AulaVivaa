@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.SwipeRefresh
+// import androidx.compose.material.SwipeRefresh // Temporalmente deshabilitado
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.MoreVert
@@ -39,19 +39,16 @@ fun DocenteClasesScreen(
     val clases: List<Clase> by viewModel.obtenerClasesPorAsignatura(asignaturaId).observeAsState(emptyList())
     val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
     val snackbarHostState = remember { SnackbarHostState() }
-    val isRefreshing = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.sincronizarClasesPorAsignatura(asignaturaId)
     }
 
     // Manejar pull-to-refresh
-    fun onRefresh() {
-        isRefreshing.value = true
+    val onRefresh: () -> Unit = {
         viewModel.sincronizarClasesPorAsignatura(asignaturaId)
         scope.launch {
             kotlinx.coroutines.delay(500)
-            isRefreshing.value = false
             snackbarHostState.showSnackbar("✓ Datos actualizados")
         }
     }
@@ -111,11 +108,8 @@ fun DocenteClasesScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                SwipeRefresh(
-                    onRefresh = { onRefresh() },
-                    refreshing = isRefreshing.value
-                ) {
-                    LazyColumn(
+                // SwipeRefresh temporalmente deshabilitado
+                LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -144,7 +138,6 @@ fun DocenteClasesScreen(
                             }
                         )
                     }
-                }
                 }
             }
 

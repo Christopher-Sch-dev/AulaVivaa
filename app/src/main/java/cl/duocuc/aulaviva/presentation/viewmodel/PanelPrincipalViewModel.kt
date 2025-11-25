@@ -104,4 +104,11 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
             _logoutEvent.postValue(true)
         }
     }
+
+    /**
+     * Limpia el mensaje de toast después de mostrarlo.
+     */
+    fun limpiarToastMessage() {
+        _toastMessage.postValue(null)
+    }
 }

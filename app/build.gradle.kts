@@ -126,6 +126,10 @@ dependencies {
     // Material Design 3 para Compose
     implementation("androidx.compose.material3:material3")
 
+    // Material (para SwipeRefresh compatible con Material3)
+    // Forzar versión específica que incluye SwipeRefresh
+    implementation("androidx.compose.material:material:1.7.5")
+
     // Foundation (layouts, gestures, etc.)
     implementation("androidx.compose.foundation:foundation")
 

@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.SwipeRefresh
+// import androidx.compose.material.SwipeRefresh // Temporalmente deshabilitado
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.ui.clases.compose.DetalleClaseActivityCompose
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
@@ -34,7 +35,6 @@ fun AlumnoClasesScreen(
     val clases: List<Clase> by viewModel.obtenerClasesPorAsignatura(asignaturaId).observeAsState(emptyList())
     val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
     val snackbarHostState = remember { SnackbarHostState() }
-    val isRefreshing = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         if (asignaturaId.isNotEmpty()) {
@@ -43,14 +43,12 @@ fun AlumnoClasesScreen(
     }
 
     // Manejar pull-to-refresh
-    fun onRefresh() {
-        isRefreshing.value = true
+    val onRefresh: () -> Unit = {
         if (asignaturaId.isNotEmpty()) {
             viewModel.sincronizarClasesPorAsignatura(asignaturaId)
         }
         scope.launch {
             kotlinx.coroutines.delay(500)
-            isRefreshing.value = false
             snackbarHostState.showSnackbar("✓ Datos actualizados")
         }
     }
@@ -91,11 +89,8 @@ fun AlumnoClasesScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                SwipeRefresh(
-                    onRefresh = { onRefresh() },
-                    refreshing = isRefreshing.value
-                ) {
-                    LazyColumn(
+                // SwipeRefresh temporalmente deshabilitado
+                LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -111,7 +106,6 @@ fun AlumnoClasesScreen(
                             }
                         )
                     }
-                }
                 }
             }
 

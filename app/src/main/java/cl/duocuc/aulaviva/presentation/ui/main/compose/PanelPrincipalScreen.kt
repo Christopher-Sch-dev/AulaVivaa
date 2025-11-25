@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.presentation.activity.compose.DocenteAsignaturasActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.auth.compose.LoginActivityCompose
 import cl.duocuc.aulaviva.presentation.viewmodel.PanelPrincipalViewModel
@@ -39,6 +40,7 @@ fun PanelPrincipalScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Estados del ViewModel
     val userEmail: String? by viewModel.userEmail.observeAsState()
@@ -80,13 +82,15 @@ fun PanelPrincipalScreen(
         }
     }
 
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     // Mostrar toast y notificación de bienvenida
     LaunchedEffect(toastMessage) {
         toastMessage?.let { mensaje ->
             scope.launch {
                 snackbarHostState.showSnackbar(mensaje)
+                viewModel.limpiarToastMessage()
             }
-            viewModel.toastMessage.value = null // Limpiar después de mostrar
         }
     }
 
@@ -113,9 +117,6 @@ fun PanelPrincipalScreen(
             context.startActivity(intent)
         }
     }
-
-    val snackbarHostState = remember { SnackbarHostState() }
-    var showLogoutDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },

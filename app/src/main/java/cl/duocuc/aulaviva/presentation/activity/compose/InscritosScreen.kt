@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
@@ -29,6 +30,7 @@ fun InscritosScreen(
     asignaturaNombre: String,
     viewModel: InscritosViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val inscritos: List<AlumnoAsignaturaEntity> by viewModel.obtenerInscritosLive(asignaturaId).observeAsState(emptyList())
     val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
