@@ -79,13 +79,18 @@ fun CrearEditarClaseScreen(
         }
     }
 
-    // Observar resultados
+    // Observar resultados y cerrar automáticamente al editar
     LaunchedEffect(operationSuccess) {
-        operationSuccess?.let {
+        operationSuccess?.let { mensaje ->
             scope.launch {
-                snackbarHostState.showSnackbar(it)
+                snackbarHostState.showSnackbar(mensaje)
+                // Si es edición, cerrar automáticamente después de mostrar el mensaje
+                if (claseId != null) {
+                    kotlinx.coroutines.delay(800) // Esperar para que se vea el mensaje
+                    (context as? android.app.Activity)?.finish()
+                }
+                viewModel.clearMessages()
             }
-            // finish se maneja desde Activity
         }
     }
 

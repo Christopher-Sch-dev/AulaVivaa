@@ -83,8 +83,10 @@ fun PanelPrincipalScreen(
     }
 
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var isCreatingDemo by remember { mutableStateOf(false) }
+    var showConfirmDialog by remember { mutableStateOf(false) }
 
-    // Mostrar toast y notificación de bienvenida
+    // Mostrar toast
     LaunchedEffect(toastMessage) {
         toastMessage?.let { mensaje ->
             scope.launch {
@@ -94,18 +96,10 @@ fun PanelPrincipalScreen(
         }
     }
 
-    // Mostrar notificación de bienvenida con Snackbar (solo una vez al cargar)
-    var bienvenidaMostrada by remember { mutableStateOf(false) }
-    LaunchedEffect(userEmail) {
-        if (!bienvenidaMostrada && userEmail != null) {
-            bienvenidaMostrada = true
-            val nombre = userEmail?.substringBefore("@") ?: "Usuario"
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = "¡Bienvenido $nombre! 👋",
-                    duration = SnackbarDuration.Short
-                )
-            }
+    // Observar cuando se completa la creación de demo
+    LaunchedEffect(toastMessage) {
+        toastMessage?.let {
+            isCreatingDemo = false
         }
     }
 
@@ -256,20 +250,10 @@ fun PanelPrincipalScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    var isCreatingDemo by remember { mutableStateOf(false) }
-
-                    // Observar cuando se completa la creación de demo
-                    LaunchedEffect(toastMessage) {
-                        toastMessage?.let {
-                            isCreatingDemo = false
-                        }
-                    }
-
                     Button(
                         onClick = {
                             if (!isCreatingDemo) {
-                                isCreatingDemo = true
-                                viewModel.crearAsignaturaYClaseDemo()
+                                showConfirmDialog = true
                             }
                         },
                         enabled = !isCreatingDemo,
@@ -307,6 +291,59 @@ fun PanelPrincipalScreen(
                         textAlign = TextAlign.Center
                     )
                 }
+            }
+
+            // Dialog de confirmación para crear demo
+            if (showConfirmDialog) {
+                AlertDialog(
+                    onDismissRequest = { showConfirmDialog = false },
+                    title = { Text("🎓 Crear Asignatura Demo") },
+                    text = {
+                        Column {
+                            Text(
+                                text = "Se creará una asignatura de demostración con:",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            Text(
+                                text = "• Asignatura: Programación Móvil DEMO",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
+                            )
+                            Text(
+                                text = "• Clase: Introducción a Kotlin para Android",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
+                            )
+                            Text(
+                                text = "• Material PDF incluido",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
+                            )
+                            Text(
+                                text = "• Código de acceso generado automáticamente",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 16.dp)
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showConfirmDialog = false
+                                isCreatingDemo = true
+                                viewModel.crearAsignaturaYClaseDemo()
+                            }
+                        ) {
+                            Text("Sí, crear")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showConfirmDialog = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

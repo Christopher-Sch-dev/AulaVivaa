@@ -303,7 +303,7 @@ class IARepository(private val context: Context) : IIARepository {
         }
     }
 
-    // ✅ FIX: Helpers mejorados para extracción y caché de texto
+    // ✅ FIX: Helpers mejorados para extracción y caché de texto - OPTIMIZADO
     private suspend fun extractTextFromPdf(pdfUrl: String): String = withContext(Dispatchers.IO) {
         Log.d(TAG, "📄 [PDF] Iniciando extracción de texto desde: $pdfUrl")
 
@@ -317,15 +317,26 @@ class IARepository(private val context: Context) : IIARepository {
         val pdfFile = descargarPDFATempFile(pdfUrl)
         Log.d(TAG, "✅ [PDF] Archivo descargado: ${pdfFile.length()} bytes (${pdfFile.length() / 1024 / 1024} MB)")
 
-        Log.d(TAG, "🔍 [PDF] Abriendo documento con PDFBox...")
+        Log.d(TAG, "🔍 [PDF] Abriendo documento con PDFBox (optimizado)...")
+        // ✅ OPTIMIZACIÓN: Usar configuración de memoria más eficiente
         val document = com.tom_roush.pdfbox.pdmodel.PDDocument.load(
             pdfFile,
-            MemoryUsageSetting.setupTempFileOnly()
+            MemoryUsageSetting.setupMixed(1024 * 1024 * 50) // 50MB en memoria, resto en temp
         )
 
         try {
-            Log.d(TAG, "📝 [PDF] Extrayendo texto con PDFTextStripper...")
+            val pageCount = document.numberOfPages
+            Log.d(TAG, "📄 [PDF] Documento tiene $pageCount páginas")
+
+            Log.d(TAG, "📝 [PDF] Extrayendo texto con PDFTextStripper (optimizado)...")
             val stripper = com.tom_roush.pdfbox.text.PDFTextStripper()
+
+            // ✅ OPTIMIZACIÓN: Para PDFs grandes, extraer solo páginas necesarias si es posible
+            // Por ahora extraemos todo, pero optimizamos la configuración
+            stripper.sortByPosition = true // Más rápido
+            stripper.setStartPage(1)
+            stripper.setEndPage(pageCount)
+
             val fullText = stripper.getText(document)
 
             // ✅ FIX: Guardar en caché

@@ -27,6 +27,8 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTheme
 import cl.duocuc.aulaviva.presentation.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 /**
  * Pantalla de Login en Jetpack Compose con Material Design 3
@@ -58,10 +60,23 @@ fun LoginScreen(
     val error: String? by viewModel.error.observeAsState()
     val loginSuccess: Boolean by viewModel.loginSuccess.observeAsState(false)
 
-    // Observar login exitoso
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // Observar login exitoso y mostrar bienvenida
     LaunchedEffect(loginSuccess) {
         if (loginSuccess) {
-            onLoginSuccess()
+            // Mostrar mensaje de bienvenida antes de navegar
+            val nombre = email.substringBefore("@").takeIf { it.isNotEmpty() } ?: "Usuario"
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "¡Bienvenido $nombre! 👋",
+                    duration = SnackbarDuration.Short
+                )
+                // Esperar un momento para que se vea el mensaje
+                kotlinx.coroutines.delay(500)
+                onLoginSuccess()
+            }
         }
     }
 
@@ -85,16 +100,16 @@ fun LoginScreen(
         }
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-
     // Mostrar Snackbar cuando hay error
     LaunchedEffect(error) {
         error?.let { errorMessage ->
-            snackbarHostState.showSnackbar(
-                message = errorMessage,
-                duration = SnackbarDuration.Long
-            )
-            viewModel.clearError()
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = errorMessage,
+                    duration = SnackbarDuration.Long
+                )
+                viewModel.clearError()
+            }
         }
     }
 

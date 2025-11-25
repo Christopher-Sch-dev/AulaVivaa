@@ -1,6 +1,8 @@
 package cl.duocuc.aulaviva.presentation.activity.compose
 
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,6 +50,19 @@ fun DocenteClasesScreen(
         viewModel.sincronizarClasesPorAsignatura(asignaturaId)
     }
 
+    // Launcher para detectar cuando se cierra la actividad de edición/creación
+    val crearEditarLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        // Cuando se cierra la actividad de edición/creación, refrescar la lista
+        if (result.resultCode == android.app.Activity.RESULT_OK || result.resultCode == android.app.Activity.RESULT_CANCELED) {
+            scope.launch {
+                viewModel.sincronizarClasesPorAsignatura(asignaturaId)
+                delay(300) // Pequeño delay para asegurar que la actualización se procese
+            }
+        }
+    }
+
     // Manejar pull-to-refresh
     val onRefresh: () -> Unit = {
         viewModel.sincronizarClasesPorAsignatura(asignaturaId)
@@ -86,7 +101,7 @@ fun DocenteClasesScreen(
                     val intent = Intent(context, CrearEditarClaseActivityCompose::class.java)
                     intent.putExtra("ASIGNATURA_ID", asignaturaId)
                     intent.putExtra("ASIGNATURA_NOMBRE", asignaturaNombre)
-                    context.startActivity(intent)
+                    crearEditarLauncher.launch(intent)
                 },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
@@ -107,7 +122,7 @@ fun DocenteClasesScreen(
                         val intent = Intent(context, CrearEditarClaseActivityCompose::class.java)
                         intent.putExtra("ASIGNATURA_ID", asignaturaId)
                         intent.putExtra("ASIGNATURA_NOMBRE", asignaturaNombre)
-                        context.startActivity(intent)
+                        crearEditarLauncher.launch(intent)
                     },
                     modifier = Modifier.fillMaxSize()
                 )
@@ -135,7 +150,7 @@ fun DocenteClasesScreen(
                                     intent.putExtra("CLASE_ID", clase.id)
                                     intent.putExtra("ASIGNATURA_ID", asignaturaId)
                                     intent.putExtra("ASIGNATURA_NOMBRE", asignaturaNombre)
-                                    context.startActivity(intent)
+                                    crearEditarLauncher.launch(intent)
                                 },
                                 onEliminar = {
                                     viewModel.eliminarClase(clase.id)
