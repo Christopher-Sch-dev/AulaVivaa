@@ -1,8 +1,9 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
+  "$comment": "Root Directory debe estar configurado como '/' (raíz) en Railway Dashboard. gradlew está en la raíz, no en backend/",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd backend && ./gradlew build -x test"
+    "buildCommand": "./gradlew :backend:build -x test"
   },
   "deploy": {
     "startCommand": "cd backend && java -jar build/libs/backend-1.0.0.jar",
