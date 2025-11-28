@@ -2,6 +2,7 @@ package cl.duocuc.aulaviva.data.remote
 
 import android.util.Log
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaDao
+import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
 import cl.duocuc.aulaviva.data.local.AsignaturaDao
 import cl.duocuc.aulaviva.data.model.AlumnoAsignatura
 import cl.duocuc.aulaviva.data.model.Asignatura
@@ -33,12 +34,26 @@ class SpringBootAlumnoRepository(
                     // Guardar asignatura en Room
                     asignaturaDao.insertarAsignatura(asignatura.toEntity(sincronizado = true))
 
-                    // Crear inscripción en Room (necesitamos el ID del alumno)
-                    val alumnoId = TokenManager.getToken()?.let {
-                        // Decodificar del token o usar otro método
-                        // Por ahora, lo guardamos cuando se crea la inscripción
-                        ""
-                    } ?: ""
+                    // Obtener ID del alumno del token JWT
+                    val alumnoId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+                        TokenManager.getToken() ?: ""
+                    ) ?: ""
+
+                    if (alumnoId.isNotEmpty()) {
+                        // Crear inscripción en Room
+                        val inscripcionEntity = AlumnoAsignaturaEntity(
+                            id = java.util.UUID.randomUUID().toString(),
+                            alumnoId = alumnoId,
+                            asignaturaId = asignatura.id,
+                            fechaInscripcion = java.time.OffsetDateTime.now().toString(),
+                            estado = "activo",
+                            sincronizado = true
+                        )
+                        alumnoAsignaturaDao.insertarInscripcion(inscripcionEntity)
+                        Log.d("SpringBootAlumno", "✅ Inscripción guardada en Room: ${asignatura.nombre}")
+                    } else {
+                        Log.w("SpringBootAlumno", "⚠️ No se pudo obtener ID del alumno del token")
+                    }
 
                     Log.d("SpringBootAlumno", "✅ Inscrito en: ${asignatura.nombre}")
                     Result.success(asignatura)
@@ -63,9 +78,23 @@ class SpringBootAlumnoRepository(
                 val asignaturasDto = response.body()!!.data!!
                 val asignaturas = asignaturasDto.map { it.toAsignatura() }
 
-                // Guardar en Room
+                // Guardar asignaturas en Room
                 if (asignaturas.isNotEmpty()) {
                     asignaturaDao.insertarVarias(asignaturas.map { it.toEntity(sincronizado = true) })
+
+                    // Crear inscripciones en Room para cada asignatura
+                    val inscripciones = asignaturas.map { asignatura ->
+                        AlumnoAsignaturaEntity(
+                            id = java.util.UUID.randomUUID().toString(),
+                            alumnoId = alumnoId,
+                            asignaturaId = asignatura.id,
+                            fechaInscripcion = java.time.OffsetDateTime.now().toString(),
+                            estado = "activo",
+                            sincronizado = true
+                        )
+                    }
+                    alumnoAsignaturaDao.insertarVarias(inscripciones)
+                    Log.d("SpringBootAlumno", "✅ ${inscripciones.size} inscripciones guardadas en Room")
                 }
 
                 Result.success(asignaturas)
@@ -74,6 +103,7 @@ class SpringBootAlumnoRepository(
                 Result.failure(Exception(error ?: "Error desconocido"))
             }
         } catch (e: Exception) {
+            Log.e("SpringBootAlumno", "❌ Error obteniendo asignaturas inscritas", e)
             Result.failure(e)
         }
     }
@@ -104,12 +134,30 @@ class SpringBootAlumnoRepository(
             if (response.isSuccessful && response.body()?.success == true) {
                 val inscripcionesDto = response.body()!!.data!!
                 val inscripciones = inscripcionesDto.map { it.toAlumnoAsignatura() }
+
+                // Guardar inscripciones en Room
+                if (inscripciones.isNotEmpty()) {
+                    val inscripcionesEntity = inscripciones.map { inscripcion ->
+                        AlumnoAsignaturaEntity(
+                            id = inscripcion.id,
+                            alumnoId = inscripcion.alumnoId,
+                            asignaturaId = inscripcion.asignaturaId,
+                            fechaInscripcion = inscripcion.fechaInscripcion,
+                            estado = inscripcion.estado,
+                            sincronizado = true
+                        )
+                    }
+                    alumnoAsignaturaDao.insertarVarias(inscripcionesEntity)
+                    Log.d("SpringBootAlumno", "✅ ${inscripcionesEntity.size} inscripciones guardadas en Room")
+                }
+
                 Result.success(inscripciones)
             } else {
                 val error = response.body()?.error ?: response.message()
                 Result.failure(Exception(error ?: "Error desconocido"))
             }
         } catch (e: Exception) {
+            Log.e("SpringBootAlumno", "❌ Error obteniendo inscripciones", e)
             Result.failure(e)
         }
     }

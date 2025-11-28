@@ -77,8 +77,24 @@ class AsignaturasRepository(
         Log.d("AsignaturasRepo", "🔄 Sincronizando inscritos para: $asignaturaId")
 
         return try {
-            // Spring Boot no tiene endpoint específico, usar el de alumnos
-            Result.success(Unit)
+            val springBootAlumnoRepo = cl.duocuc.aulaviva.data.remote.SpringBootAlumnoRepository(
+                alumnoAsignaturaDao,
+                asignaturaDao,
+                SpringBootClient.apiService
+            )
+
+            val result = springBootAlumnoRepo.obtenerInscripcionesAsignatura(asignaturaId)
+            result.fold(
+                onSuccess = { inscripciones ->
+                    // Las inscripciones ya se guardan en Room dentro de obtenerInscripcionesAsignatura
+                    Log.d("AsignaturasRepo", "✅ ${inscripciones.size} inscripciones sincronizadas")
+                    Result.success(Unit)
+                },
+                onFailure = { error ->
+                    Log.e("AsignaturasRepo", "❌ Error sincronizando inscritos", error)
+                    Result.failure(error)
+                }
+            )
         } catch (e: Exception) {
             Log.e("AsignaturasRepo", "❌ Error sincronizando inscritos", e)
             Result.failure(e)

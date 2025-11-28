@@ -473,15 +473,29 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
     /**
      * Comprueba si una asignatura tiene clases asociadas.
      * Retorna `true` si existe al menos una clase para la asignatura.
+     *
+     * Sincroniza primero con el backend para obtener el estado más actualizado.
      */
     override suspend fun tieneClases(asignaturaId: String): Boolean {
         return try {
+            // Sincronizar clases de la asignatura antes de verificar
+            // Esto asegura que tenemos el estado más actualizado del backend
+            sincronizarClasesPorAsignatura(asignaturaId)
+
+            // Verificar en Room después de sincronizar
             val clases = claseDao.obtenerClasesPorAsignaturaDirecto(asignaturaId)
             clases.isNotEmpty()
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error verificando clases para $asignaturaId", e)
-            // En caso de error, conservador: asumimos que sí tiene clases para evitar borrados accidentales
-            true
+            // En caso de error, verificar solo en Room como fallback
+            try {
+                val clases = claseDao.obtenerClasesPorAsignaturaDirecto(asignaturaId)
+                clases.isNotEmpty()
+            } catch (e2: Exception) {
+                Log.e("ClaseRepository", "❌ Error en fallback de verificación", e2)
+                // En caso de error, conservador: asumimos que sí tiene clases para evitar borrados accidentales
+                true
+            }
         }
     }
 

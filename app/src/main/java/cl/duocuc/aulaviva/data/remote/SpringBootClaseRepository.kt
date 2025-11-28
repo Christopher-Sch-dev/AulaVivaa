@@ -157,13 +157,41 @@ class SpringBootClaseRepository(
                 // Eliminar de Room - obtener entidad primero
                 val entity = claseDao.obtenerClasePorId(claseId)
                 entity?.let { claseDao.eliminarClase(it) }
+                Log.d("SpringBootClase", "✅ Clase eliminada del backend y Room")
                 Result.success(Unit)
             } else {
-                val error = response.body()?.error ?: response.message()
-                Result.failure(Exception(error ?: "Error desconocido"))
+                // Si el backend dice que no existe, verificar si existe localmente
+                val errorMessage = response.body()?.error ?: response.message() ?: "Error desconocido"
+                val isNotFound = response.code() == 400 && errorMessage.contains("no encontrada", ignoreCase = true)
+
+                if (isNotFound) {
+                    // La clase no existe en el backend, pero puede existir localmente
+                    // Eliminarla de Room de todas formas
+                    val entity = claseDao.obtenerClasePorId(claseId)
+                    if (entity != null) {
+                        claseDao.eliminarClase(entity)
+                        Log.d("SpringBootClase", "✅ Clase eliminada de Room (no existía en backend)")
+                        Result.success(Unit)
+                    } else {
+                        Log.w("SpringBootClase", "⚠️ Clase no encontrada ni en backend ni en Room")
+                        Result.failure(Exception("Clase no encontrada"))
+                    }
+                } else {
+                    Log.e("SpringBootClase", "❌ Error eliminando clase: $errorMessage")
+                    Result.failure(Exception(errorMessage))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            // Si hay error de conexión, intentar eliminar localmente
+            Log.w("SpringBootClase", "⚠️ Error de conexión, eliminando localmente: ${e.message}")
+            val entity = claseDao.obtenerClasePorId(claseId)
+            if (entity != null) {
+                claseDao.eliminarClase(entity)
+                Log.d("SpringBootClase", "✅ Clase eliminada de Room (error de conexión)")
+                Result.success(Unit)
+            } else {
+                Result.failure(e)
+            }
         }
     }
 
