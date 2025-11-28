@@ -99,6 +99,27 @@ class SpringBootClaseRepository(
         }
     }
 
+    suspend fun obtenerClasePorId(claseId: String): Result<Clase> = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.obtenerClase("Bearer ${TokenManager.getToken()}", claseId)
+
+            if (response.isSuccessful && response.body()?.success == true) {
+                val claseDto = response.body()!!.data!!
+                val clase = claseDto.toClase()
+
+                // Sincronizar a Room
+                claseDao.insertarClase(clase.toEntity(sincronizado = true))
+
+                Result.success(clase)
+            } else {
+                val error = response.body()?.error ?: response.message()
+                Result.failure(Exception(error ?: "Error desconocido"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun actualizarClase(clase: Clase): Result<Clase> = withContext(Dispatchers.IO) {
         try {
             val request = ActualizarClaseRequestDto(

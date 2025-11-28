@@ -26,7 +26,9 @@ class AlumnoRepository(
      * Obtiene asignaturas inscritas del alumno actual (Flow para LiveData).
      */
     override fun obtenerAsignaturasInscritas(): Flow<List<Asignatura>> {
-        val alumnoId = TokenManager.getToken() ?: ""
+        val alumnoId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: ""
 
         // Obtener IDs de inscripciones desde Room
         return alumnoAsignaturaDao.obtenerInscripcionesActivas(alumnoId).map { inscripciones ->
@@ -59,8 +61,9 @@ class AlumnoRepository(
      * Sincroniza asignaturas inscritas desde Supabase.
      */
     override suspend fun sincronizarAsignaturasInscritas(): Result<Unit> {
-        val alumnoId = TokenManager.getToken() ?: ""
-            ?: return Result.failure(Exception("Usuario no autenticado"))
+        val alumnoId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: return Result.failure(Exception("Usuario no autenticado"))
 
         Log.d("AlumnoRepo", "🔄 Sincronizando asignaturas inscritas...")
 
@@ -89,8 +92,9 @@ class AlumnoRepository(
      * Darse de baja de una asignatura.
      */
     override suspend fun darDeBaja(asignaturaId: String): Result<Unit> {
-        val alumnoId = TokenManager.getToken() ?: ""
-            ?: return Result.failure(Exception("Usuario no autenticado"))
+        val alumnoId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: return Result.failure(Exception("Usuario no autenticado"))
 
         Log.d("AlumnoRepo", "🚪 Dando de baja de: $asignaturaId")
         return springBootRepository.darDeBaja(alumnoId, asignaturaId)
@@ -100,7 +104,9 @@ class AlumnoRepository(
      * Verifica si el alumno está inscrito en una asignatura.
      */
     override suspend fun estaInscrito(asignaturaId: String): Boolean {
-        val alumnoId = TokenManager.getToken() ?: return false
+        val alumnoId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: return false
         val inscripcion = alumnoAsignaturaDao.obtenerInscripcion(alumnoId, asignaturaId)
         return inscripcion != null && inscripcion.estado == "activo"
     }

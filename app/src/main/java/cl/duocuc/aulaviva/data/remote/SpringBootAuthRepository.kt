@@ -76,13 +76,13 @@ class SpringBootAuthRepository(
     }
 
     fun getCurrentUserId(): String? {
-        // El token JWT contiene el userId, pero necesitamos decodificarlo
-        // Por ahora, guardamos el userId cuando hacemos login
-        return currentUserId
+        val token = TokenManager.getToken() ?: return null
+        return JwtDecoder.getUserIdFromToken(token) ?: currentUserId
     }
 
     fun getCurrentUserEmail(): String? {
-        return currentUserEmail
+        val token = TokenManager.getToken() ?: return null
+        return JwtDecoder.getEmailFromToken(token) ?: currentUserEmail
     }
 
     fun isLoggedIn(): Boolean {
@@ -98,7 +98,7 @@ class SpringBootAuthRepository(
         }
     }
 
-    // Cache local del usuario actual
+    // Cache local del usuario actual (fallback si el token no se puede decodificar)
     private var currentUserId: String? = null
     private var currentUserEmail: String? = null
 

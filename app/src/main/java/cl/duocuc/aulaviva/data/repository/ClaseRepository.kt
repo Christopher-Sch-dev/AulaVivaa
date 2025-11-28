@@ -36,11 +36,9 @@ import kotlinx.coroutines.withContext
  */
 class ClaseRepository(private val application: Application) : IClaseRepository {
 
-    private val uid: String get() = TokenManager.getToken()?.let {
-        // Decodificar userId del token JWT o usar otro método
-        // Por ahora, usamos el token como referencia
-        ""
-    } ?: ""
+    private val uid: String get() = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+        cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+    ) ?: ""
 
     // Referencia al DAO de Room (BD local)
     private val db = AppDatabase.getDatabase(application)
@@ -155,7 +153,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
     }
 
     /**
-     * Sincroniza clases desde Supabase a Room.
+     * Sincroniza clases desde Spring Boot a Room.
      */
     override suspend fun sincronizarDesdeSupabase() {
         try {
@@ -187,7 +185,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                         onSuccess = {
                             // Si se subió, marcar como sincronizada en Room
                             claseDao.insertarClase(claseEntity.copy(sincronizado = true))
-                            Log.d("ClaseRepository", "✅ Clase ${clase.id} sincronizada a Supabase")
+                            Log.d("ClaseRepository", "✅ Clase ${clase.id} sincronizada a Spring Boot")
                         },
                         onFailure = { error ->
                             Log.e(
@@ -205,7 +203,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 }
             }
 
-            // PASO 2: Descargar clases desde Supabase y actualizar Room
+            // PASO 2: Descargar clases desde Spring Boot y actualizar Room
             val result = springBootRepo.obtenerClases()
             result.fold(
                 onSuccess = {
@@ -213,7 +211,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                         "ClaseRepository",
                         "✅ Sincronización exitosa: ${it.size} clases descargadas"
                     )
-                    // El supabaseRepo.obtenerClases ya actualiza Room.
+                    // El springBootRepo.obtenerClases ya actualiza Room.
                 },
                 onFailure = { error ->
                     Log.e("ClaseRepository", "❌ Error en sincronización de descarga", error)
@@ -262,8 +260,8 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
             val result = springBootRepo.crearClase(clase)
             result.fold(
                 onSuccess = {
-                    Log.d("ClaseRepository", "✅ Clase creada exitosamente en Supabase")
-                    // Ya se guarda en Room dentro de supabaseRepo.crearClase
+                    Log.d("ClaseRepository", "✅ Clase creada exitosamente en Spring Boot")
+                    // Ya se guarda en Room dentro de springBootRepo.crearClase
                     onSuccess()
                 },
                 onFailure = { error ->
@@ -341,7 +339,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase actualizada exitosamente en Supabase")
-                    // Ya se guarda en Room dentro de supabaseRepo.actualizarClase
+                    // Ya se guarda en Room dentro de springBootRepo.actualizarClase
                     onSuccess()
                 },
                 onFailure = { error ->
@@ -389,7 +387,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase actualizada")
-                    // Ya se guarda en Room dentro de supabaseRepo.actualizarClase
+                    // Ya se guarda en Room dentro de springBootRepo.actualizarClase
                 },
                 onFailure = { error ->
                     Log.e(
@@ -428,7 +426,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase eliminada exitosamente de Supabase")
-                    // Ya se elimina de Room dentro de supabaseRepo.eliminarClase
+                    // Ya se elimina de Room dentro de springBootRepo.eliminarClase
                     onSuccess()
                 },
                 onFailure = { error ->
@@ -453,7 +451,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase eliminada")
-                    // Ya se elimina de Room dentro de supabaseRepo.eliminarClase
+                    // Ya se elimina de Room dentro de springBootRepo.eliminarClase
                 },
                 onFailure = { error ->
                     Log.e("ClaseRepository", "❌ Error eliminando clase (sobrecarga): $error")

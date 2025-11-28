@@ -31,7 +31,9 @@ class AsignaturasRepository(
      * Obtiene asignaturas del docente actual (Flow para LiveData).
      */
     override fun obtenerAsignaturasDocente(): Flow<List<Asignatura>> {
-        val docenteId = TokenManager.getToken() ?: ""
+        val docenteId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: ""
 
         // Leer de Room (offline-first)
         return asignaturaDao.obtenerAsignaturasPorDocente(docenteId).map { entities ->
@@ -53,8 +55,9 @@ class AsignaturasRepository(
      * Sincroniza asignaturas desde Supabase.
      */
     override suspend fun sincronizarAsignaturas(): Result<Unit> {
-        val docenteId = TokenManager.getToken() ?: ""
-            ?: return Result.failure(Exception("Usuario no autenticado"))
+        val docenteId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: return Result.failure(Exception("Usuario no autenticado"))
 
         Log.d("AsignaturasRepo", "🔄 Sincronizando asignaturas...")
 
