@@ -4,6 +4,7 @@ import cl.duocuc.aulaviva.backend.infrastructure.config.SupabaseConfig
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
@@ -17,7 +18,7 @@ class StorageService(
         supabaseUrl = supabaseConfig.url,
         supabaseKey = supabaseConfig.serviceRoleKey
     ) {
-        install(Storage)
+        install(io.github.jan.supabase.storage.Storage)
     }
 
     fun subirPdf(file: MultipartFile, nombreArchivo: String, userId: UUID): String = runBlocking {

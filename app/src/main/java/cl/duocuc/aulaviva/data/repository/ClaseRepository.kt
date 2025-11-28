@@ -9,8 +9,10 @@ import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.local.ClaseDao
 import cl.duocuc.aulaviva.data.local.ClaseEntity
 import cl.duocuc.aulaviva.data.model.Clase
-import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
-import cl.duocuc.aulaviva.data.supabase.SupabaseClaseRepository
+import cl.duocuc.aulaviva.data.remote.SpringBootAuthRepository
+import cl.duocuc.aulaviva.data.remote.SpringBootClaseRepository
+import cl.duocuc.aulaviva.data.remote.SpringBootClient
+import cl.duocuc.aulaviva.data.remote.TokenManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -34,14 +36,18 @@ import kotlinx.coroutines.withContext
  */
 class ClaseRepository(private val application: Application) : IClaseRepository {
 
-    private val uid: String get() = SupabaseAuthManager.getCurrentUserId() ?: ""
+    private val uid: String get() = TokenManager.getToken()?.let {
+        // Decodificar userId del token JWT o usar otro método
+        // Por ahora, usamos el token como referencia
+        ""
+    } ?: ""
 
     // Referencia al DAO de Room (BD local)
     private val db = AppDatabase.getDatabase(application)
     private val claseDao: ClaseDao = db.claseDao()
 
-    // Referencia al repository de Supabase
-    private val supabaseRepo = SupabaseClaseRepository(claseDao)
+    // Referencia al repository de Spring Boot (migrado de Supabase)
+    private val springBootRepo = SpringBootClaseRepository(claseDao, SpringBootClient.apiService)
 
     private val appContext = application.applicationContext
 
@@ -172,10 +178,10 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                         asignaturaId = claseEntity.asignaturaId
                     )
                     // Intentar crear/actualizar en Supabase
-                    val result = if (supabaseRepo.obtenerClasePorId(clase.id).isSuccess) {
-                        supabaseRepo.actualizarClase(clase)
+                    val result = if (springBootRepo.obtenerClasePorId(clase.id).isSuccess) {
+                        springBootRepo.actualizarClase(clase)
                     } else {
-                        supabaseRepo.crearClase(clase)
+                        springBootRepo.crearClase(clase)
                     }
                     result.fold(
                         onSuccess = {
@@ -200,7 +206,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
             }
 
             // PASO 2: Descargar clases desde Supabase y actualizar Room
-            val result = supabaseRepo.obtenerClases()
+            val result = springBootRepo.obtenerClases()
             result.fold(
                 onSuccess = {
                     Log.d(
@@ -224,7 +230,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      */
     override suspend fun sincronizarClasesPorAsignatura(asignaturaId: String) {
         try {
-            val result = supabaseRepo.obtenerClasesPorAsignatura(asignaturaId)
+            val result = springBootRepo.obtenerClasesPorAsignatura(asignaturaId)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Sincronizadas ${it.size} clases para asignatura $asignaturaId")
@@ -253,7 +259,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 return
             }
 
-            val result = supabaseRepo.crearClase(clase)
+            val result = springBootRepo.crearClase(clase)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase creada exitosamente en Supabase")
@@ -331,7 +337,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 asignaturaId = asignaturaId
             )
 
-            val result = supabaseRepo.actualizarClase(clase)
+            val result = springBootRepo.actualizarClase(clase)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase actualizada exitosamente en Supabase")
@@ -379,7 +385,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      */
     override suspend fun actualizarClase(clase: Clase) {
         try {
-            val result = supabaseRepo.actualizarClase(clase)
+            val result = springBootRepo.actualizarClase(clase)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase actualizada")
@@ -418,7 +424,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
         onError: (String) -> Unit
     ) {
         try {
-            val result = supabaseRepo.eliminarClase(claseId)
+            val result = springBootRepo.eliminarClase(claseId)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase eliminada exitosamente de Supabase")
@@ -443,7 +449,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      */
     override suspend fun eliminarClase(claseId: String) {
         try {
-            val result = supabaseRepo.eliminarClase(claseId)
+            val result = springBootRepo.eliminarClase(claseId)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase eliminada")
@@ -507,7 +513,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 asignaturaId = asignaturaId
             )
 
-            val result = supabaseRepo.crearClase(claseDemo)
+            val result = springBootRepo.crearClase(claseDemo)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase de prueba creada")

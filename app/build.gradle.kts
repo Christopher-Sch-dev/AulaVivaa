@@ -49,10 +49,12 @@ android {
         val geminiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
         val supabaseUrl = localProperties.getProperty("SUPABASE_URL") ?: ""
         val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY") ?: ""
+        val springBootUrl = localProperties.getProperty("SPRING_BOOT_URL") ?: "http://localhost:8080/"
 
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "SPRING_BOOT_URL", "\"$springBootUrl\"")
     }
 
     // ✅ Configuración de firma para APK release
@@ -199,11 +201,13 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
-    // Retrofit (para Gemini API)
+    // Retrofit (para Gemini API y Spring Boot)
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.retrofit2:converter-kotlinx-serialization:1.0.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.code.gson:gson:2.13.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     // Google Generative AI (Gemini) - Compatible con Ktor 2.3.12
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")

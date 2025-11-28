@@ -15,7 +15,7 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
-        mavenCentral()
+        mavenCentral()  // Maven Central primero para Supabase
         maven { url = uri("https://jitpack.io") }  // Para AndroidPdfViewer
     }
 }

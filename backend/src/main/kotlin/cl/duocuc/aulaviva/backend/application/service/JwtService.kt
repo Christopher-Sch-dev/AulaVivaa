@@ -31,10 +31,8 @@ class JwtService(
 
     fun validateToken(token: String): Boolean {
         return try {
-            Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
+            val parser = Jwts.parser().setSigningKey(key).build()
+            parser.parseClaimsJws(token)
             true
         } catch (e: Exception) {
             false
@@ -57,11 +55,8 @@ class JwtService(
     }
 
     private fun extractClaims(token: String): Claims {
-        return Jwts.parserBuilder()
-            .setSigningKey(key)
-            .build()
-            .parseClaimsJws(token)
-            .body
+        val parser = Jwts.parser().setSigningKey(key).build()
+        return parser.parseClaimsJws(token).body
     }
 }
 

@@ -9,7 +9,7 @@ import cl.duocuc.aulaviva.backend.domain.entity.Usuario
 import cl.duocuc.aulaviva.backend.infrastructure.repository.UsuarioRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.gotrue.Auth
+import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.builtin.Email
 import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Value
@@ -30,18 +30,19 @@ class AuthService(
         supabaseUrl = supabaseUrl,
         supabaseKey = supabaseAnonKey
     ) {
-        install(Auth)
+        install(io.github.jan.supabase.gotrue.Auth)
     }
 
     @Transactional
     fun login(request: LoginRequest): AuthResponse = runBlocking {
         // Autenticar con Supabase Auth
-        val session = supabaseClient.auth.signInWith(Email) {
+        supabaseClient.auth.signInWith(Email) {
             this.email = request.email
             this.password = request.password
         }
 
-        val user = session.user
+        val user = supabaseClient.auth.currentUserOrNull()
+            ?: throw RuntimeException("Error obteniendo usuario después del login")
         val userId = UUID.fromString(user.id)
 
         // Obtener datos adicionales del usuario
@@ -68,12 +69,13 @@ class AuthService(
         }
 
         // Hacer login para obtener el usuario
-        val session = supabaseClient.auth.signInWith(Email) {
+        supabaseClient.auth.signInWith(Email) {
             this.email = request.email
             this.password = request.password
         }
 
-        val user = session.user
+        val user = supabaseClient.auth.currentUserOrNull()
+            ?: throw RuntimeException("Error obteniendo usuario después del registro")
         val userId = UUID.fromString(user.id)
 
         // Guardar datos adicionales en tabla usuarios
