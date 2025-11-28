@@ -5,6 +5,8 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
+import retrofit2.http.Part
+import retrofit2.http.Multipart
 
 /**
  * Interfaz Retrofit para comunicarse con el backend Spring Boot.

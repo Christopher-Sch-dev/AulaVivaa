@@ -2,13 +2,13 @@ package cl.duocuc.aulaviva.data.remote
 
 import android.util.Log
 import cl.duocuc.aulaviva.BuildConfig
-import kotlinx.serialization.json.Json
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import okhttp3.MediaType.Companion.toMediaType
+import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
@@ -19,13 +19,9 @@ object SpringBootClient {
 
     private const val BASE_URL = BuildConfig.SPRING_BOOT_URL
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        encodeDefaults = false
-    }
-
-    private val contentType = "application/json".toMediaType()
+    private val gson: Gson = GsonBuilder()
+        .serializeNulls()
+        .create()
 
     private val loggingInterceptor = HttpLoggingInterceptor { message ->
         Log.d("SpringBootAPI", message)
@@ -61,7 +57,7 @@ object SpringBootClient {
     private val retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(okHttpClient)
-        .addConverterFactory(json.asConverterFactory(contentType))
+        .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
 
     val apiService: SpringBootApiService = retrofit.create(SpringBootApiService::class.java)

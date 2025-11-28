@@ -7,8 +7,6 @@ import cl.duocuc.aulaviva.data.remote.SpringBootAuthRepository
 import cl.duocuc.aulaviva.data.remote.SpringBootClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-
 /**
  * Repository para manejar la tabla `usuarios` usando Spring Boot.
  * Migrado de Supabase directo a Spring Boot backend.
@@ -90,7 +88,6 @@ class UsuarioRepository : IUsuarioRepository {
 /**
  * DTO para serialización de usuarios (compatibilidad).
  */
-@Serializable
 data class UsuarioDTO(
     val id: String,
     val email: String,

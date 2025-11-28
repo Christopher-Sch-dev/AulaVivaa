@@ -45,7 +45,7 @@ object JwtDecoder {
             val decodedString = String(decodedBytes)
             val json = JSONObject(decodedString)
 
-            json.optString("email", null)
+            json.optString("email", "")
         } catch (e: Exception) {
             Log.e("JwtDecoder", "Error decodificando email del token", e)
             null
@@ -65,7 +65,7 @@ object JwtDecoder {
             val decodedString = String(decodedBytes)
             val json = JSONObject(decodedString)
 
-            json.optString("rol", null)
+            json.optString("rol", "")
         } catch (e: Exception) {
             Log.e("JwtDecoder", "Error decodificando rol del token", e)
             null

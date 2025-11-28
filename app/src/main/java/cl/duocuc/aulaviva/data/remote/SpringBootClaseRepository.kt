@@ -154,8 +154,9 @@ class SpringBootClaseRepository(
             val response = apiService.eliminarClase("Bearer ${TokenManager.getToken()}", claseId)
 
             if (response.isSuccessful && response.body()?.success == true) {
-                // Eliminar de Room
-                claseDao.eliminarClase(claseId)
+                // Eliminar de Room - obtener entidad primero
+                val entity = claseDao.obtenerClasePorId(claseId)
+                entity?.let { claseDao.eliminarClase(it) }
                 Result.success(Unit)
             } else {
                 val error = response.body()?.error ?: response.message()
@@ -175,7 +176,7 @@ class SpringBootClaseRepository(
         archivoPdfUrl = archivoPdfUrl,
         archivoPdfNombre = archivoPdfNombre,
         creador = creador,
-        asignaturaId = asignaturaId
+        asignaturaId = asignaturaId ?: ""
     )
 
     private fun Clase.toEntity(sincronizado: Boolean) = cl.duocuc.aulaviva.data.local.ClaseEntity(

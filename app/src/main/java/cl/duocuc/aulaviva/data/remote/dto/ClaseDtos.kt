@@ -1,8 +1,5 @@
 package cl.duocuc.aulaviva.data.remote.dto
 
-import kotlinx.serialization.Serializable
-
-@Serializable
 data class CrearClaseRequestDto(
     val nombre: String,
     val descripcion: String = "",
@@ -12,7 +9,6 @@ data class CrearClaseRequestDto(
     val asignaturaId: String? = null
 )
 
-@Serializable
 data class ActualizarClaseRequestDto(
     val nombre: String,
     val descripcion: String = "",
@@ -21,7 +17,6 @@ data class ActualizarClaseRequestDto(
     val archivoPdfNombre: String = ""
 )
 
-@Serializable
 data class ClaseResponseDto(
     val id: String,
     val nombre: String,

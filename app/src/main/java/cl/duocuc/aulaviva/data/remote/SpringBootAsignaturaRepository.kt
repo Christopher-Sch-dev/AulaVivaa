@@ -100,8 +100,9 @@ class SpringBootAsignaturaRepository(
             val response = apiService.eliminarAsignatura("Bearer ${TokenManager.getToken()}", asignaturaId)
 
             if (response.isSuccessful && response.body()?.success == true) {
-                // Eliminar de Room
-                asignaturaDao.eliminarAsignatura(asignaturaId)
+                // Eliminar de Room - obtener entidad primero
+                val entity = asignaturaDao.obtenerAsignaturaPorId(asignaturaId)
+                entity?.let { asignaturaDao.eliminarAsignatura(it) }
                 Result.success(Unit)
             } else {
                 val error = response.body()?.error ?: response.message()
