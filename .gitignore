@@ -101,6 +101,7 @@ lint/tmp/
 # API keys - IMPORTANT: Never commit these!
 *.properties
 !gradle-wrapper.properties
+keystore.properties
 
 # OS-specific files
 .DS_Store

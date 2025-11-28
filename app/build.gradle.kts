@@ -61,7 +61,9 @@ android {
     signingConfigs {
         create("release") {
             if (keystorePropertiesFile.exists()) {
-                storeFile = file(keystoreProperties.getProperty("KEYSTORE_FILE") ?: "aulaviva-release.jks")
+                val keystorePath = keystoreProperties.getProperty("KEYSTORE_FILE") ?: "aulaviva-release.jks"
+                // La ruta es relativa al módulo app, no a la raíz
+                storeFile = file(keystorePath.replace("app/", ""))
                 storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD")
                 keyAlias = keystoreProperties.getProperty("KEY_ALIAS")
                 keyPassword = keystoreProperties.getProperty("KEY_PASSWORD")
