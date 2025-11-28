@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository
 import java.util.*
 
 @Repository
-interface ClaseRepository : JpaRepository<Clase, UUID> {
+interface ClaseRepository : JpaRepository<Clase, String> {
     fun findByCreador(creador: UUID): List<Clase>
     fun findByAsignaturaId(asignaturaId: UUID): List<Clase>
 

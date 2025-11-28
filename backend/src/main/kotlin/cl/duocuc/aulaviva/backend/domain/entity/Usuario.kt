@@ -22,16 +22,8 @@ data class Usuario(
     val nombre: String? = null,
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: OffsetDateTime = OffsetDateTime.now(),
-
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: OffsetDateTime = OffsetDateTime.now()
-) {
-    @PreUpdate
-    fun preUpdate() {
-        updatedAt = OffsetDateTime.now()
-    }
-}
+    val createdAt: OffsetDateTime = OffsetDateTime.now()
+)
 
 enum class RolUsuario {
     docente,

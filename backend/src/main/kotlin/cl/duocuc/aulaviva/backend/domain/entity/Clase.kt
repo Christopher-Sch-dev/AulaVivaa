@@ -8,9 +8,8 @@ import java.util.*
 @Table(name = "clases", schema = "public")
 data class Clase(
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", columnDefinition = "UUID")
-    val id: UUID = UUID.randomUUID(),
+    @Column(name = "id", columnDefinition = "TEXT")
+    val id: String,
 
     @Column(name = "nombre", nullable = false, length = 200)
     val nombre: String,
@@ -34,14 +33,6 @@ data class Clase(
     val asignaturaId: UUID? = null,
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    val createdAt: OffsetDateTime = OffsetDateTime.now(),
-
-    @Column(name = "updated_at", nullable = false)
-    var updatedAt: OffsetDateTime = OffsetDateTime.now()
-) {
-    @PreUpdate
-    fun preUpdate() {
-        updatedAt = OffsetDateTime.now()
-    }
-}
+    val createdAt: OffsetDateTime = OffsetDateTime.now()
+)
 

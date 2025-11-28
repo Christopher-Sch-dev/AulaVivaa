@@ -17,6 +17,7 @@ class ClaseService(
     @Transactional
     fun crearClase(creadorId: UUID, request: CrearClaseRequest): ClaseResponse {
         val clase = Clase(
+            id = UUID.randomUUID().toString(), // Generar UUID como String
             nombre = request.nombre,
             descripcion = request.descripcion,
             fecha = request.fecha.ifEmpty { System.currentTimeMillis().toString() },
@@ -44,7 +45,7 @@ class ClaseService(
             .map { it.toResponse() }
     }
 
-    fun obtenerClasePorId(claseId: UUID): ClaseResponse {
+    fun obtenerClasePorId(claseId: String): ClaseResponse {
         val clase = claseRepository.findById(claseId)
             .orElseThrow { RuntimeException("Clase no encontrada") }
         return clase.toResponse()
@@ -52,7 +53,7 @@ class ClaseService(
 
     @Transactional
     fun actualizarClase(
-        claseId: UUID,
+        claseId: String,
         creadorId: UUID,
         request: ActualizarClaseRequest
     ): ClaseResponse {
@@ -75,7 +76,7 @@ class ClaseService(
     }
 
     @Transactional
-    fun eliminarClase(claseId: UUID, creadorId: UUID) {
+    fun eliminarClase(claseId: String, creadorId: UUID) {
         val clase = claseRepository.findById(claseId)
             .orElseThrow { RuntimeException("Clase no encontrada") }
 
@@ -95,8 +96,7 @@ class ClaseService(
         archivoPdfNombre = archivoPdfNombre,
         creador = creador,
         asignaturaId = asignaturaId,
-        createdAt = createdAt,
-        updatedAt = updatedAt
+        createdAt = createdAt
     )
 }
 

@@ -50,7 +50,7 @@ class ClaseController(
     }
 
     @GetMapping("/{id}")
-    fun obtenerClase(@PathVariable id: UUID): ResponseEntity<ApiResponse<ClaseResponse>> {
+    fun obtenerClase(@PathVariable id: String): ResponseEntity<ApiResponse<ClaseResponse>> {
         return try {
             val clase = claseService.obtenerClasePorId(id)
             ResponseEntity.ok(ApiResponse.success(clase))
@@ -62,7 +62,7 @@ class ClaseController(
 
     @PutMapping("/{id}")
     fun actualizarClase(
-        @PathVariable id: UUID,
+        @PathVariable id: String,
         @Valid @RequestBody request: ActualizarClaseRequest
     ): ResponseEntity<ApiResponse<ClaseResponse>> {
         return try {
@@ -79,7 +79,7 @@ class ClaseController(
     }
 
     @DeleteMapping("/{id}")
-    fun eliminarClase(@PathVariable id: UUID): ResponseEntity<ApiResponse<Unit?>> {
+    fun eliminarClase(@PathVariable id: String): ResponseEntity<ApiResponse<Unit?>> {
         return try {
             val creadorId = CurrentUser.getUserId()
             claseService.eliminarClase(id, creadorId)
