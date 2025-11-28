@@ -7,30 +7,33 @@ import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaDao
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
 import cl.duocuc.aulaviva.data.local.AsignaturaDao
 import cl.duocuc.aulaviva.data.model.Asignatura
-import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
-import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
+import cl.duocuc.aulaviva.data.remote.SpringBootAsignaturaRepository
+import cl.duocuc.aulaviva.data.remote.SpringBootClient
+import cl.duocuc.aulaviva.data.remote.TokenManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
  * Repository MVVM para asignaturas.
- * Orquesta la lógica entre Room (local) y Supabase (remoto).
+ * Orquesta la lógica entre Room (local) y Spring Boot backend (remoto).
  *
  * Patrón: Offline-first
  * - Siempre lee de Room (rápido)
- * - Sincroniza con Supabase en segundo plano
+ * - Sincroniza con Spring Boot en segundo plano
  */
 class AsignaturasRepository(
     private val asignaturaDao: AsignaturaDao,
     private val alumnoAsignaturaDao: AlumnoAsignaturaDao,
-    private val supabaseRepository: SupabaseAsignaturaRepository
+    private val springBootRepository: SpringBootAsignaturaRepository
 ) : IAsignaturasRepository {
 
     /**
      * Obtiene asignaturas del docente actual (Flow para LiveData).
      */
     override fun obtenerAsignaturasDocente(): Flow<List<Asignatura>> {
-        val docenteId = SupabaseAuthManager.getCurrentUserId() ?: ""
+        val docenteId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: ""
 
         // Leer de Room (offline-first)
         return asignaturaDao.obtenerAsignaturasPorDocente(docenteId).map { entities ->
@@ -49,16 +52,17 @@ class AsignaturasRepository(
     }
 
     /**
-     * Sincroniza asignaturas desde Supabase.
+     * Sincroniza asignaturas desde Spring Boot.
      */
     override suspend fun sincronizarAsignaturas(): Result<Unit> {
-        val docenteId = SupabaseAuthManager.getCurrentUserId()
-            ?: return Result.failure(Exception("Usuario no autenticado"))
+        val docenteId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: return Result.failure(Exception("Usuario no autenticado"))
 
         Log.d("AsignaturasRepo", "🔄 Sincronizando asignaturas...")
 
         return try {
-            supabaseRepository.obtenerAsignaturasDocente(docenteId)
+            springBootRepository.obtenerAsignaturasDocente(docenteId)
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("AsignaturasRepo", "❌ Error sincronizando", e)
@@ -73,8 +77,24 @@ class AsignaturasRepository(
         Log.d("AsignaturasRepo", "🔄 Sincronizando inscritos para: $asignaturaId")
 
         return try {
-            supabaseRepository.obtenerInscritosPorAsignatura(asignaturaId)
-            Result.success(Unit)
+            val springBootAlumnoRepo = cl.duocuc.aulaviva.data.remote.SpringBootAlumnoRepository(
+                alumnoAsignaturaDao,
+                asignaturaDao,
+                SpringBootClient.apiService
+            )
+
+            val result = springBootAlumnoRepo.obtenerInscripcionesAsignatura(asignaturaId)
+            result.fold(
+                onSuccess = { inscripciones ->
+                    // Las inscripciones ya se guardan en Room dentro de obtenerInscripcionesAsignatura
+                    Log.d("AsignaturasRepo", "✅ ${inscripciones.size} inscripciones sincronizadas")
+                    Result.success(Unit)
+                },
+                onFailure = { error ->
+                    Log.e("AsignaturasRepo", "❌ Error sincronizando inscritos", error)
+                    Result.failure(error)
+                }
+            )
         } catch (e: Exception) {
             Log.e("AsignaturasRepo", "❌ Error sincronizando inscritos", e)
             Result.failure(e)
@@ -88,28 +108,20 @@ class AsignaturasRepository(
         nombre: String,
         descripcion: String
     ): Result<Asignatura> {
-        val docenteId = SupabaseAuthManager.getCurrentUserId()
-            ?: return Result.failure(Exception("Usuario no autenticado"))
-
         Log.d("AsignaturasRepo", "➕ Creando asignatura: $nombre")
 
-        // Generar código temporal (se actualizará después)
-        val codigoTemporal = "TEMP-${System.currentTimeMillis().toString().takeLast(4)}"
-
-        // Crear timestamp actual
-        val now = java.time.Instant.now().toString()
-
+        // Crear asignatura temporal (Spring Boot generará el ID y código)
         val asignatura = Asignatura(
             id = cl.duocuc.aulaviva.utils.IdUtils.generateId(),
             nombre = nombre,
-            codigoAcceso = codigoTemporal,
-            docenteId = docenteId,
+            codigoAcceso = "", // Se generará en el backend
+            docenteId = "", // Se obtendrá del token
             descripcion = descripcion,
-            createdAt = now,
-            updatedAt = now
+            createdAt = "",
+            updatedAt = ""
         )
 
-        return supabaseRepository.crearAsignatura(asignatura)
+        return springBootRepository.crearAsignatura(asignatura)
     }
 
     /**
@@ -117,7 +129,7 @@ class AsignaturasRepository(
      */
     override suspend fun generarCodigo(asignaturaId: String): Result<String> {
         Log.d("AsignaturasRepo", "🔑 Generando código para: $asignaturaId")
-        return supabaseRepository.generarCodigo(asignaturaId)
+        return springBootRepository.generarCodigo(asignaturaId)
     }
 
     /**
@@ -125,7 +137,7 @@ class AsignaturasRepository(
      */
     override suspend fun actualizarAsignatura(asignatura: Asignatura): Result<Asignatura> {
         Log.d("AsignaturasRepo", "✏️ Actualizando asignatura: ${asignatura.id}")
-        return supabaseRepository.actualizarAsignatura(asignatura)
+        return springBootRepository.actualizarAsignatura(asignatura)
     }
 
     /**
@@ -133,7 +145,7 @@ class AsignaturasRepository(
      */
     override suspend fun eliminarAsignatura(asignaturaId: String): Result<Unit> {
         Log.d("AsignaturasRepo", "🗑️ Eliminando asignatura: $asignaturaId")
-        return supabaseRepository.eliminarAsignatura(asignaturaId)
+        return springBootRepository.eliminarAsignatura(asignaturaId)
     }
 
     /**

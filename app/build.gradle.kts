@@ -40,8 +40,8 @@ android {
         applicationId = "cl.duocuc.aulaviva"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2  // ✅ Incrementado para evitar conflicto con versión anterior
+        versionName = "1.1"  // ✅ Actualizado para reflejar nueva versión
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -49,17 +49,21 @@ android {
         val geminiKey = localProperties.getProperty("GEMINI_API_KEY") ?: ""
         val supabaseUrl = localProperties.getProperty("SUPABASE_URL") ?: ""
         val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY") ?: ""
+        val springBootUrl = localProperties.getProperty("SPRING_BOOT_URL") ?: "http://localhost:8080/"
 
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiKey\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "SPRING_BOOT_URL", "\"$springBootUrl\"")
     }
 
     // ✅ Configuración de firma para APK release
     signingConfigs {
         create("release") {
             if (keystorePropertiesFile.exists()) {
-                storeFile = file(keystoreProperties.getProperty("KEYSTORE_FILE") ?: "aulaviva-release.jks")
+                val keystorePath = keystoreProperties.getProperty("KEYSTORE_FILE") ?: "aulaviva-release.jks"
+                // La ruta es relativa al módulo app, no a la raíz
+                storeFile = file(keystorePath.replace("app/", ""))
                 storePassword = keystoreProperties.getProperty("KEYSTORE_PASSWORD")
                 keyAlias = keystoreProperties.getProperty("KEY_ALIAS")
                 keyPassword = keystoreProperties.getProperty("KEY_PASSWORD")
@@ -161,10 +165,12 @@ dependencies {
     // SwipeRefreshLayout
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
-    // ✅ SUPABASE (versiones estables en Maven Central)
+    // ✅ SUPABASE (mantenido para compatibilidad - los archivos aún existen aunque no se usen directamente)
+    // La app ahora usa Spring Boot, pero mantenemos estas dependencias por si acaso
     implementation("io.github.jan-tennert.supabase:postgrest-kt:2.6.1")
     implementation("io.github.jan-tennert.supabase:storage-kt:2.6.1")
     implementation("io.github.jan-tennert.supabase:gotrue-kt:2.6.1")
+    // Nota: El módulo base supabase-kt no existe como artefacto separado, se incluye en los submódulos
 
     // Ktor dependencies (forzar versión 2.3.12 compatible con Supabase 2.6.1)
     implementation("io.ktor:ktor-client-android:2.3.12") {
@@ -197,11 +203,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
-    // Retrofit (para Gemini API)
+    // Retrofit (para Gemini API y Spring Boot)
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.code.gson:gson:2.13.2")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
 
     // Google Generative AI (Gemini) - Compatible con Ktor 2.3.12
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")

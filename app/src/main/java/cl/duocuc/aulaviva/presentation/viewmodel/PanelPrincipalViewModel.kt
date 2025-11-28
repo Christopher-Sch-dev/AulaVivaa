@@ -59,27 +59,45 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
                 val asignaturaCreada = resultAsignatura.getOrNull()!!
                 val codigoFinal = asignaturaCreada.codigoAcceso.uppercase()
 
-                val claseDemo = Clase(
-                    id = IdUtils.generateId(),
-                    nombre = "Introducción a Kotlin para Android",
-                    descripcion = "Clase demostrativa sobre Kotlin y desarrollo Android",
-                    fecha = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date()),
-                    asignaturaId = asignaturaCreada.id,
-                    archivoPdfUrl = "https://kotlinlang.org/docs/kotlin-reference.pdf",
-                    archivoPdfNombre = "Kotlin_Reference_Demo.pdf",
-                    creador = authRepository.getCurrentUserId() ?: ""
-                )
+                // Descargar y subir el PDF demo al backend de Spring Boot (Storage)
+                val pdfUrl = "https://ferestrepoca.github.io/paradigmas-de-programacion/poo/tutoriales/Kotlin/Enlaces/POO-Kotlin.pptx.pdf"
+                val pdfNombre = "POO-Kotlin.pptx.pdf"
 
-                clasesRepo.crearClaseAsync(
-                    clase = claseDemo,
-                    onSuccess = {
-                        _toastMessage.postValue("✅ ¡Demo creada! Código: $codigoFinal")
-                        _demoCodigo.postValue(codigoFinal)
+                android.util.Log.d("PanelPrincipalVM", "📥 Descargando y subiendo PDF demo...")
+                val uploadResult = storageRepository.subirPdfDesdeUrl(pdfUrl, pdfNombre)
+
+                uploadResult.fold(
+                    onSuccess = { uploadedPdfUrl ->
+                        android.util.Log.d("PanelPrincipalVM", "✅ PDF subido: $uploadedPdfUrl")
+
+                        // Crear la clase demo con la URL del PDF subido
+                        val claseDemo = Clase(
+                            id = IdUtils.generateId(),
+                            nombre = "Introducción a Kotlin para Android",
+                            descripcion = "Clase demostrativa sobre Kotlin y desarrollo Android",
+                            fecha = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date()),
+                            asignaturaId = asignaturaCreada.id,
+                            archivoPdfUrl = uploadedPdfUrl,
+                            archivoPdfNombre = pdfNombre,
+                            creador = authRepository.getCurrentUserId() ?: ""
+                        )
+
+                        clasesRepo.crearClaseAsync(
+                            clase = claseDemo,
+                            onSuccess = {
+                                _toastMessage.postValue("✅ ¡Demo creada! Código: $codigoFinal")
+                                _demoCodigo.postValue(codigoFinal)
+                            },
+                            onError = { error ->
+                                _toastMessage.postValue("⚠️ Asignatura creada, pero error en clase: $error")
+                            },
+                            scope = viewModelScope
+                        )
                     },
-                    onError = { error ->
-                        _toastMessage.postValue("⚠️ Asignatura creada, pero error en clase: $error")
-                    },
-                    scope = viewModelScope
+                    onFailure = { error ->
+                        android.util.Log.e("PanelPrincipalVM", "❌ Error subiendo PDF demo", error)
+                        _toastMessage.postValue("⚠️ Asignatura creada, pero error subiendo PDF: ${error.message}")
+                    }
                 )
 
             } catch (e: Exception) {

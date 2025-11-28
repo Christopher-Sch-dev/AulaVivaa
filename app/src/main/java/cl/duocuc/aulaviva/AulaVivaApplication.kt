@@ -2,38 +2,34 @@ package cl.duocuc.aulaviva
 
 import android.app.Application
 import android.util.Log
-import cl.duocuc.aulaviva.data.supabase.SupabaseClientProvider
+import cl.duocuc.aulaviva.data.remote.SpringBootClient
 
 /**
  * Clase Application personalizada.
  * Se ejecuta ANTES de cualquier Activity.
  *
- * Inicializa Supabase una sola vez al arrancar la app.
+ * Inicializa Spring Boot backend (migrado de Supabase directo).
  */
 class AulaVivaApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
 
-        // Inicializar Supabase
+        // Verificar configuración de Spring Boot
         try {
-            val supabaseUrl = BuildConfig.SUPABASE_URL
-            val supabaseAnonKey = BuildConfig.SUPABASE_ANON_KEY
+            val springBootUrl = BuildConfig.SPRING_BOOT_URL
 
-            // Verificar si las credenciales de Supabase están configuradas
-            // Si no están configuradas, la app puede funcionar en modo offline
-            if (supabaseUrl.isEmpty() || supabaseAnonKey.isEmpty()) {
-                Log.w("AulaVivaApp", "Credenciales Supabase no configuradas - Modo OFFLINE ONLY")
-                Log.w("AulaVivaApp", "Configura SUPABASE_URL y SUPABASE_ANON_KEY en local.properties")
-                // No lanzar excepción, permitir que la app inicie en modo offline
+            if (springBootUrl.isEmpty() || springBootUrl == "http://localhost:8080/") {
+                Log.w("AulaVivaApp", "⚠️ URL de Spring Boot no configurada - Usando localhost")
+                Log.w("AulaVivaApp", "Configura SPRING_BOOT_URL en local.properties")
             } else {
-                // Inicializar el cliente de Supabase con las credenciales proporcionadas
-                SupabaseClientProvider.initialize(supabaseUrl, supabaseAnonKey)
-                Log.i("AulaVivaApp", "Aplicación inicializada con Supabase correctamente")
+                Log.i("AulaVivaApp", "✅ Backend Spring Boot configurado: $springBootUrl")
             }
 
+            // El cliente Retrofit se inicializa automáticamente al acceder a SpringBootClient.apiService
+            // No requiere inicialización explícita como Supabase
+
         } catch (e: Exception) {
-            // Capturar cualquier error durante la inicialización pero no bloquear el inicio de la app
             Log.e("AulaVivaApp", "Error inicializando aplicación", e)
             // No lanzar excepción, permitir que la app continúe funcionando
         }
