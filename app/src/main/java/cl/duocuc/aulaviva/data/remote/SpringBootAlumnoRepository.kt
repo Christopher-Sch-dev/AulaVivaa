@@ -61,8 +61,43 @@ class SpringBootAlumnoRepository(
                     Result.failure(Exception(inscripcion.message))
                 }
             } else {
-                val error = response.body()?.error ?: response.message()
-                Result.failure(Exception(error ?: "Error desconocido"))
+                // Manejar caso especial: "Ya estás inscrito"
+                val errorMessage = response.body()?.error ?: response.message() ?: "Error desconocido"
+                if (response.code() == 400 && errorMessage.contains("Ya estás inscrito", ignoreCase = true)) {
+                    // Si ya está inscrito, sincronizar asignaturas para obtener la asignatura
+                    Log.d("SpringBootAlumno", "ℹ️ Ya está inscrito, sincronizando asignaturas...")
+                    val alumnoId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+                        TokenManager.getToken() ?: ""
+                    ) ?: ""
+
+                    if (alumnoId.isNotEmpty()) {
+                        // Sincronizar asignaturas inscritas para actualizar Room
+                        val syncResult = obtenerAsignaturasInscritas(alumnoId)
+                        syncResult.fold(
+                            onSuccess = { asignaturas ->
+                                // Buscar la asignatura por código
+                                val asignaturaEncontrada = asignaturas.find {
+                                    it.codigoAcceso.equals(codigo, ignoreCase = true)
+                                }
+                                if (asignaturaEncontrada != null) {
+                                    Log.d("SpringBootAlumno", "✅ Asignatura encontrada después de sincronizar: ${asignaturaEncontrada.nombre}")
+                                    Result.success(asignaturaEncontrada)
+                                } else {
+                                    Log.w("SpringBootAlumno", "⚠️ Asignatura no encontrada después de sincronizar")
+                                    Result.failure(Exception("Ya estás inscrito, pero no se pudo obtener la asignatura"))
+                                }
+                            },
+                            onFailure = { error ->
+                                Log.e("SpringBootAlumno", "❌ Error sincronizando después de 'Ya estás inscrito'", error)
+                                Result.failure(Exception("Ya estás inscrito, pero error al sincronizar: ${error.message}"))
+                            }
+                        )
+                    } else {
+                        Result.failure(Exception("Ya estás inscrito, pero no se pudo obtener ID del alumno"))
+                    }
+                } else {
+                    Result.failure(Exception(errorMessage))
+                }
             }
         } catch (e: Exception) {
             Log.e("SpringBootAlumno", "❌ Error inscribiendo", e)
@@ -82,19 +117,40 @@ class SpringBootAlumnoRepository(
                 if (asignaturas.isNotEmpty()) {
                     asignaturaDao.insertarVarias(asignaturas.map { it.toEntity(sincronizado = true) })
 
-                    // Crear inscripciones en Room para cada asignatura
-                    val inscripciones = asignaturas.map { asignatura ->
-                        AlumnoAsignaturaEntity(
-                            id = java.util.UUID.randomUUID().toString(),
-                            alumnoId = alumnoId,
-                            asignaturaId = asignatura.id,
-                            fechaInscripcion = java.time.OffsetDateTime.now().toString(),
-                            estado = "activo",
-                            sincronizado = true
-                        )
+                    // Crear/actualizar inscripciones en Room solo para asignaturas que no tienen inscripción
+                    val inscripcionesNuevas = mutableListOf<AlumnoAsignaturaEntity>()
+
+                    asignaturas.forEach { asignatura ->
+                        // Verificar si ya existe una inscripción para esta asignatura
+                        val inscripcionExistente = alumnoAsignaturaDao.obtenerInscripcion(alumnoId, asignatura.id)
+
+                        if (inscripcionExistente == null) {
+                            // Crear nueva inscripción solo si no existe
+                            val nuevaInscripcion = AlumnoAsignaturaEntity(
+                                id = java.util.UUID.randomUUID().toString(),
+                                alumnoId = alumnoId,
+                                asignaturaId = asignatura.id,
+                                fechaInscripcion = java.time.OffsetDateTime.now().toString(),
+                                estado = "activo",
+                                sincronizado = true
+                            )
+                            inscripcionesNuevas.add(nuevaInscripcion)
+                        } else {
+                            // Actualizar inscripción existente para asegurar que esté sincronizada
+                            val inscripcionActualizada = inscripcionExistente.copy(
+                                estado = "activo",
+                                sincronizado = true
+                            )
+                            alumnoAsignaturaDao.actualizarInscripcion(inscripcionActualizada)
+                        }
                     }
-                    alumnoAsignaturaDao.insertarVarias(inscripciones)
-                    Log.d("SpringBootAlumno", "✅ ${inscripciones.size} inscripciones guardadas en Room")
+
+                    if (inscripcionesNuevas.isNotEmpty()) {
+                        alumnoAsignaturaDao.insertarVarias(inscripcionesNuevas)
+                        Log.d("SpringBootAlumno", "✅ ${inscripcionesNuevas.size} nuevas inscripciones guardadas en Room")
+                    } else {
+                        Log.d("SpringBootAlumno", "ℹ️ Todas las asignaturas ya tienen inscripciones en Room (actualizadas)")
+                    }
                 }
 
                 Result.success(asignaturas)
@@ -129,13 +185,16 @@ class SpringBootAlumnoRepository(
 
     suspend fun obtenerInscripcionesAsignatura(asignaturaId: String): Result<List<AlumnoAsignatura>> = withContext(Dispatchers.IO) {
         try {
+            Log.d("SpringBootAlumno", "📥 Obteniendo inscripciones para asignatura: $asignaturaId")
             val response = apiService.obtenerInscripciones("Bearer ${TokenManager.getToken()}", asignaturaId)
 
             if (response.isSuccessful && response.body()?.success == true) {
                 val inscripcionesDto = response.body()!!.data!!
+                Log.d("SpringBootAlumno", "📊 Inscripciones recibidas del backend: ${inscripcionesDto.size}")
+
                 val inscripciones = inscripcionesDto.map { it.toAlumnoAsignatura() }
 
-                // Guardar inscripciones en Room
+                // Guardar inscripciones en Room (reemplazar las existentes para esta asignatura)
                 if (inscripciones.isNotEmpty()) {
                     val inscripcionesEntity = inscripciones.map { inscripcion ->
                         AlumnoAsignaturaEntity(
@@ -148,16 +207,25 @@ class SpringBootAlumnoRepository(
                         )
                     }
                     alumnoAsignaturaDao.insertarVarias(inscripcionesEntity)
-                    Log.d("SpringBootAlumno", "✅ ${inscripcionesEntity.size} inscripciones guardadas en Room")
+                    Log.d("SpringBootAlumno", "✅ ${inscripcionesEntity.size} inscripciones guardadas en Room para asignatura $asignaturaId")
+
+                    // Log de detalles para debugging
+                    inscripcionesEntity.forEach { entity ->
+                        Log.d("SpringBootAlumno", "  - Inscripción: alumnoId=${entity.alumnoId.take(8)}..., estado=${entity.estado}")
+                    }
+                } else {
+                    Log.d("SpringBootAlumno", "ℹ️ No hay inscripciones para la asignatura $asignaturaId")
+                    // No eliminar inscripciones existentes, solo indicar que no hay nuevas
                 }
 
                 Result.success(inscripciones)
             } else {
                 val error = response.body()?.error ?: response.message()
+                Log.e("SpringBootAlumno", "❌ Error obteniendo inscripciones: $error (código: ${response.code()})")
                 Result.failure(Exception(error ?: "Error desconocido"))
             }
         } catch (e: Exception) {
-            Log.e("SpringBootAlumno", "❌ Error obteniendo inscripciones", e)
+            Log.e("SpringBootAlumno", "❌ Excepción obteniendo inscripciones", e)
             Result.failure(e)
         }
     }

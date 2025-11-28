@@ -23,7 +23,19 @@ class SpringBootStorageRepository(
         try {
             val inputStream = appContext.contentResolver.openInputStream(uri)
             val bytes = inputStream?.readBytes() ?: return@withContext Result.failure(Exception("No fue posible leer el archivo"))
+            subirPdfDesdeBytes(bytes, nombreArchivo, appContext)
+        } catch (e: Exception) {
+            Log.e("SpringBootStorage", "❌ Error subiendo PDF", e)
+            Result.failure(e)
+        }
+    }
 
+    /**
+     * Sube un PDF desde bytes directamente.
+     * Útil para subir PDFs descargados desde URLs.
+     */
+    suspend fun subirPdfDesdeBytes(bytes: ByteArray, nombreArchivo: String, appContext: android.content.Context): Result<String> = withContext(Dispatchers.IO) {
+        try {
             // Crear archivo temporal
             val tempFile = File.createTempFile("upload_", ".pdf", appContext.cacheDir)
             tempFile.writeBytes(bytes)
@@ -46,7 +58,7 @@ class SpringBootStorageRepository(
                 Result.failure(Exception(error ?: "Error desconocido"))
             }
         } catch (e: Exception) {
-            Log.e("SpringBootStorage", "❌ Error subiendo PDF", e)
+            Log.e("SpringBootStorage", "❌ Error subiendo PDF desde bytes", e)
             Result.failure(e)
         }
     }

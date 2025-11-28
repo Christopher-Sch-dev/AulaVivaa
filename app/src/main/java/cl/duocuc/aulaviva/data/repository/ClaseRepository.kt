@@ -8,7 +8,6 @@ import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.local.ClaseDao
 import cl.duocuc.aulaviva.data.local.ClaseEntity
 import cl.duocuc.aulaviva.data.model.Clase
-import cl.duocuc.aulaviva.data.remote.SpringBootAuthRepository
 import cl.duocuc.aulaviva.data.remote.SpringBootClaseRepository
 import cl.duocuc.aulaviva.data.remote.SpringBootClient
 import cl.duocuc.aulaviva.data.remote.TokenManager
@@ -43,10 +42,8 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
     private val db = AppDatabase.getDatabase(application)
     private val claseDao: ClaseDao = db.claseDao()
 
-    // Referencia al repository de Spring Boot (migrado de Supabase)
+    // Referencia al repository de Spring Boot backend
     private val springBootRepo = SpringBootClaseRepository(claseDao, SpringBootClient.apiService)
-
-    private val appContext = application.applicationContext
 
     /**
      * Mapeo local Clase -> ClaseEntity controlando el flag de sincronización.
@@ -64,23 +61,26 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
     )
 
     /**
+     * Mapeo ClaseEntity -> Clase (reutilizable para evitar duplicación).
+     */
+    private fun ClaseEntity.toClase(): Clase = Clase(
+        id = id,
+        nombre = nombre,
+        descripcion = descripcion,
+        fecha = fecha,
+        archivoPdfUrl = archivoPdfUrl,
+        archivoPdfNombre = archivoPdfNombre,
+        creador = creador,
+        asignaturaId = asignaturaId
+    )
+
+    /**
      * Obtiene las clases del usuario desde Room (local).
      * Flow emite automáticamente cuando los datos cambian.
      */
     override fun obtenerClasesLocal(): Flow<List<Clase>> {
         return claseDao.obtenerClasesPorUsuario(uid).map { entities ->
-            entities.map { entity ->
-                Clase(
-                    id = entity.id,
-                    nombre = entity.nombre,
-                    descripcion = entity.descripcion,
-                    fecha = entity.fecha,
-                    archivoPdfUrl = entity.archivoPdfUrl,
-                    archivoPdfNombre = entity.archivoPdfNombre,
-                    creador = entity.creador,
-                    asignaturaId = entity.asignaturaId
-                )
-            }
+            entities.map { it.toClase() }
         }
     }
 
@@ -89,18 +89,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      */
     override fun obtenerClasesPorAsignatura(asignaturaId: String): Flow<List<Clase>> {
         return claseDao.obtenerClasesPorAsignatura(asignaturaId).map { entities ->
-            entities.map { entity ->
-                Clase(
-                    id = entity.id,
-                    nombre = entity.nombre,
-                    descripcion = entity.descripcion,
-                    fecha = entity.fecha,
-                    archivoPdfUrl = entity.archivoPdfUrl,
-                    archivoPdfNombre = entity.archivoPdfNombre,
-                    creador = entity.creador,
-                    asignaturaId = entity.asignaturaId
-                )
-            }
+            entities.map { it.toClase() }
         }
     }
 
@@ -113,18 +102,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
         }
 
         return claseDao.obtenerClasesPorAsignaturas(asignaturasIds).map { entities ->
-            entities.map { entity ->
-                Clase(
-                    id = entity.id,
-                    nombre = entity.nombre,
-                    descripcion = entity.descripcion,
-                    fecha = entity.fecha,
-                    archivoPdfUrl = entity.archivoPdfUrl,
-                    archivoPdfNombre = entity.archivoPdfNombre,
-                    creador = entity.creador,
-                    asignaturaId = entity.asignaturaId
-                )
-            }
+            entities.map { it.toClase() }
         }
     }
 
@@ -133,19 +111,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      */
     override suspend fun obtenerClasePorId(claseId: String): Clase? {
         return try {
-            val entity = claseDao.obtenerClasePorId(claseId)
-            if (entity != null) {
-                Clase(
-                    id = entity.id,
-                    nombre = entity.nombre,
-                    descripcion = entity.descripcion,
-                    fecha = entity.fecha,
-                    archivoPdfUrl = entity.archivoPdfUrl,
-                    archivoPdfNombre = entity.archivoPdfNombre,
-                    creador = entity.creador,
-                    asignaturaId = entity.asignaturaId
-                )
-            } else null
+            claseDao.obtenerClasePorId(claseId)?.toClase()
         } catch (_: Exception) {
             null
         }
@@ -164,16 +130,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
             )
             clasesNoSincronizadas.forEach { claseEntity ->
                 try {
-                    val clase = Clase(
-                        id = claseEntity.id,
-                        nombre = claseEntity.nombre,
-                        descripcion = claseEntity.descripcion,
-                        fecha = claseEntity.fecha,
-                        archivoPdfUrl = claseEntity.archivoPdfUrl,
-                        archivoPdfNombre = claseEntity.archivoPdfNombre,
-                        creador = claseEntity.creador,
-                        asignaturaId = claseEntity.asignaturaId
-                    )
+                    val clase = claseEntity.toClase()
                     // Intentar crear/actualizar en Spring Boot
                     val existe = springBootRepo.obtenerClasePorId(clase.id).getOrNull()
                     val result = if (existe != null) {
@@ -474,28 +431,34 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      * Comprueba si una asignatura tiene clases asociadas.
      * Retorna `true` si existe al menos una clase para la asignatura.
      *
-     * Sincroniza primero con el backend para obtener el estado más actualizado.
+     * Optimización: Primero verifica en Room (rápido), solo sincroniza si no encuentra clases localmente.
+     * Esto evita sincronizaciones innecesarias cuando ya hay datos locales.
      */
     override suspend fun tieneClases(asignaturaId: String): Boolean {
         return try {
-            // Sincronizar clases de la asignatura antes de verificar
-            // Esto asegura que tenemos el estado más actualizado del backend
-            sincronizarClasesPorAsignatura(asignaturaId)
+            // PASO 1: Verificar primero en Room (rápido, sin red)
+            val clasesLocales = claseDao.obtenerClasesPorAsignaturaDirecto(asignaturaId)
+            if (clasesLocales.isNotEmpty()) {
+                // Si hay clases locales, retornar inmediatamente (optimización)
+                return true
+            }
 
-            // Verificar en Room después de sincronizar
-            val clases = claseDao.obtenerClasesPorAsignaturaDirecto(asignaturaId)
-            clases.isNotEmpty()
+            // PASO 2: Solo si no hay clases locales, sincronizar con backend
+            // Esto asegura que tenemos el estado más actualizado antes de confirmar que no hay clases
+            try {
+                sincronizarClasesPorAsignatura(asignaturaId)
+                // Verificar nuevamente después de sincronizar
+                val clasesDespuesSync = claseDao.obtenerClasesPorAsignaturaDirecto(asignaturaId)
+                clasesDespuesSync.isNotEmpty()
+            } catch (syncError: Exception) {
+                Log.w("ClaseRepository", "⚠️ Error sincronizando para verificación (no crítico): $asignaturaId", syncError)
+                // Si falla la sincronización, confiar en el estado local (ya verificamos que está vacío)
+                false
+            }
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error verificando clases para $asignaturaId", e)
-            // En caso de error, verificar solo en Room como fallback
-            try {
-                val clases = claseDao.obtenerClasesPorAsignaturaDirecto(asignaturaId)
-                clases.isNotEmpty()
-            } catch (e2: Exception) {
-                Log.e("ClaseRepository", "❌ Error en fallback de verificación", e2)
-                // En caso de error, conservador: asumimos que sí tiene clases para evitar borrados accidentales
-                true
-            }
+            // En caso de error crítico, conservador: asumimos que sí tiene clases para evitar borrados accidentales
+            true
         }
     }
 
