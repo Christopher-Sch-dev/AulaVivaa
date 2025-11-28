@@ -1,0 +1,22 @@
+# Nixpacks configuration for Railway deployment
+# Este archivo especifica explícitamente cómo construir el proyecto en Railway
+
+[phases.setup]
+# Usar JDK 17 (compatible con Spring Boot 3.2.0)
+nixPkgs = ["openjdk17"]
+
+[phases.build]
+# Comandos de build
+cmds = [
+    "chmod +x gradlew",
+    "./gradlew :backend:clean :backend:bootJar -x test --no-daemon --no-build-cache"
+]
+
+[phases.deploy]
+# Comando de inicio (Railway inyecta PORT automáticamente)
+cmd = "cd backend && java -Dserver.port=$PORT -jar build/libs/backend-1.0.0.jar"
+
+[start]
+# Comando de inicio para Railway
+cmd = "cd backend && java -Dserver.port=$PORT -jar build/libs/backend-1.0.0.jar"
+

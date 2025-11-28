@@ -3,7 +3,6 @@ package cl.duocuc.aulaviva.data.repository
 import cl.duocuc.aulaviva.domain.repository.IClaseRepository
 
 import android.app.Application
-import android.net.Uri
 import android.util.Log
 import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.local.ClaseDao
@@ -157,7 +156,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      */
     override suspend fun sincronizarDesdeSupabase() {
         try {
-            // PASO 1: Subir clases pendientes desde Room a Supabase
+            // PASO 1: Subir clases pendientes desde Room a Spring Boot
             val clasesNoSincronizadas = claseDao.obtenerNoSincronizadas()
             Log.d(
                 "ClaseRepository",
@@ -266,12 +265,12 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                     onSuccess()
                 },
                 onFailure = { error ->
-                    Log.e("ClaseRepository", "❌ Error creando clase en Supabase: $error")
+                    Log.e("ClaseRepository", "❌ Error creando clase en Spring Boot: $error")
                     // Guardar localmente con sincronizado = false
                     claseDao.insertarClase(clase.toEntityLocal(false))
                     Log.d(
                         "ClaseRepository",
-                        "💾 Clase guardada localmente por error en Supabase: ${clase.id}"
+                        "💾 Clase guardada localmente por error en Spring Boot: ${clase.id}"
                     )
                     onSuccess() // Consideramos éxito local para la UI
                     // No llamamos onError aquí ya que la guardamos localmente
@@ -339,17 +338,17 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
             val result = springBootRepo.actualizarClase(clase)
             result.fold(
                 onSuccess = {
-                    Log.d("ClaseRepository", "✅ Clase actualizada exitosamente en Supabase")
+                    Log.d("ClaseRepository", "✅ Clase actualizada exitosamente en Spring Boot")
                     // Ya se guarda en Room dentro de springBootRepo.actualizarClase
                     onSuccess()
                 },
                 onFailure = { error ->
-                    Log.e("ClaseRepository", "❌ Error actualizando clase en Supabase: $error")
+                    Log.e("ClaseRepository", "❌ Error actualizando clase en Spring Boot: $error")
                     // Actualizar localmente con sincronizado = false
                     claseDao.actualizarClase(clase.toEntityLocal(false))
                     Log.d(
                         "ClaseRepository",
-                        "💾 Clase actualizada localmente por error en Supabase: ${'$'}{clase.id}"
+                        "💾 Clase actualizada localmente por error en Spring Boot: ${'$'}{clase.id}"
                     )
                     onSuccess() // Consideramos éxito local para la UI
                 }
@@ -393,13 +392,13 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 onFailure = { error ->
                     Log.e(
                         "ClaseRepository",
-                        "❌ Error actualizando clase en Supabase (sobrecarga): $error"
+                        "❌ Error actualizando clase en Spring Boot (sobrecarga): $error"
                     )
                     // Actualizar localmente con sincronizado = false
                     claseDao.actualizarClase(clase.toEntityLocal(false))
                     Log.d(
                         "ClaseRepository",
-                        "💾 Clase actualizada localmente por error en Supabase (sobrecarga): ${'$'}{clase.id}"
+                        "💾 Clase actualizada localmente por error en Spring Boot (sobrecarga): ${'$'}{clase.id}"
                     )
                 }
             )
@@ -426,15 +425,15 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
             val result = springBootRepo.eliminarClase(claseId)
             result.fold(
                 onSuccess = {
-                    Log.d("ClaseRepository", "✅ Clase eliminada exitosamente de Supabase")
+                    Log.d("ClaseRepository", "✅ Clase eliminada exitosamente de Spring Boot")
                     // Ya se elimina de Room dentro de springBootRepo.eliminarClase
                     onSuccess()
                 },
                 onFailure = { error ->
-                    Log.e("ClaseRepository", "❌ Error eliminando clase de Supabase: $error")
-                    // Si falla la eliminación en Supabase, simplemente no la eliminamos localmente
+                    Log.e("ClaseRepository", "❌ Error eliminando clase de Spring Boot: $error")
+                    // Si falla la eliminación en Spring Boot, simplemente no la eliminamos localmente
                     // El usuario puede intentar de nuevo más tarde o manejarlo manualmente.
-                    onError(error.message ?: "Error al eliminar clase en Supabase")
+                    onError(error.message ?: "Error al eliminar clase en Spring Boot")
                 }
             )
         } catch (e: Exception) {
@@ -456,7 +455,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 },
                 onFailure = { error ->
                     Log.e("ClaseRepository", "❌ Error eliminando clase (sobrecarga): $error")
-                    // Si falla la eliminación en Supabase, simplemente no la eliminamos localmente
+                    // Si falla la eliminación en Spring Boot, simplemente no la eliminamos localmente
                 }
             )
         } catch (e: Exception) {
@@ -469,64 +468,6 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      */
     override suspend fun limpiarLocal() {
         claseDao.eliminarTodas()
-    }
-
-    /**
-     * Crea una CLASE DE PRUEBA automáticamente.
-     * NOTA: Este método está deprecado y solo se usa para demos.
-     * En producción, las clases deben crearse con PDFs reales subidos por el usuario.
-     */
-    @Deprecated("Solo para uso en demos. Usar crearClase con PDF real en producción.")
-    suspend fun crearClaseDePrueba(
-        asignaturaId: String,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
-    ) {
-        try {
-            val claseDemoId = "clase_demo_${System.currentTimeMillis()}"
-            val nombreArchivoDemo = "clase_demo.pdf"
-
-            // Para demos, usar un PDF de ejemplo desde Supabase Storage o dejar vacío
-            // En producción, el usuario debe subir su propio PDF
-            val pdfUrl: String = "" // Vacío para demos sin PDF
-
-            val claseDemo = Clase(
-                id = claseDemoId,
-                nombre = "Introducción a Desarrollo Android con Kotlin",
-                descripcion = """
-                    En esta clase exploraremos los fundamentos del desarrollo móvil Android utilizando Kotlin.
-
-                    Actividades:
-                    • Configuración del entorno de desarrollo
-                    • Sintaxis básica de Kotlin
-                    • Creación de la primera aplicación
-                    • Arquitectura MVVM
-                    • Integración con Supabase
-
-                    Material incluido: Guía completa en PDF con ejemplos prácticos.
-                """.trimIndent(),
-                fecha = "Lunes 4 de Noviembre, 14:00hrs",
-                archivoPdfUrl = pdfUrl,
-                archivoPdfNombre = nombreArchivoDemo,
-                creador = uid,
-                asignaturaId = asignaturaId
-            )
-
-            val result = springBootRepo.crearClase(claseDemo)
-            result.fold(
-                onSuccess = {
-                    Log.d("ClaseRepository", "✅ Clase de prueba creada")
-                    onSuccess()
-                },
-                onFailure = { error ->
-                    Log.e("ClaseRepository", "❌ Error creando clase de prueba", error)
-                    onError(error.message ?: "Error al crear clase de prueba")
-                }
-            )
-        } catch (e: Exception) {
-            Log.e("ClaseRepository", "❌ Error en crearClaseDePrueba", e)
-            onError(e.message ?: "Error al crear clase de prueba")
-        }
     }
 
     /**
@@ -544,29 +485,4 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
         }
     }
 
-    /**
-     * Sube un PDF a Supabase Storage y retorna la URL pública.
-     */
-    suspend fun subirPdfASupabaseStorage(
-        pdfUri: Uri,
-        nombreArchivo: String
-    ): String = withContext(Dispatchers.IO) {
-        try {
-            Log.d("ClaseRepository", "📤 Iniciando subida de PDF: $nombreArchivo")
-            // Use centralized StorageRepository to perform uploads
-            val storageRepo = RepositoryProvider.provideStorageRepository(application)
-            val uploadResult = storageRepo.subirPdf(pdfUri, nombreArchivo)
-
-            uploadResult.fold(onSuccess = { url ->
-                Log.d("ClaseRepository", "✅ PDF subido exitosamente")
-                return@withContext url
-            }, onFailure = { error ->
-                Log.e("ClaseRepository", "❌ Error subiendo PDF", error)
-                throw Exception(error.message ?: "Error subiendo PDF")
-            })
-        } catch (e: Exception) {
-            Log.e("ClaseRepository", "❌ Error en subirPdfASupabaseStorage", e)
-            throw Exception("Error subiendo PDF: ${'$'}{e.message}")
-        }
-    }
 }

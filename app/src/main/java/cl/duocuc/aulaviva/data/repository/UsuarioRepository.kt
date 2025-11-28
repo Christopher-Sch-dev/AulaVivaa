@@ -21,22 +21,17 @@ class UsuarioRepository : IUsuarioRepository {
     /**
      * Guardar datos del usuario en tabla usuarios.
      * Nota: Spring Boot crea el usuario automáticamente en el registro,
-     * este método se mantiene para compatibilidad pero puede no ser necesario.
+     * este método es un no-op para mantener compatibilidad con la interfaz.
      */
     override suspend fun guardarUsuario(
         uid: String,
         email: String,
         rol: String
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            // Spring Boot crea el usuario automáticamente en el registro
-            // Este método se mantiene para compatibilidad pero ya no es necesario
-            Log.d("UsuarioRepo", "💾 Usuario ya creado por Spring Boot en registro")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Log.e("UsuarioRepo", "❌ Error guardando usuario", e)
-            Result.failure(Exception("Error al guardar datos del usuario: ${e.message}"))
-        }
+        // Spring Boot crea el usuario automáticamente en el registro
+        // Este método es un no-op para mantener compatibilidad con la interfaz
+        Log.d("UsuarioRepo", "💾 Usuario ya creado por Spring Boot en registro (no-op)")
+        Result.success(Unit)
     }
 
     /**
@@ -69,19 +64,18 @@ class UsuarioRepository : IUsuarioRepository {
 
     /**
      * Actualizar rol del usuario.
-     * Nota: Spring Boot no tiene endpoint específico para actualizar rol,
-     * este método se mantiene para compatibilidad.
+     * Nota: Spring Boot no tiene endpoint específico para actualizar rol actualmente.
+     * Este método es un no-op para mantener compatibilidad con la interfaz.
+     *
+     * Para implementar en el futuro:
+     * - Agregar endpoint PUT /api/usuarios/{id}/rol en Spring Boot
+     * - Actualizar este método para llamar al endpoint
      */
     override suspend fun actualizarRol(uid: String, nuevoRol: String): Result<Unit> =
         withContext(Dispatchers.IO) {
-            try {
-                Log.d("UsuarioRepo", "✏️ Actualización de rol no soportada en Spring Boot actualmente")
-                // TODO: Implementar endpoint en Spring Boot si es necesario
-                Result.success(Unit)
-            } catch (e: Exception) {
-                Log.e("UsuarioRepo", "❌ Error actualizando rol", e)
-                Result.failure(Exception("Error al actualizar rol: ${e.message}"))
-            }
+            Log.d("UsuarioRepo", "✏️ Actualización de rol no soportada en Spring Boot (no-op)")
+            // TODO: Implementar endpoint en Spring Boot cuando sea necesario
+            Result.success(Unit)
         }
 }
 

@@ -58,7 +58,7 @@ class AlumnoRepository(
     }
 
     /**
-     * Sincroniza asignaturas inscritas desde Supabase.
+     * Sincroniza asignaturas inscritas desde Spring Boot.
      */
     override suspend fun sincronizarAsignaturasInscritas(): Result<Unit> {
         val alumnoId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(

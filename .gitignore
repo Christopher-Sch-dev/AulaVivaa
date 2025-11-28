@@ -20,6 +20,14 @@ out/
 # Gradle files
 .gradle/
 build/
+**/build/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# Local Gradle properties (no subir configuraciones locales)
+gradle.properties.local
+local.properties
 
 # Local configuration file (sdk path, etc)
 local.properties

@@ -15,11 +15,11 @@ import kotlinx.coroutines.flow.map
 
 /**
  * Repository MVVM para asignaturas.
- * Orquesta la lógica entre Room (local) y Supabase (remoto).
+ * Orquesta la lógica entre Room (local) y Spring Boot backend (remoto).
  *
  * Patrón: Offline-first
  * - Siempre lee de Room (rápido)
- * - Sincroniza con Supabase en segundo plano
+ * - Sincroniza con Spring Boot en segundo plano
  */
 class AsignaturasRepository(
     private val asignaturaDao: AsignaturaDao,
@@ -52,7 +52,7 @@ class AsignaturasRepository(
     }
 
     /**
-     * Sincroniza asignaturas desde Supabase.
+     * Sincroniza asignaturas desde Spring Boot.
      */
     override suspend fun sincronizarAsignaturas(): Result<Unit> {
         val docenteId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
