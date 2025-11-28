@@ -374,10 +374,21 @@ SPRING_BOOT_URL=https://tu-servidor.com/
 
 #### Railway (Recomendado - Gratis para empezar)
 
+**📖 Guía Completa**: Ver [backend/RAILWAY_SETUP.md](RAILWAY_SETUP.md)
+
+**Pasos Rápidos**:
+
 1. Conecta tu repositorio GitHub a Railway
-2. Configura variables de entorno en el dashboard
+2. Configura las variables de entorno (ver [VARIABLES_ENTORNO_RAILWAY.md](VARIABLES_ENTORNO_RAILWAY.md))
 3. Railway detecta automáticamente Spring Boot y lo despliega
-4. Obtén la URL pública (ej: `https://aulaviva-backend.railway.app`)
+4. Obtén la URL pública (ej: `https://aulaviva-backend-production.up.railway.app`)
+
+**Variables Requeridas**:
+- `SUPABASE_DB_HOST`, `SUPABASE_DB_PORT`, `SUPABASE_DB_NAME`, `SUPABASE_DB_USER`, `SUPABASE_DB_PASSWORD`
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `JWT_SECRET` (mínimo 32 caracteres)
+
+**Nota**: Railway inyecta automáticamente `PORT`, no necesitas configurarlo.
 
 #### Heroku
 

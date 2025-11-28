@@ -38,10 +38,16 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOrigins = listOf(
-            "http://localhost:8080",
-            "android-app://cl.duocuc.aulaviva"
-        )
+
+        // Permitir orígenes desde variables de entorno o usar valores por defecto
+        val allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS")?.split(",")
+            ?: listOf(
+                "http://localhost:8080",
+                "android-app://cl.duocuc.aulaviva",
+                "*" // Permitir todos los orígenes en producción (Railway)
+            )
+
+        configuration.allowedOrigins = allowedOrigins
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true

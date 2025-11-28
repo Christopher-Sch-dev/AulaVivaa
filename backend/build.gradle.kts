@@ -68,3 +68,9 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+// Task para generar JAR ejecutable (necesario para Railway)
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    archiveBaseName.set("backend")
+    archiveVersion.set("1.0.0")
+}
+
