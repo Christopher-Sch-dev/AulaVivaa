@@ -17,20 +17,10 @@ import java.util.*
 class StorageService(
     private val supabaseConfig: SupabaseConfig
 ) {
-    // Configurar HttpClient con timeout extendido para Railway (30s en lugar de 10s por defecto)
-    private val httpClient = HttpClient(CIO) {
-        install(HttpTimeout) {
-            requestTimeoutMillis = 30000 // 30 segundos (aumentado desde 10s por defecto)
-            connectTimeoutMillis = 10000 // 10 segundos para conexión
-            socketTimeoutMillis = 30000 // 30 segundos para socket
-        }
-    }
-
-    // Configurar Supabase Client con HttpClient personalizado
+    // Configurar Supabase Client para Storage
     private val supabaseClient: SupabaseClient = createSupabaseClient(
         supabaseUrl = supabaseConfig.url,
-        supabaseKey = supabaseConfig.serviceRoleKey,
-        httpClient = httpClient
+        supabaseKey = supabaseConfig.serviceRoleKey
     ) {
         install(io.github.jan.supabase.storage.Storage)
     }

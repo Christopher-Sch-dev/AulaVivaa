@@ -29,20 +29,15 @@ class AuthService(
     @Value("\${supabase.anon-key}")
     private val supabaseAnonKey: String
 ) {
-    // Configurar HttpClient con timeout extendido para Railway (30s en lugar de 10s por defecto)
-    private val httpClient = HttpClient(CIO) {
-        install(HttpTimeout) {
-            requestTimeoutMillis = 30000 // 30 segundos (aumentado desde 10s por defecto)
-            connectTimeoutMillis = 10000 // 10 segundos para conexión
-            socketTimeoutMillis = 30000 // 30 segundos para socket
-        }
-    }
-
-    // Configurar Supabase Client con HttpClient personalizado
+    // Configurar Supabase Client
+    // Nota: El timeout por defecto de Supabase es 10s
+    // Si hay problemas de timeout en Railway, verificar:
+    // 1. Variables de entorno SUPABASE_URL y SUPABASE_ANON_KEY
+    // 2. Conectividad de Railway a Supabase
+    // 3. Considerar usar Session Pooler de Supabase para mejor rendimiento
     private val supabaseClient: SupabaseClient = createSupabaseClient(
         supabaseUrl = supabaseUrl,
-        supabaseKey = supabaseAnonKey,
-        httpClient = httpClient
+        supabaseKey = supabaseAnonKey
     ) {
         install(io.github.jan.supabase.gotrue.Auth)
     }
