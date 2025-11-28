@@ -2,7 +2,9 @@ package cl.duocuc.aulaviva.data.repository
 
 import android.app.Application
 import cl.duocuc.aulaviva.data.local.AppDatabase
-import cl.duocuc.aulaviva.data.supabase.SupabaseAsignaturaRepository
+import cl.duocuc.aulaviva.data.remote.SpringBootAsignaturaRepository
+import cl.duocuc.aulaviva.data.remote.SpringBootAlumnoRepository
+import cl.duocuc.aulaviva.data.remote.SpringBootClient
 import cl.duocuc.aulaviva.domain.repository.IAsignaturasRepository
 import cl.duocuc.aulaviva.domain.repository.IAlumnoRepository
 import cl.duocuc.aulaviva.domain.repository.IClaseRepository
@@ -38,7 +40,7 @@ object RepositoryProvider {
             val repo = AsignaturasRepository(
                 asignaturaDao = db.asignaturaDao(),
                 alumnoAsignaturaDao = db.alumnoAsignaturaDao(),
-                supabaseRepository = SupabaseAsignaturaRepository(db.asignaturaDao(), db.alumnoAsignaturaDao())
+                springBootRepository = SpringBootAsignaturaRepository(db.asignaturaDao(), db.alumnoAsignaturaDao(), SpringBootClient.apiService)
             )
             asignaturasRepository = repo
             repo
@@ -52,7 +54,7 @@ object RepositoryProvider {
             val repo = AlumnoRepository(
                 alumnoAsignaturaDao = db.alumnoAsignaturaDao(),
                 asignaturaDao = db.asignaturaDao(),
-                supabaseRepository = cl.duocuc.aulaviva.data.supabase.SupabaseAlumnoRepository(db.alumnoAsignaturaDao(), db.asignaturaDao())
+                springBootRepository = SpringBootAlumnoRepository(db.alumnoAsignaturaDao(), db.asignaturaDao(), SpringBootClient.apiService)
             )
             alumnoRepository = repo
             repo

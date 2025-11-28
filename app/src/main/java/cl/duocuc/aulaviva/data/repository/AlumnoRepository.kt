@@ -6,8 +6,9 @@ import android.util.Log
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaDao
 import cl.duocuc.aulaviva.data.local.AsignaturaDao
 import cl.duocuc.aulaviva.data.model.Asignatura
-import cl.duocuc.aulaviva.data.supabase.SupabaseAlumnoRepository
-import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
+import cl.duocuc.aulaviva.data.remote.SpringBootAlumnoRepository
+import cl.duocuc.aulaviva.data.remote.SpringBootClient
+import cl.duocuc.aulaviva.data.remote.TokenManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -18,14 +19,16 @@ import kotlinx.coroutines.flow.map
 class AlumnoRepository(
     private val alumnoAsignaturaDao: AlumnoAsignaturaDao,
     private val asignaturaDao: AsignaturaDao,
-    private val supabaseRepository: SupabaseAlumnoRepository
+    private val springBootRepository: SpringBootAlumnoRepository
 ) : IAlumnoRepository {
 
     /**
      * Obtiene asignaturas inscritas del alumno actual (Flow para LiveData).
      */
     override fun obtenerAsignaturasInscritas(): Flow<List<Asignatura>> {
-        val alumnoId = SupabaseAuthManager.getCurrentUserId() ?: ""
+        val alumnoId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: ""
 
         // Obtener IDs de inscripciones desde Room
         return alumnoAsignaturaDao.obtenerInscripcionesActivas(alumnoId).map { inscripciones ->
@@ -58,13 +61,14 @@ class AlumnoRepository(
      * Sincroniza asignaturas inscritas desde Supabase.
      */
     override suspend fun sincronizarAsignaturasInscritas(): Result<Unit> {
-        val alumnoId = SupabaseAuthManager.getCurrentUserId()
-            ?: return Result.failure(Exception("Usuario no autenticado"))
+        val alumnoId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: return Result.failure(Exception("Usuario no autenticado"))
 
         Log.d("AlumnoRepo", "🔄 Sincronizando asignaturas inscritas...")
 
         return try {
-            supabaseRepository.obtenerAsignaturasInscritas(alumnoId)
+            springBootRepository.obtenerAsignaturasInscritas(alumnoId)
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("AlumnoRepo", "❌ Error sincronizando", e)
@@ -81,25 +85,28 @@ class AlumnoRepository(
         }
 
         Log.d("AlumnoRepo", "🎓 Inscribiendo con código: $codigo")
-        return supabaseRepository.inscribirConCodigo(codigo)
+        return springBootRepository.inscribirConCodigo(codigo)
     }
 
     /**
      * Darse de baja de una asignatura.
      */
     override suspend fun darDeBaja(asignaturaId: String): Result<Unit> {
-        val alumnoId = SupabaseAuthManager.getCurrentUserId()
-            ?: return Result.failure(Exception("Usuario no autenticado"))
+        val alumnoId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: return Result.failure(Exception("Usuario no autenticado"))
 
         Log.d("AlumnoRepo", "🚪 Dando de baja de: $asignaturaId")
-        return supabaseRepository.darDeBaja(alumnoId, asignaturaId)
+        return springBootRepository.darDeBaja(alumnoId, asignaturaId)
     }
 
     /**
      * Verifica si el alumno está inscrito en una asignatura.
      */
     override suspend fun estaInscrito(asignaturaId: String): Boolean {
-        val alumnoId = SupabaseAuthManager.getCurrentUserId() ?: return false
+        val alumnoId = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+            cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+        ) ?: return false
         val inscripcion = alumnoAsignaturaDao.obtenerInscripcion(alumnoId, asignaturaId)
         return inscripcion != null && inscripcion.estado == "activo"
     }

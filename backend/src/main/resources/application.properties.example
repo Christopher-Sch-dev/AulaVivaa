@@ -1,0 +1,27 @@
+# ============================================
+# CONFIGURACIÓN DE SUPABASE PARA SPRING BOOT
+# ============================================
+# Copia este archivo a application.properties y completa los valores
+# O configura las variables de entorno
+
+# Base de datos PostgreSQL (Supabase)
+# Obtener desde: Supabase Dashboard → Settings → Database
+SUPABASE_DB_HOST=db.xxxxx.supabase.co
+SUPABASE_DB_PORT=5432
+SUPABASE_DB_NAME=postgres
+SUPABASE_DB_USER=postgres
+SUPABASE_DB_PASSWORD=tu-password-aqui
+
+# Supabase API
+# Obtener desde: Supabase Dashboard → Settings → API
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_ANON_KEY=tu-anon-key-aqui
+SUPABASE_SERVICE_ROLE_KEY=tu-service-role-key-aqui
+
+# Storage
+SUPABASE_STORAGE_BUCKET=clases
+
+# JWT Secret (cambiar en producción)
+# Debe ser mínimo 256 bits (32 caracteres)
+JWT_SECRET=tu-secret-key-super-seguro-minimo-32-caracteres-cambiar-en-produccion
+

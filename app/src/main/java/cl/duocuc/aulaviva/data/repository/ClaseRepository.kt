@@ -9,8 +9,10 @@ import cl.duocuc.aulaviva.data.local.AppDatabase
 import cl.duocuc.aulaviva.data.local.ClaseDao
 import cl.duocuc.aulaviva.data.local.ClaseEntity
 import cl.duocuc.aulaviva.data.model.Clase
-import cl.duocuc.aulaviva.data.supabase.SupabaseAuthManager
-import cl.duocuc.aulaviva.data.supabase.SupabaseClaseRepository
+import cl.duocuc.aulaviva.data.remote.SpringBootAuthRepository
+import cl.duocuc.aulaviva.data.remote.SpringBootClaseRepository
+import cl.duocuc.aulaviva.data.remote.SpringBootClient
+import cl.duocuc.aulaviva.data.remote.TokenManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -20,28 +22,30 @@ import kotlinx.coroutines.withContext
 
 /**
  * Repository que maneja toda la lógica de clases.
- * Utiliza arquitectura offline-first con Supabase.
+ * Utiliza arquitectura offline-first con Spring Boot backend.
  *
  * Usa DOS fuentes de datos:
  * 1. Room (BD local) - Funciona sin internet
- * 2. Supabase Postgres + Storage - Se sincroniza cuando hay conexión
+ * 2. Spring Boot REST API - Se sincroniza cuando hay conexión
  *
  * ESTRATEGIA:
  * - Siempre leo primero de Room (rápido, offline)
- * - Intento sincronizar con Supabase en segundo plano
+ * - Intento sincronizar con Spring Boot en segundo plano
  * - Si no hay internet, guardo en Room con sincronizado=false
  * - Cuando vuelve internet, subo lo pendiente
  */
 class ClaseRepository(private val application: Application) : IClaseRepository {
 
-    private val uid: String get() = SupabaseAuthManager.getCurrentUserId() ?: ""
+    private val uid: String get() = cl.duocuc.aulaviva.data.remote.JwtDecoder.getUserIdFromToken(
+        cl.duocuc.aulaviva.data.remote.TokenManager.getToken() ?: ""
+    ) ?: ""
 
     // Referencia al DAO de Room (BD local)
     private val db = AppDatabase.getDatabase(application)
     private val claseDao: ClaseDao = db.claseDao()
 
-    // Referencia al repository de Supabase
-    private val supabaseRepo = SupabaseClaseRepository(claseDao)
+    // Referencia al repository de Spring Boot (migrado de Supabase)
+    private val springBootRepo = SpringBootClaseRepository(claseDao, SpringBootClient.apiService)
 
     private val appContext = application.applicationContext
 
@@ -149,7 +153,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
     }
 
     /**
-     * Sincroniza clases desde Supabase a Room.
+     * Sincroniza clases desde Spring Boot a Room.
      */
     override suspend fun sincronizarDesdeSupabase() {
         try {
@@ -168,19 +172,21 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                         fecha = claseEntity.fecha,
                         archivoPdfUrl = claseEntity.archivoPdfUrl,
                         archivoPdfNombre = claseEntity.archivoPdfNombre,
-                        creador = claseEntity.creador
+                        creador = claseEntity.creador,
+                        asignaturaId = claseEntity.asignaturaId
                     )
-                    // Intentar crear/actualizar en Supabase
-                    val result = if (supabaseRepo.obtenerClasePorId(clase.id).isSuccess) {
-                        supabaseRepo.actualizarClase(clase)
+                    // Intentar crear/actualizar en Spring Boot
+                    val existe = springBootRepo.obtenerClasePorId(clase.id).getOrNull()
+                    val result = if (existe != null) {
+                        springBootRepo.actualizarClase(clase)
                     } else {
-                        supabaseRepo.crearClase(clase)
+                        springBootRepo.crearClase(clase)
                     }
                     result.fold(
                         onSuccess = {
                             // Si se subió, marcar como sincronizada en Room
                             claseDao.insertarClase(claseEntity.copy(sincronizado = true))
-                            Log.d("ClaseRepository", "✅ Clase ${clase.id} sincronizada a Supabase")
+                            Log.d("ClaseRepository", "✅ Clase ${clase.id} sincronizada a Spring Boot")
                         },
                         onFailure = { error ->
                             Log.e(
@@ -198,15 +204,15 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 }
             }
 
-            // PASO 2: Descargar clases desde Supabase y actualizar Room
-            val result = supabaseRepo.obtenerClases()
+            // PASO 2: Descargar clases desde Spring Boot y actualizar Room
+            val result = springBootRepo.obtenerClases()
             result.fold(
                 onSuccess = {
                     Log.d(
                         "ClaseRepository",
                         "✅ Sincronización exitosa: ${it.size} clases descargadas"
                     )
-                    // El supabaseRepo.obtenerClases ya actualiza Room.
+                    // El springBootRepo.obtenerClases ya actualiza Room.
                 },
                 onFailure = { error ->
                     Log.e("ClaseRepository", "❌ Error en sincronización de descarga", error)
@@ -223,7 +229,7 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      */
     override suspend fun sincronizarClasesPorAsignatura(asignaturaId: String) {
         try {
-            val result = supabaseRepo.obtenerClasesPorAsignatura(asignaturaId)
+            val result = springBootRepo.obtenerClasesPorAsignatura(asignaturaId)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Sincronizadas ${it.size} clases para asignatura $asignaturaId")
@@ -252,11 +258,11 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 return
             }
 
-            val result = supabaseRepo.crearClase(clase)
+            val result = springBootRepo.crearClase(clase)
             result.fold(
                 onSuccess = {
-                    Log.d("ClaseRepository", "✅ Clase creada exitosamente en Supabase")
-                    // Ya se guarda en Room dentro de supabaseRepo.crearClase
+                    Log.d("ClaseRepository", "✅ Clase creada exitosamente en Spring Boot")
+                    // Ya se guarda en Room dentro de springBootRepo.crearClase
                     onSuccess()
                 },
                 onFailure = { error ->
@@ -315,6 +321,10 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
         onError: (String) -> Unit
     ) {
         try {
+            // Obtener asignaturaId desde la clase existente si existe
+            val claseExistente = claseDao.obtenerClasePorId(claseId)
+            val asignaturaId = claseExistente?.asignaturaId ?: ""
+
             val clase = Clase(
                 id = claseId,
                 nombre = nombre,
@@ -322,14 +332,15 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 fecha = fecha,
                 archivoPdfUrl = archivoPdfUrl,
                 archivoPdfNombre = archivoPdfNombre,
-                creador = uid
+                creador = uid,
+                asignaturaId = asignaturaId
             )
 
-            val result = supabaseRepo.actualizarClase(clase)
+            val result = springBootRepo.actualizarClase(clase)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase actualizada exitosamente en Supabase")
-                    // Ya se guarda en Room dentro de supabaseRepo.actualizarClase
+                    // Ya se guarda en Room dentro de springBootRepo.actualizarClase
                     onSuccess()
                 },
                 onFailure = { error ->
@@ -346,6 +357,9 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error general en actualizarClase: $e")
             // Actualizar localmente con sincronizado = false
+            val claseExistente = claseDao.obtenerClasePorId(claseId)
+            val asignaturaId = claseExistente?.asignaturaId ?: ""
+
             val claseLocal = Clase(
                 id = claseId,
                 nombre = nombre,
@@ -353,7 +367,8 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 fecha = fecha,
                 archivoPdfUrl = archivoPdfUrl,
                 archivoPdfNombre = archivoPdfNombre,
-                creador = uid
+                creador = uid,
+                asignaturaId = asignaturaId
             )
             claseDao.actualizarClase(claseLocal.toEntityLocal(false))
             Log.d(
@@ -369,11 +384,11 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      */
     override suspend fun actualizarClase(clase: Clase) {
         try {
-            val result = supabaseRepo.actualizarClase(clase)
+            val result = springBootRepo.actualizarClase(clase)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase actualizada")
-                    // Ya se guarda en Room dentro de supabaseRepo.actualizarClase
+                    // Ya se guarda en Room dentro de springBootRepo.actualizarClase
                 },
                 onFailure = { error ->
                     Log.e(
@@ -408,11 +423,11 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
         onError: (String) -> Unit
     ) {
         try {
-            val result = supabaseRepo.eliminarClase(claseId)
+            val result = springBootRepo.eliminarClase(claseId)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase eliminada exitosamente de Supabase")
-                    // Ya se elimina de Room dentro de supabaseRepo.eliminarClase
+                    // Ya se elimina de Room dentro de springBootRepo.eliminarClase
                     onSuccess()
                 },
                 onFailure = { error ->
@@ -433,11 +448,11 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
      */
     override suspend fun eliminarClase(claseId: String) {
         try {
-            val result = supabaseRepo.eliminarClase(claseId)
+            val result = springBootRepo.eliminarClase(claseId)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase eliminada")
-                    // Ya se elimina de Room dentro de supabaseRepo.eliminarClase
+                    // Ya se elimina de Room dentro de springBootRepo.eliminarClase
                 },
                 onFailure = { error ->
                     Log.e("ClaseRepository", "❌ Error eliminando clase (sobrecarga): $error")
@@ -457,35 +472,23 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
     }
 
     /**
-     * Crea una CLASE DE PRUEBA automáticamente
+     * Crea una CLASE DE PRUEBA automáticamente.
+     * NOTA: Este método está deprecado y solo se usa para demos.
+     * En producción, las clases deben crearse con PDFs reales subidos por el usuario.
      */
-    suspend fun crearClaseDePrueba(onSuccess: () -> Unit, onError: (String) -> Unit) {
+    @Deprecated("Solo para uso en demos. Usar crearClase con PDF real en producción.")
+    suspend fun crearClaseDePrueba(
+        asignaturaId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
         try {
             val claseDemoId = "clase_demo_${System.currentTimeMillis()}"
             val nombreArchivoDemo = "clase_demo.pdf"
-            // Usar URL externa por defecto. Para usar assets, descomentar y configurar:
-            // val assetUri = Uri.parse("android.resource://${appContext.packageName}/raw/clase_demo")
-            val dummyAssetUri: Uri = Uri.EMPTY // Placeholder para asset Uri (no implementado aún)
 
-            var pdfUrl: String = "https://www.bluebooksoft.com/DISENO_PROGRAMACION_WEB/1366.pdf"
-
-            if (dummyAssetUri != Uri.EMPTY) {
-                try {
-                    pdfUrl = subirPdfASupabaseStorage(dummyAssetUri, nombreArchivoDemo)
-                    Log.d(
-                        "ClaseRepository",
-                        "✅ PDF de demostración subido a Supabase Storage: $pdfUrl"
-                    )
-                } catch (e: Exception) {
-                    Log.e(
-                        "ClaseRepository",
-                        "❌ Error subiendo PDF de demostración desde assets: ${'$'}{e.message}",
-                        e
-                    )
-                    // Fallback to external URL if asset upload fails
-                    pdfUrl = "https://www.bluebooksoft.com/DISENO_PROGRAMACION_WEB/1366.pdf"
-                }
-            }
+            // Para demos, usar un PDF de ejemplo desde Supabase Storage o dejar vacío
+            // En producción, el usuario debe subir su propio PDF
+            val pdfUrl: String = "" // Vacío para demos sin PDF
 
             val claseDemo = Clase(
                 id = claseDemoId,
@@ -505,10 +508,11 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 fecha = "Lunes 4 de Noviembre, 14:00hrs",
                 archivoPdfUrl = pdfUrl,
                 archivoPdfNombre = nombreArchivoDemo,
-                creador = uid
+                creador = uid,
+                asignaturaId = asignaturaId
             )
 
-            val result = supabaseRepo.crearClase(claseDemo)
+            val result = springBootRepo.crearClase(claseDemo)
             result.fold(
                 onSuccess = {
                     Log.d("ClaseRepository", "✅ Clase de prueba creada")
