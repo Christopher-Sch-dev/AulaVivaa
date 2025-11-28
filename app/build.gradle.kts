@@ -163,12 +163,12 @@ dependencies {
     // SwipeRefreshLayout
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
-    // ✅ SUPABASE (versiones estables en Maven Central)
+    // ✅ SUPABASE (mantenido para compatibilidad - los archivos aún existen aunque no se usen directamente)
+    // La app ahora usa Spring Boot, pero mantenemos estas dependencias por si acaso
     implementation("io.github.jan-tennert.supabase:postgrest-kt:2.6.1")
     implementation("io.github.jan-tennert.supabase:storage-kt:2.6.1")
     implementation("io.github.jan-tennert.supabase:gotrue-kt:2.6.1")
-    // Módulo base de Supabase (requerido para createSupabaseClient)
-    implementation("io.github.jan.supabase:supabase-kt:2.6.1")
+    // Nota: El módulo base supabase-kt no existe como artefacto separado, se incluye en los submódulos
 
     // Ktor dependencies (forzar versión 2.3.12 compatible con Supabase 2.6.1)
     implementation("io.ktor:ktor-client-android:2.3.12") {
@@ -204,10 +204,11 @@ dependencies {
     // Retrofit (para Gemini API y Spring Boot)
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
-    implementation("com.squareup.retrofit2:converter-kotlinx-serialization:1.0.0")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
 
     // Google Generative AI (Gemini) - Compatible con Ktor 2.3.12
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")

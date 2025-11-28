@@ -175,8 +175,9 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                         creador = claseEntity.creador,
                         asignaturaId = claseEntity.asignaturaId
                     )
-                    // Intentar crear/actualizar en Supabase
-                    val result = if (springBootRepo.obtenerClasePorId(clase.id).isSuccess) {
+                    // Intentar crear/actualizar en Spring Boot
+                    val existe = springBootRepo.obtenerClasePorId(clase.id).getOrNull()
+                    val result = if (existe != null) {
                         springBootRepo.actualizarClase(clase)
                     } else {
                         springBootRepo.crearClase(clase)
