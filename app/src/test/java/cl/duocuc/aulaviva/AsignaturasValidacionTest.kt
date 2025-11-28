@@ -20,7 +20,7 @@ class AsignaturasValidacionTest {
      *
      * QUÉ TESTEA: Validación de nombre de asignatura no vacío
      * POR QUÉ ES IMPORTANTE: No se puede crear asignatura sin nombre
-     * CÓMO DEFENDERLO: "Verifico que asignaturas sin nombre sean rechazadas,
+     * "Verifico que asignaturas sin nombre sean rechazadas,
      *                    ya que el nombre es un campo obligatorio en el sistema"
      */
     @Test
