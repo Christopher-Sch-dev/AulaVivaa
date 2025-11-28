@@ -22,15 +22,15 @@ import kotlinx.coroutines.withContext
 
 /**
  * Repository que maneja toda la lógica de clases.
- * Utiliza arquitectura offline-first con Supabase.
+ * Utiliza arquitectura offline-first con Spring Boot backend.
  *
  * Usa DOS fuentes de datos:
  * 1. Room (BD local) - Funciona sin internet
- * 2. Supabase Postgres + Storage - Se sincroniza cuando hay conexión
+ * 2. Spring Boot REST API - Se sincroniza cuando hay conexión
  *
  * ESTRATEGIA:
  * - Siempre leo primero de Room (rápido, offline)
- * - Intento sincronizar con Supabase en segundo plano
+ * - Intento sincronizar con Spring Boot en segundo plano
  * - Si no hay internet, guardo en Room con sincronizado=false
  * - Cuando vuelve internet, subo lo pendiente
  */

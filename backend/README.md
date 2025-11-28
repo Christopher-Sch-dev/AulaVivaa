@@ -327,15 +327,85 @@ curl -X GET http://localhost:8080/api/asignaturas \
 
 ---
 
+## 🔌 Conexión con la App Móvil Android
+
+### ¿Cómo se conecta la app al backend?
+
+La app Android se conecta al backend Spring Boot mediante **HTTP/REST** usando **Retrofit 2**. La URL del backend se configura en `local.properties` de la app:
+
+```properties
+# Desarrollo local (emulador)
+SPRING_BOOT_URL=http://10.0.2.2:8080/
+
+# Desarrollo local (dispositivo físico - misma red WiFi)
+SPRING_BOOT_URL=http://192.168.1.X:8080/
+
+# Producción
+SPRING_BOOT_URL=https://tu-servidor.com/
+```
+
+### Flujo de Autenticación
+
+1. **App Android** → `POST /api/auth/login` → **Spring Boot**
+2. **Spring Boot** → Valida credenciales con **Supabase Auth**
+3. **Spring Boot** → Genera JWT propio y lo retorna
+4. **App Android** → Guarda JWT y lo envía en headers `Authorization: Bearer {token}`
+
+### Flujo de Datos
+
+1. **App Android** → Realiza requests HTTP a endpoints REST de Spring Boot
+2. **Spring Boot** → Procesa requests, valida JWT, ejecuta lógica de negocio
+3. **Spring Boot** → Se conecta a **Supabase PostgreSQL** para leer/escribir datos
+4. **Spring Boot** → Retorna respuesta JSON a la app Android
+5. **App Android** → Guarda datos en **Room Database** (offline-first)
+
+### Requisitos para Desarrollo Local
+
+1. **Backend corriendo**: El servidor Spring Boot debe estar activo en `http://localhost:8080`
+2. **Misma red**: Si usas dispositivo físico, debe estar en la misma red WiFi que tu máquina
+3. **Firewall**: Asegúrate de que el puerto 8080 esté abierto
+4. **CORS**: Ya está configurado para permitir requests desde Android
+
+---
+
 ## 🚀 Despliegue
 
-Para producción:
+### Opciones de Despliegue
 
-1. Configura variables de entorno en el servidor
-2. Cambia `JWT_SECRET` por una clave segura (mínimo 256 bits)
-3. Configura HTTPS
-4. Ajusta `CORS` para permitir solo tu dominio de producción
-5. Configura logs apropiados
+#### Railway (Recomendado - Gratis para empezar)
+
+1. Conecta tu repositorio GitHub a Railway
+2. Configura variables de entorno en el dashboard
+3. Railway detecta automáticamente Spring Boot y lo despliega
+4. Obtén la URL pública (ej: `https://aulaviva-backend.railway.app`)
+
+#### Heroku
+
+```bash
+# Instalar Heroku CLI
+heroku create aulaviva-backend
+heroku config:set SUPABASE_DB_HOST=...
+heroku config:set JWT_SECRET=...
+git push heroku main
+```
+
+#### AWS / Google Cloud / DigitalOcean
+
+1. Crea una instancia de servidor (EC2, Compute Engine, Droplet)
+2. Instala Java 17+
+3. Clona el repositorio
+4. Configura variables de entorno
+5. Ejecuta `./gradlew bootRun` o crea un servicio systemd
+
+### Checklist de Producción
+
+- [ ] Configura variables de entorno en el servidor
+- [ ] Cambia `JWT_SECRET` por una clave segura (mínimo 256 bits)
+- [ ] Configura HTTPS (certificado SSL)
+- [ ] Ajusta `CORS` en `SecurityConfig.kt` para permitir solo tu dominio de producción
+- [ ] Configura logs apropiados (logback, CloudWatch, etc.)
+- [ ] Configura monitoreo (Health checks, métricas)
+- [ ] Actualiza `SPRING_BOOT_URL` en la app Android con la URL de producción
 
 ---
 
