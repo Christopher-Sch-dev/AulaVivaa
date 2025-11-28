@@ -325,19 +325,10 @@ fun LoginScreen(
                 modifier = Modifier.padding(top = 24.dp)
             ) {
                 Text(
-                    text = "Desarrollado para ",
+                    text = "DESARROLLADO POR DEV-CHRIS.sch 🎓",
                     style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "XXXXX",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = " 🎓",
-                    style = MaterialTheme.typography.bodySmall
                 )
             }
         }

@@ -40,8 +40,8 @@ android {
         applicationId = "cl.duocuc.aulaviva"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2  // ✅ Incrementado para evitar conflicto con versión anterior
+        versionName = "1.1"  // ✅ Actualizado para reflejar nueva versión
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
