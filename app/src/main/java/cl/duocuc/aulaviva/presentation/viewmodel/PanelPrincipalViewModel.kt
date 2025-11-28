@@ -65,8 +65,8 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
                     descripcion = "Clase demostrativa sobre Kotlin y desarrollo Android",
                     fecha = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date()),
                     asignaturaId = asignaturaCreada.id,
-                    archivoPdfUrl = "https://kotlinlang.org/docs/kotlin-reference.pdf",
-                    archivoPdfNombre = "Kotlin_Reference_Demo.pdf",
+                    archivoPdfUrl = "", // Demo sin PDF - en producción el usuario sube su propio PDF
+                    archivoPdfNombre = "",
                     creador = authRepository.getCurrentUserId() ?: ""
                 )
 

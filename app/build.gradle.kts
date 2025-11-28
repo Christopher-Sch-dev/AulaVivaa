@@ -165,6 +165,8 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:postgrest-kt:2.6.1")
     implementation("io.github.jan-tennert.supabase:storage-kt:2.6.1")
     implementation("io.github.jan-tennert.supabase:gotrue-kt:2.6.1")
+    // Módulo base de Supabase (requerido para createSupabaseClient)
+    implementation("io.github.jan.supabase:supabase-kt:2.6.1")
 
     // Ktor dependencies (forzar versión 2.3.12 compatible con Supabase 2.6.1)
     implementation("io.ktor:ktor-client-android:2.3.12") {

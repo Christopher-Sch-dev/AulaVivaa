@@ -168,7 +168,8 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                         fecha = claseEntity.fecha,
                         archivoPdfUrl = claseEntity.archivoPdfUrl,
                         archivoPdfNombre = claseEntity.archivoPdfNombre,
-                        creador = claseEntity.creador
+                        creador = claseEntity.creador,
+                        asignaturaId = claseEntity.asignaturaId
                     )
                     // Intentar crear/actualizar en Supabase
                     val result = if (supabaseRepo.obtenerClasePorId(clase.id).isSuccess) {
@@ -315,6 +316,10 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
         onError: (String) -> Unit
     ) {
         try {
+            // Obtener asignaturaId desde la clase existente si existe
+            val claseExistente = claseDao.obtenerClasePorId(claseId)
+            val asignaturaId = claseExistente?.asignaturaId ?: ""
+
             val clase = Clase(
                 id = claseId,
                 nombre = nombre,
@@ -322,7 +327,8 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 fecha = fecha,
                 archivoPdfUrl = archivoPdfUrl,
                 archivoPdfNombre = archivoPdfNombre,
-                creador = uid
+                creador = uid,
+                asignaturaId = asignaturaId
             )
 
             val result = supabaseRepo.actualizarClase(clase)
@@ -346,6 +352,9 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error general en actualizarClase: $e")
             // Actualizar localmente con sincronizado = false
+            val claseExistente = claseDao.obtenerClasePorId(claseId)
+            val asignaturaId = claseExistente?.asignaturaId ?: ""
+
             val claseLocal = Clase(
                 id = claseId,
                 nombre = nombre,
@@ -353,7 +362,8 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 fecha = fecha,
                 archivoPdfUrl = archivoPdfUrl,
                 archivoPdfNombre = archivoPdfNombre,
-                creador = uid
+                creador = uid,
+                asignaturaId = asignaturaId
             )
             claseDao.actualizarClase(claseLocal.toEntityLocal(false))
             Log.d(
@@ -457,35 +467,23 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
     }
 
     /**
-     * Crea una CLASE DE PRUEBA automáticamente
+     * Crea una CLASE DE PRUEBA automáticamente.
+     * NOTA: Este método está deprecado y solo se usa para demos.
+     * En producción, las clases deben crearse con PDFs reales subidos por el usuario.
      */
-    suspend fun crearClaseDePrueba(onSuccess: () -> Unit, onError: (String) -> Unit) {
+    @Deprecated("Solo para uso en demos. Usar crearClase con PDF real en producción.")
+    suspend fun crearClaseDePrueba(
+        asignaturaId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
         try {
             val claseDemoId = "clase_demo_${System.currentTimeMillis()}"
             val nombreArchivoDemo = "clase_demo.pdf"
-            // Usar URL externa por defecto. Para usar assets, descomentar y configurar:
-            // val assetUri = Uri.parse("android.resource://${appContext.packageName}/raw/clase_demo")
-            val dummyAssetUri: Uri = Uri.EMPTY // Placeholder para asset Uri (no implementado aún)
 
-            var pdfUrl: String = "https://www.bluebooksoft.com/DISENO_PROGRAMACION_WEB/1366.pdf"
-
-            if (dummyAssetUri != Uri.EMPTY) {
-                try {
-                    pdfUrl = subirPdfASupabaseStorage(dummyAssetUri, nombreArchivoDemo)
-                    Log.d(
-                        "ClaseRepository",
-                        "✅ PDF de demostración subido a Supabase Storage: $pdfUrl"
-                    )
-                } catch (e: Exception) {
-                    Log.e(
-                        "ClaseRepository",
-                        "❌ Error subiendo PDF de demostración desde assets: ${'$'}{e.message}",
-                        e
-                    )
-                    // Fallback to external URL if asset upload fails
-                    pdfUrl = "https://www.bluebooksoft.com/DISENO_PROGRAMACION_WEB/1366.pdf"
-                }
-            }
+            // Para demos, usar un PDF de ejemplo desde Supabase Storage o dejar vacío
+            // En producción, el usuario debe subir su propio PDF
+            val pdfUrl: String = "" // Vacío para demos sin PDF
 
             val claseDemo = Clase(
                 id = claseDemoId,
@@ -505,7 +503,8 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                 fecha = "Lunes 4 de Noviembre, 14:00hrs",
                 archivoPdfUrl = pdfUrl,
                 archivoPdfNombre = nombreArchivoDemo,
-                creador = uid
+                creador = uid,
+                asignaturaId = asignaturaId
             )
 
             val result = supabaseRepo.crearClase(claseDemo)

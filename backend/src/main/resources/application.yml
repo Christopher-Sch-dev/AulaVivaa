@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: aulaviva-backend
+
+  datasource:
+    url: jdbc:postgresql://${SUPABASE_DB_HOST:db.xxxxx.supabase.co}:${SUPABASE_DB_PORT:5432}/${SUPABASE_DB_NAME:postgres}
+    username: ${SUPABASE_DB_USER:postgres}
+    password: ${SUPABASE_DB_PASSWORD:your-password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: none # No modificar esquema, usar el de Supabase
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+    open-in-view: false
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# Supabase Configuration
+supabase:
+  url: ${SUPABASE_URL:https://xxxxx.supabase.co}
+  anon-key: ${SUPABASE_ANON_KEY:your-anon-key}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:your-service-role-key}
+  storage:
+    bucket: clases
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:your-super-secret-jwt-key-change-in-production-min-256-bits}
+  expiration: 86400000 # 24 horas en milisegundos
+
+# CORS Configuration
+cors:
+  allowed-origins:
+    - "http://localhost:8080"
+    - "android-app://cl.duocuc.aulaviva"
+  allowed-methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - PATCH
+    - OPTIONS
+  allowed-headers:
+    - "*"
+  allow-credentials: true
+
+logging:
+  level:
+    root: INFO
+    cl.duocuc.aulaviva: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+

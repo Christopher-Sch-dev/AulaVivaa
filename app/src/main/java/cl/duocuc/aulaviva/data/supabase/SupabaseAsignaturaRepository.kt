@@ -222,7 +222,7 @@ class SupabaseAsignaturaRepository(
             Log.d("SupabaseAsignatura", "🔑 Generando código para: $asignaturaId")
 
             val request = GenerarCodigoRequest(asignaturaId)
-            val codigo = supabase.postgrest.rpc("generar_codigo_asignatura", request).decodeAs<String>()
+            val codigo = supabase.postgrest.rpc("rpc_generar_codigo_asignatura", request).decodeAs<String>()
 
             Log.d("SupabaseAsignatura", "✅ Código generado: $codigo")
             Result.success(codigo)

@@ -215,7 +215,8 @@ class SupabaseClaseRepository(private val claseDao: ClaseDao) {
                 fecha = clase.fecha,
                 archivo_pdf_url = clase.archivoPdfUrl,
                 archivo_pdf_nombre = clase.archivoPdfNombre,
-                creador = clase.creador
+                creador = clase.creador,
+                asignatura_id = clase.asignaturaId.ifEmpty { null }
             )
 
             supabase.from("clases").update(dto) {
@@ -342,6 +343,7 @@ fun ClaseEntity.toClase(): Clase {
         fecha = this.fecha,
         archivoPdfUrl = this.archivoPdfUrl,
         archivoPdfNombre = this.archivoPdfNombre,
-        creador = this.creador
+        creador = this.creador,
+        asignaturaId = this.asignaturaId
     )
 }
