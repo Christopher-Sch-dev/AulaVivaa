@@ -13,6 +13,8 @@ import cl.duocuc.aulaviva.domain.usecase.SincronizarClasesUseCase
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
 import org.junit.After
 import org.junit.Before
@@ -86,6 +88,44 @@ class PanelPrincipalViewModelTest {
         // Assert
         coVerify { syncAsignaturasUseCase.invoke() }
         coVerify { syncClasesUseCase.invoke() }
+    }
+
+    @Test
+    fun `crearAsignaturaYClaseDemo should not call repository if already loading`() = runTest {
+        // Arrange
+        val viewModel = PanelPrincipalViewModel(application)
+        
+        val mockAsignatura = cl.duocuc.aulaviva.data.model.Asignatura(
+            id = "A1", 
+            nombre = "Demo", 
+            descripcion = "Desc", 
+            codigoAcceso = "DEMO123", 
+            docenteId = "User1"  // Fixed parameter name
+        )
+        
+        replacePrivateField(viewModel, "asignaturasRepo", asignaturasRepo)
+        
+        // Use slot to allow delay simulation
+        coEvery { asignaturasRepo.crearAsignatura(any(), any()) } coAnswers {
+            delay(100) 
+            Result.success(mockAsignatura)
+        }
+
+        // Mock storage to prevent NPE on result handling
+        every { RepositoryProvider.provideStorageRepository(any()) } returns storageRepo
+        coEvery { storageRepo.subirPdfDesdeUrl(any(), any()) } returns Result.success("http://url.pdf")
+
+        // Act
+        val job1 = launch { viewModel.crearAsignaturaYClaseDemo() }
+        val job2 = launch { viewModel.crearAsignaturaYClaseDemo() }
+        
+        advanceUntilIdle()
+
+        // Assert
+        coVerify(exactly = 1) { asignaturasRepo.crearAsignatura(any(), any()) }
+        
+        job1.cancel()
+        job2.cancel()
     }
 
     // Helper to inject mocks into private fields

@@ -50,8 +50,17 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
     /**
      * Crea una asignatura demo y una clase demo. Public API para la Activity.
      */
+    private val _isLoading = MutableLiveData<Boolean>(false)
+    val isLoading: LiveData<Boolean> = _isLoading
+
+    /**
+     * Crea una asignatura demo y una clase demo. Public API para la Activity.
+     */
     fun crearAsignaturaYClaseDemo() {
+        if (_isLoading.value == true) return
+
         viewModelScope.launch {
+            _isLoading.postValue(true)
             try {
                 // ... (existing demo logic remains same, but maybe use repos directly or UseCases)
                 val resultAsignatura = asignaturasRepo.crearAsignatura(
@@ -96,9 +105,11 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
                                 _demoCodigo.postValue(codigoFinal)
                                 // Refrescar datos para que aparezcan de inmediato
                                 refreshData()
+                                _isLoading.postValue(false)
                             },
                             onError = { error ->
                                 _toastMessage.postValue("⚠️ Asignatura creada, pero error en clase: $error")
+                                _isLoading.postValue(false)
                             },
                             scope = viewModelScope
                         )
@@ -106,11 +117,13 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
                     onFailure = { error ->
                         android.util.Log.e("PanelPrincipalVM", "❌ Error subiendo PDF demo", error)
                         _toastMessage.postValue("⚠️ Asignatura creada, pero error subiendo PDF: ${error.message}")
+                        _isLoading.postValue(false)
                     }
                 )
 
             } catch (e: Exception) {
                 _toastMessage.postValue("❌ Error al crear demo: ${e.message}")
+                _isLoading.postValue(false)
             }
         }
     }

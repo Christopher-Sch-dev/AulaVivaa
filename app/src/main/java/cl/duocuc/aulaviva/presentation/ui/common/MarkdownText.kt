@@ -107,9 +107,10 @@ fun MarkdownText(
                         .codeTextSize(14) // Tamaño de código
                         .codeBackgroundColor(surfaceVariantColor)
                         .codeTextColor(onSurfaceVariantColor)
+                        // Asegurar contraste en links y quotes
                         .linkColor(primaryColor)
                         .blockQuoteColor(primaryColor)
-                        .listItemColor(primaryColor)
+                        .listItemColor(onSurfaceVariantColor) // Mejor que primary para items de lista
                         .thematicBreakColor(outlineColor)
                 }
             })

@@ -74,6 +74,56 @@ fun DocenteClasesScreen(
         }
     }
 
+    // Estados para la eliminación
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var claseToDelete by remember { mutableStateOf<Clase?>(null) }
+    
+    // Observar resultados de operaciones del ViewModel
+    val operationSuccess by viewModel.operationSuccess.observeAsState()
+    val error by viewModel.error.observeAsState()
+    
+    // Efecto para manejar mensajes de éxito/error
+    LaunchedEffect(operationSuccess) {
+        operationSuccess?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearMessages()
+            // Sincronizar después de eliminar para asegurar estado consistente
+            viewModel.sincronizarClasesPorAsignatura(asignaturaId)
+        }
+    }
+    
+    LaunchedEffect(error) {
+        error?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearMessages()
+        }
+    }
+
+    if (showDeleteDialog && claseToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(context.getString(R.string.confirmar_eliminacion)) },
+            text = { Text("¿Estás seguro que deseas eliminar la clase '${claseToDelete?.nombre}'? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        claseToDelete?.let { viewModel.eliminarClase(it.id) }
+                        showDeleteDialog = false
+                        claseToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(context.getString(R.string.eliminar))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(context.getString(R.string.cancelar))
+                }
+            }
+        )
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -157,10 +207,8 @@ fun DocenteClasesScreen(
                                     crearEditarLauncher.launch(intent)
                                 },
                                 onEliminar = {
-                                    viewModel.eliminarClase(clase.id)
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(context.getString(R.string.msg_clase_eliminada))
-                                    }
+                                    claseToDelete = clase
+                                    showDeleteDialog = true
                                 }
                             )
                         }
