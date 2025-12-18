@@ -382,7 +382,7 @@ gcloud run deploy aulaviva-backend --source .
 ```
 
 La URL de producción actual es:
-`https://AulaViva-620174961947.southamerica-west1.run.app`
+`https://aulaviva-backend-620174961947.southamerica-west1.run.app`
 
 #### AWS / DigitalOcean / Otros
 También puedes desplegar el Dockerfile generado en cualquier plataforma compatible con contenedores.
