@@ -1,6 +1,5 @@
 package cl.duocuc.aulaviva.presentation.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkMode
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -24,7 +23,7 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun AulaVivaTheme(
-    darkTheme: Boolean = isSystemInDarkMode(),
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
     // Forzamos dark scheme por diseño profesional

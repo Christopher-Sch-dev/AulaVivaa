@@ -34,12 +34,12 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "cl.duocuc.aulaviva"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "cl.duocuc.aulaviva"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 2  // ✅ Incrementado para evitar conflicto con versión anterior
         versionName = "1.1"  // ✅ Actualizado para reflejar nueva versión
 
