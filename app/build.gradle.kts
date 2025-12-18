@@ -73,8 +73,9 @@ android {
 
     buildTypes {
         release {
-            // ✅ Usar configuración de firma
-            signingConfig = signingConfigs.getByName("release")
+            // ✅ Usar configuración de firma (Fallback a debug si no hay keystore)
+            val releaseSigning = signingConfigs.getByName("release")
+            signingConfig = if (keystorePropertiesFile.exists()) releaseSigning else signingConfigs.getByName("debug")
 
             isMinifyEnabled = true // R8 activo
             isShrinkResources = true // Elimina recursos no usados

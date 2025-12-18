@@ -23,17 +23,17 @@ import kotlin.random.Random
 private val breakcoreGlitchShader = """
     uniform shader composable;
     uniform float time;
-    uniform float2 resolution;
+    uniform vec2 resolution;
     uniform float intensity;
     uniform float glitchType; // 0=chromatic, 1=tear, 2=pixelSort, 3=noise
     
     // Función de ruido (para efectos aleatorios)
-    float hash(float2 p) {
-        return fract(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453);
+    float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
     }
     
-    half4 main(float2 fragCoord) {
-        float2 uv = fragCoord / resolution;
+    half4 main(vec2 fragCoord) {
+        vec2 uv = fragCoord / resolution;
         
         if (intensity < 0.1) {
             return composable.eval(fragCoord);
@@ -42,24 +42,24 @@ private val breakcoreGlitchShader = """
         // CHROMATIC ABERRATION (RGB split agresivo)
         if (glitchType < 1.0) {
             float offset = intensity * 8.0;
-            half4 r = composable.eval(fragCoord + float2(offset, 0));
+            half4 r = composable.eval(fragCoord + vec2(offset, 0));
             half4 g = composable.eval(fragCoord);
-            half4 b = composable.eval(fragCoord - float2(offset, 0));
+            half4 b = composable.eval(fragCoord - vec2(offset, 0));
             return half4(r.r, g.g, b.b, 1.0);
         }
         
         // SCREEN TEAR (desplazamiento horizontal agresivo)
         if (glitchType < 2.0) {
-            float tear = step(0.85, hash(float2(uv.y * 20.0, time))) * intensity;
-            float2 tearOffset = float2(tear * 50.0, 0);
+            float tear = step(0.85, hash(vec2(uv.y * 20.0, time))) * intensity;
+            vec2 tearOffset = vec2(tear * 50.0, 0);
             return composable.eval(fragCoord + tearOffset);
         }
         
         // PIXEL SORT (simulado con desplazamiento vertical)
         if (glitchType < 3.0) {
-            float brightness = dot(composable.eval(fragCoord).rgb, float3(0.299, 0.587, 0.114));
+            float brightness = dot(composable.eval(fragCoord).rgb, vec3(0.299, 0.587, 0.114));
             float sortOffset = brightness * intensity * 15.0;
-            return composable.eval(fragCoord + float2(0, sortOffset));
+            return composable.eval(fragCoord + vec2(0, sortOffset));
         }
         
         // DIGITAL NOISE (corrupción de datos)
@@ -77,14 +77,14 @@ private val breakcoreGlitchShader = """
 private val cyberGridShader = """
     uniform shader composable;
     uniform float time;
-    uniform float2 resolution;
+    uniform vec2 resolution;
     
-    half4 main(float2 fragCoord) {
-        float2 uv = fragCoord / resolution;
+    half4 main(vec2 fragCoord) {
+        vec2 uv = fragCoord / resolution;
         half4 color = composable.eval(fragCoord);
         
         // Grid infinito con perspectiva
-        float2 gridUV = uv * 20.0;
+        vec2 gridUV = uv * 20.0;
         gridUV.y += time * 2.0; // Movimiento hacia adelante
         
         // Perspectiva (más cerca = más grande)
@@ -92,12 +92,14 @@ private val cyberGridShader = """
         gridUV /= depth * 0.5 + 0.5;
         
         // Líneas del grid
-        float2 grid = abs(fract(gridUV - 0.5) - 0.5) / fwidth(gridUV);
+        // fwidth causa crash en algunos dispositivos/emuladores (error: no match for fwidth(float2))
+        // Usamos un valor fijo ajustado por profundidad para evitar el crash
+        vec2 grid = abs(fract(gridUV - 0.5) - 0.5) / (0.02 / depth); 
         float line = min(grid.x, grid.y);
         float gridValue = 1.0 - min(line, 1.0);
         
         // Color cyan con fade por distancia
-        float3 gridColor = float3(0.02, 0.71, 0.83) * gridValue * depth;
+        vec3 gridColor = vec3(0.02, 0.71, 0.83) * gridValue * depth;
         
         return color + half4(gridColor * 0.3, 0.0);
     }
@@ -110,10 +112,10 @@ private val cyberGridShader = """
 private val aggressiveScanLineShader = """
     uniform shader composable;
     uniform float time;
-    uniform float2 resolution;
+    uniform vec2 resolution;
     
-    half4 main(float2 fragCoord) {
-        float2 uv = fragCoord / resolution;
+    half4 main(vec2 fragCoord) {
+        vec2 uv = fragCoord / resolution;
         half4 color = composable.eval(fragCoord);
         
         // Scan line MÁS EVIDENTE (cada 2 píxeles, no cada 3)

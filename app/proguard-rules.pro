@@ -33,6 +33,16 @@
     public static *** i(...);
 }
 
+# KEEP Markwon (Markdown)
+-dontwarn io.noties.markwon.**
+-dontwarn com.caverock.androidsvg.**
+-dontwarn pl.droidsonroids.gif.**
+
+# KEEP PDFBox
+-dontwarn com.tom_roush.pdfbox.**
+-dontwarn com.gemalto.jp2.**
+-dontwarn org.apache.commons.logging.**
+
 # OPTIMIZACIÓN: Inline functions
 -allowaccessmodification
 -mergeinterfacesaggressively
