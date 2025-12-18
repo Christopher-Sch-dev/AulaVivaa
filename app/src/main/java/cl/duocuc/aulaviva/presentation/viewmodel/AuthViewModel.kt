@@ -67,28 +67,37 @@ class AuthViewModel : ViewModel() {
         _error.value = null
 
         viewModelScope.launch {
-            val result = repository.register(email, password, rol)
-            result.fold(onSuccess = {
-                android.util.Log.d("AuthViewModel", "✅ Registro exitoso para: $email")
-                _isLoading.value = false
-                _registerSuccess.value = true
-            }, onFailure = { e ->
-                android.util.Log.e("AuthViewModel", "❌ Error en registro: ${e.message}", e)
-                _isLoading.value = false
-                
-                val lowerMsg = e.message?.lowercase() ?: ""
-                when {
-                    lowerMsg == "pending_confirmation" -> {
-                        _error.value = "Cuenta creada. Revisa tu email para confirmar la cuenta."
+            try {
+                val result = repository.register(email, password, rol)
+                result.fold(onSuccess = {
+                    android.util.Log.d("AuthViewModel", "✅ Registro exitoso para: $email")
+                    _isLoading.value = false
+                    _registerSuccess.value = true
+                }, onFailure = { e ->
+                    android.util.Log.e("AuthViewModel", "❌ Error en registro: ${e.message}", e)
+                    _isLoading.value = false
+                    
+                    val lowerMsg = e.message?.lowercase() ?: ""
+                    when {
+                        lowerMsg == "pending_confirmation" -> {
+                            _error.value = "Cuenta creada. Revisa tu email para confirmar la cuenta."
+                        }
+                        lowerMsg.contains("403") || lowerMsg.contains("forbidden") -> {
+                            _error.value = "Error de servidor (403): Acceso denegado. Contacta a soporte."
+                        }
+                        lowerMsg.contains("network") || lowerMsg.contains("connect") -> {
+                            _error.value = "Error de conexión. Revisa tu internet."
+                        }
+                        else -> {
+                            _error.value = e.message ?: "Error desconocido en registro"
+                        }
                     }
-                    lowerMsg.contains("403") || lowerMsg.contains("forbidden") -> {
-                        _error.value = "Error de servidor (403): Acceso denegado. Contacta a soporte."
-                    }
-                    else -> {
-                        _error.value = e.message
-                    }
-                }
-            })
+                })
+            } catch (e: Exception) {
+                 android.util.Log.e("AuthViewModel", "❌ Excepción crítica en registro", e)
+                 _isLoading.value = false
+                 _error.value = "Error inesperado: ${e.localizedMessage}"
+            }
         }
     }
 

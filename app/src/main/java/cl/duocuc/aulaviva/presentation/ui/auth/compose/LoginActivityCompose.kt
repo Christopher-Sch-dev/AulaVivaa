@@ -116,7 +116,7 @@ class LoginActivityCompose : ComponentActivity() {
                                 try {
                                     // Obtener el rol del usuario desde el repositorio
                                     val resultRol = authRepository.obtenerRolUsuario()
-                                    val rol = resultRol.getOrNull() ?: "docente"
+                                    val rol = resultRol.getOrNull() ?: "alumno" // Default to Alumno
 
                                     // Crear Intent según el rol del usuario
                                     val intent = when (rol.lowercase()) {
@@ -130,7 +130,7 @@ class LoginActivityCompose : ComponentActivity() {
                                         )
                                         else -> Intent(
                                             this@LoginActivityCompose,
-                                            PanelPrincipalActivityCompose::class.java
+                                            PanelAlumnoActivityCompose::class.java
                                         )
                                     }
 
@@ -139,10 +139,10 @@ class LoginActivityCompose : ComponentActivity() {
                                     startActivity(intent)
                                     finish()
                                 } catch (e: Exception) {
-                                    // Si falla la obtención del rol, redirigir al panel docente por defecto
+                                    // Si falla la obtención del rol, redirigir al panel ALUMNO por defecto (seguridad)
                                     val intent = Intent(
                                         this@LoginActivityCompose,
-                                        PanelPrincipalActivityCompose::class.java
+                                        PanelAlumnoActivityCompose::class.java
                                     )
                                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     startActivity(intent)

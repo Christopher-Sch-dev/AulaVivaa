@@ -73,13 +73,13 @@ class WelcomeActivityCompose : ComponentActivity() {
 
                 if (isAuthenticated) {
                     val resultRol = authRepository.obtenerRolUsuario()
-                    val rol = resultRol.getOrNull() ?: "docente"
+                    val rol = resultRol.getOrNull() ?: "alumno" // Default to Alumno for safety
                     
                     // Preparamos el intent pero NO lo lanzamos aún
                     targetIntent = when (rol.lowercase()) {
                         "docente" -> Intent(this@WelcomeActivityCompose, PanelPrincipalActivityCompose::class.java)
                         "alumno" -> Intent(this@WelcomeActivityCompose, PanelAlumnoActivityCompose::class.java)
-                        else -> Intent(this@WelcomeActivityCompose, PanelPrincipalActivityCompose::class.java)
+                        else -> Intent(this@WelcomeActivityCompose, PanelAlumnoActivityCompose::class.java)
                     }.apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }

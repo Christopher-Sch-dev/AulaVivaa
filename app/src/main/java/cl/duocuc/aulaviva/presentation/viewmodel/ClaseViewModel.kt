@@ -127,6 +127,15 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
+        if (asignaturaId.isEmpty()) {
+             // For compatibility or Demo handling: If empty, try to fetch classes or warn user.
+             // But for now, enforce it strictly if we are following the rules.
+             // If this is for "Demo", the demo method in PanelPrincipalVM passes valid ID so it's fine.
+             // If user tries to create manual class without selecting subject...
+            _error.value = "Debes seleccionar una asignatura asociada"
+            return
+        }
+
         _isLoading.value = true
         val nuevaClase = Clase(
             id = cl.duocuc.aulaviva.utils.IdUtils.generateId(), // UUID único para evitar duplicados
