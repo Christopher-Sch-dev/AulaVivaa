@@ -58,9 +58,10 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
      */
     fun crearAsignaturaYClaseDemo() {
         if (_isLoading.value == true) return
+        _isLoading.value = true
 
         viewModelScope.launch {
-            _isLoading.postValue(true)
+            // _isLoading.postValue(true) // Ya seteado arriba
             try {
                 // ... (existing demo logic remains same, but maybe use repos directly or UseCases)
                 val resultAsignatura = asignaturasRepo.crearAsignatura(
