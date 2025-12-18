@@ -9,13 +9,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlin.math.sin
 import kotlin.random.Random
 
 /**
  * Sistema de venas orgánicas (como tu portafolio)
  * Pulsación simulando flujo sanguíneo digital
+ * Se PAUSA cuando la app va a background para ahorrar batería.
  */
 @Composable
 fun BiomechanicalVeins(
@@ -23,12 +28,19 @@ fun BiomechanicalVeins(
     veinColor: Color = Color(0xFF06B6D4).copy(alpha = 0.15f),
     veinCount: Int = 8
 ) {
+    // CRITICAL: Obtener lifecycle para pausar en background
+    val lifecycleOwner = LocalLifecycleOwner.current
+    
     var pulsePhase by remember { mutableFloatStateOf(0f) }
     
-    LaunchedEffect(Unit) {
-        while (true) {
-            pulsePhase += 0.05f
-            delay(33)
+    // CRITICAL OPTIMIZATION: Loop con lifecycle pause
+    // Solo corre cuando la Activity está RESUMED
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (isActive) {
+                pulsePhase += 0.05f
+                delay(33)
+            }
         }
     }
     

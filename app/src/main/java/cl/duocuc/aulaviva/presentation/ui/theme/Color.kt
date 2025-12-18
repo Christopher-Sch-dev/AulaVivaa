@@ -74,6 +74,7 @@ object AulaVivaColors {
     
     val SurfaceLight = cl.duocuc.aulaviva.presentation.ui.theme.SurfaceLight
     val SurfaceDark = cl.duocuc.aulaviva.presentation.ui.theme.SurfaceDark
+    val BackgroundDark = cl.duocuc.aulaviva.presentation.ui.theme.BackgroundDark // Added for AulaVivaScreenFrame
     
     val TextPrimary = cl.duocuc.aulaviva.presentation.ui.theme.TextPrimary
     val TextSecondary = cl.duocuc.aulaviva.presentation.ui.theme.TextSecondary

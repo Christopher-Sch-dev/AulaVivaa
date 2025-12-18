@@ -17,22 +17,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import cl.duocuc.aulaviva.presentation.ui.theme.MatrixGreen
 import cl.duocuc.aulaviva.presentation.ui.theme.MatrixDarkGreen
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlin.random.Random
 
 @Composable
 fun MatrixBackground(
     modifier: Modifier = Modifier
 ) {
-    val characters = remember { "0123456789ABCDEF@#$%&*" }
+    // CRITICAL: Obtener lifecycle para pausar animación en background
+    val lifecycleOwner = LocalLifecycleOwner.current
+    
+    val characters = remember { "0123456789ABCDEFアイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン@#$%&*" }
     val textMeasurer = rememberTextMeasurer()
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
@@ -55,16 +62,22 @@ fun MatrixBackground(
         }
     }
 
-    // Animation Loop
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(50L) // Reduced to 20 FPS (was 33ms) for optimization
-            for (i in drops.indices) {
-                // Random reset logic
-                if (drops[i] * fontSizePx > screenHeight && Random.nextFloat() > 0.975f) {
-                    drops[i] = 0f // Reset to top
+    // CRITICAL OPTIMIZATION: Animation Loop CON LIFECYCLE PAUSE
+    // El loop SOLO corre cuando la Activity está en RESUMED state
+    // Cuando la app va a background, el loop se PAUSA automáticamente
+    // Esto ahorra batería y CPU significativamente
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            // Este bloque solo se ejecuta mientras la pantalla está visible
+            while (isActive) {
+                delay(50L) // 20 FPS - optimizado para balance visual/performance
+                for (i in drops.indices) {
+                    // Random reset logic - cuando la gota llega al fondo
+                    if (drops[i] * fontSizePx > screenHeight && Random.nextFloat() > 0.975f) {
+                        drops[i] = 0f // Reset to top
+                    }
+                    drops[i] += 1f // Move down by 1 row unit
                 }
-                drops[i] += 1f // Move down by 1 row unit
             }
         }
     }

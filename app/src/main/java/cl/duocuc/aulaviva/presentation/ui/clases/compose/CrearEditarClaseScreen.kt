@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cl.duocuc.aulaviva.presentation.ui.common.AulaVivaScreenFrame
+import cl.duocuc.aulaviva.presentation.ui.common.ScreenEffectMode
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -126,14 +128,16 @@ fun CrearEditarClaseScreen(
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        // Aplicar efectos visuales - Modo DETAIL: scanLines + fondo (formulario)
+        AulaVivaScreenFrame(mode = ScreenEffectMode.DETAIL) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             // Campo Nombre
             OutlinedTextField(
                 value = nombre,
@@ -314,6 +318,7 @@ fun CrearEditarClaseScreen(
                     }
                 }
             }
+        }
         }
     }
 }

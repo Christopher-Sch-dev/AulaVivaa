@@ -21,7 +21,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.ui.clases.compose.DetalleClaseActivityCompose
+import cl.duocuc.aulaviva.presentation.ui.common.AulaVivaScreenFrame
 import cl.duocuc.aulaviva.presentation.ui.common.PullToRefreshContainer
+import cl.duocuc.aulaviva.presentation.ui.common.ScreenEffectMode
 import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 import cl.duocuc.aulaviva.utils.Constants
 import cl.duocuc.aulaviva.R
@@ -80,11 +82,13 @@ fun AlumnoClasesScreen(
             )
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        // Aplicar efectos visuales - Modo LIST: solo scanLines (performance primero en listas)
+        AulaVivaScreenFrame(mode = ScreenEffectMode.LIST) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
             if (isLoading && clases.isEmpty()) {
                 CircularProgressIndicator(Modifier.align(Alignment.Center))
             } else if (clases.isEmpty()) {
@@ -122,6 +126,7 @@ fun AlumnoClasesScreen(
                         .fillMaxWidth()
                         .align(Alignment.TopCenter)
                 )
+            }
             }
         }
     }

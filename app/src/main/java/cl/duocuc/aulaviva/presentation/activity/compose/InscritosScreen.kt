@@ -19,6 +19,8 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.local.AlumnoAsignaturaEntity
+import cl.duocuc.aulaviva.presentation.ui.common.AulaVivaScreenFrame
+import cl.duocuc.aulaviva.presentation.ui.common.ScreenEffectMode
 import cl.duocuc.aulaviva.presentation.viewmodel.InscritosViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -74,11 +76,13 @@ fun InscritosScreen(
             )
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        // Aplicar efectos visuales - Modo LIST: solo scanLines (performance primero en listas)
+        AulaVivaScreenFrame(mode = ScreenEffectMode.LIST) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
             if (isLoading && inscritos.isEmpty()) {
                 CircularProgressIndicator(Modifier.align(Alignment.Center))
             } else if (inscritos.isEmpty()) {
@@ -125,6 +129,7 @@ fun InscritosScreen(
                         .fillMaxWidth()
                         .align(Alignment.TopCenter)
                 )
+            }
             }
         }
     }

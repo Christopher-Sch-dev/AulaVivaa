@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cl.duocuc.aulaviva.presentation.ui.common.AulaVivaScreenFrame
+import cl.duocuc.aulaviva.presentation.ui.common.ScreenEffectMode
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTheme
 import cl.duocuc.aulaviva.presentation.viewmodel.AuthViewModel
 
@@ -119,15 +121,18 @@ fun RegisterScreen(
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
+        // Aplicar efectos visuales consistentes con AulaVivaScreenFrame
+        // Modo AUTH: cyberGrid + scanLines + particles (30)
+        AulaVivaScreenFrame(mode = ScreenEffectMode.AUTH) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
             Spacer(modifier = Modifier.weight(0.5f))
 
             // Logo
@@ -373,6 +378,7 @@ fun RegisterScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
         }
     }
 }

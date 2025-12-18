@@ -6,12 +6,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaColors
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTypography
@@ -130,6 +141,14 @@ fun CyberButton(
 
 /**
  * CyberTextField: Input con borde cyan y texto monospace.
+ * 
+ * @param value Valor actual del campo
+ * @param onValueChange Callback cuando el valor cambia
+ * @param label Etiqueta del campo (estilo terminal)
+ * @param modifier Modificador de Compose
+ * @param enabled Si el campo está habilitado
+ * @param isPassword Si es true, oculta el texto con bullets y muestra toggle de visibilidad.
+ *                   También configura el teclado para password input.
  */
 @Composable
 fun CyberTextField(
@@ -140,6 +159,10 @@ fun CyberTextField(
     enabled: Boolean = true,
     isPassword: Boolean = false
 ) {
+    // Estado local para toggle de visibilidad - NO afecta ViewModel externo
+    // Mantiene encapsulación: el estado de visibilidad es UI-only
+    var passwordVisible by remember { mutableStateOf(false) }
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -151,6 +174,41 @@ fun CyberTextField(
         },
         modifier = modifier.fillMaxWidth(),
         enabled = enabled,
+        singleLine = true,
+        // Transformación visual: bullets cuando es password y no está visible
+        // PasswordVisualTransformation usa el character de enmascaramiento estándar de Android
+        visualTransformation = if (isPassword && !passwordVisible) {
+            PasswordVisualTransformation()
+        } else {
+            VisualTransformation.None
+        },
+        // Teclado optimizado para password: no autocomplete, no suggestions
+        keyboardOptions = if (isPassword) {
+            KeyboardOptions(keyboardType = KeyboardType.Password)
+        } else {
+            KeyboardOptions.Default
+        },
+        // Toggle de visibilidad: solo se muestra para campos password
+        // Icono cambia entre ojo abierto/cerrado según estado
+        trailingIcon = {
+            if (isPassword) {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        imageVector = if (passwordVisible) {
+                            Icons.Filled.VisibilityOff
+                        } else {
+                            Icons.Filled.Visibility
+                        },
+                        contentDescription = if (passwordVisible) {
+                            "Ocultar contraseña"
+                        } else {
+                            "Mostrar contraseña"
+                        },
+                        tint = AulaVivaColors.PrimaryCyan
+                    )
+                }
+            }
+        },
         textStyle = MaterialTheme.typography.bodyMedium.copy(
             fontFamily = FontFamily.Monospace,
             color = AulaVivaColors.TextPrimary
@@ -162,7 +220,6 @@ fun CyberTextField(
             focusedLabelColor = AulaVivaColors.PrimaryCyan,
             unfocusedLabelColor = AulaVivaColors.TextSecondary,
             cursorColor = AulaVivaColors.PrimaryCyan
-        ),
-        singleLine = true
+        )
     )
 }

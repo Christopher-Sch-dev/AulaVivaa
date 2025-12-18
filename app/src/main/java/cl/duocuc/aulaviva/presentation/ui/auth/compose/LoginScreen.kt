@@ -152,8 +152,9 @@ fun LoginScreenContent(
                         value = password,
                         onValueChange = { password = it },
                         label = "PASSWORD_HASH",
-                        enabled = !isLoading
-                    ) // TODO: Add isPassword parameter to CyberTextField if needed
+                        enabled = !isLoading,
+                        isPassword = true // Habilita toggle de visibilidad y oculta texto por defecto
+                    )
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     

@@ -6,12 +6,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlin.random.Random
 
 /**
- * Particle System Optimizado
+ * Particle System Optimizado con Lifecycle Pause
  * Max 30 partículas, ciclo de vida simple.
+ * Se PAUSA cuando la app va a background para ahorrar batería.
  */
 @Composable
 fun CyberParticleBackground(
@@ -19,6 +24,9 @@ fun CyberParticleBackground(
     modifier: Modifier = Modifier,
     particleColor: Color = Color(0xFF00FF41) // Default Matrix Green
 ) {
+    // CRITICAL: Obtener lifecycle para pausar en background
+    val lifecycleOwner = LocalLifecycleOwner.current
+    
     val particles = remember {
         List(maxParticles) {
             CyberParticle()
@@ -27,11 +35,15 @@ fun CyberParticleBackground(
     
     var time by remember { mutableLongStateOf(0L) }
     
-    LaunchedEffect(Unit) {
-        while (true) {
-            time = System.currentTimeMillis()
-            particles.forEach { it.update(time) }
-            delay(33) // ~30 FPS
+    // CRITICAL OPTIMIZATION: Loop con lifecycle pause
+    // Solo corre cuando la Activity está RESUMED
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (isActive) {
+                time = System.currentTimeMillis()
+                particles.forEach { it.update(time) }
+                delay(33) // ~30 FPS
+            }
         }
     }
     
