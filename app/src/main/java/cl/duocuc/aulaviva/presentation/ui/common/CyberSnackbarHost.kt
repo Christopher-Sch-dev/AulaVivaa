@@ -1,13 +1,14 @@
 package cl.duocuc.aulaviva.presentation.ui.common
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-
-import androidx.compose.foundation.border
+import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaColors
 
 @Composable
 fun CyberSnackbarHost(
@@ -19,17 +20,17 @@ fun CyberSnackbarHost(
         modifier = modifier
     ) { data ->
         Snackbar(
-            snackbarData = data,
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            shape = RoundedCornerShape(8.dp),
-            actionColor = MaterialTheme.colorScheme.primary,
-            actionContentColor = MaterialTheme.colorScheme.primary,
-            dismissActionContentColor = MaterialTheme.colorScheme.error,
-            modifier = Modifier.border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
-                RoundedCornerShape(8.dp)
+            modifier = Modifier.padding(16.dp),
+            contentColor = AulaVivaColors.PrimaryCyan,
+            containerColor = AulaVivaColors.SurfaceDark,
+            shape = RoundedCornerShape(4.dp),
+            // Border effect simulated via container color for now, or could use a specific Surface
+        ) {
+            Text(
+                text = data.visuals.message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = AulaVivaColors.TextPrimary
             )
-        )
+        }
     }
 }

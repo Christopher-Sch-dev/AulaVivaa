@@ -64,7 +64,8 @@ object RepositoryProvider {
     @Synchronized
     fun provideClaseRepository(application: Application): IClaseRepository {
         return claseRepository ?: run {
-            val repo = ClaseRepository(application)
+            // OPTIMIZATION: Using Offline-First Optimized Repository (Phase 3)
+            val repo = OfflineClasesRepository(application)
             claseRepository = repo
             repo
         }

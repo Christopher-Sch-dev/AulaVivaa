@@ -41,6 +41,15 @@ fun CyberCard(
 }
 
 /**
+ * Variantes de botón Cyber
+ */
+enum class CyberButtonVariant {
+    PRIMARY,
+    SECONDARY,
+    DANGER
+}
+
+/**
  * CyberButton: Botón rectangular, fuente monospace.
  */
 @Composable
@@ -49,16 +58,29 @@ fun CyberButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    loading: Boolean = false
+    loading: Boolean = false,
+    variant: CyberButtonVariant = CyberButtonVariant.PRIMARY
 ) {
+    val containerColor = when (variant) {
+        CyberButtonVariant.PRIMARY -> AulaVivaColors.PrimaryCyan
+        CyberButtonVariant.SECONDARY -> AulaVivaColors.SurfaceLight
+        CyberButtonVariant.DANGER -> AulaVivaColors.ErrorRed
+    }
+    
+    val contentColor = when (variant) {
+        CyberButtonVariant.PRIMARY -> Color.Black
+        CyberButtonVariant.SECONDARY -> AulaVivaColors.PrimaryCyan
+        CyberButtonVariant.DANGER -> Color.White
+    }
+
     Button(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         enabled = enabled && !loading,
         shape = CutCornerShape(4.dp), // Estilo "Cyber" agresivo
         colors = ButtonDefaults.buttonColors(
-            containerColor = AulaVivaColors.PrimaryCyan,
-            contentColor = Color.Black, // Contraste alto
+            containerColor = containerColor,
+            contentColor = contentColor,
             disabledContainerColor = AulaVivaColors.SurfaceDark,
             disabledContentColor = AulaVivaColors.TextSecondary
         )
@@ -66,7 +88,7 @@ fun CyberButton(
         if (loading) {
             CircularProgressIndicator(
                 modifier = Modifier.padding(end = 8.dp),
-                color = Color.Black,
+                color = contentColor,
                 strokeWidth = 2.dp
             )
         }
