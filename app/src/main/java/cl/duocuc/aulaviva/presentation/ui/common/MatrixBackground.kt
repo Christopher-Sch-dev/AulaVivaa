@@ -54,29 +54,34 @@ fun MatrixBackground(
     
     // State for drops: y-position for each column
     // Initialize with random start positions scattered throughout the screen
-    val drops = remember { 
-        mutableStateListOf<Float>().apply {
-            repeat(columns) { 
-                add(Random.nextFloat() * screenHeight) // Random start on screen (full effect immediately)
+    // State for drops and speeds
+    val drops = remember { mutableStateListOf<Float>() }
+    val speeds = remember { mutableStateListOf<Float>() }
+    
+    // Initialize
+    LaunchedEffect(Unit) {
+        if (drops.isEmpty()) {
+            repeat(columns) {
+                drops.add(Random.nextFloat() * screenHeight)
+                speeds.add(Random.nextFloat() * 1.5f + 0.5f) // Speed multiplier 0.5x to 2.0x
             }
         }
     }
 
     // CRITICAL OPTIMIZATION: Animation Loop CON LIFECYCLE PAUSE
-    // El loop SOLO corre cuando la Activity está en RESUMED state
-    // Cuando la app va a background, el loop se PAUSA automáticamente
-    // Esto ahorra batería y CPU significativamente
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            // Este bloque solo se ejecuta mientras la pantalla está visible
             while (isActive) {
-                delay(50L) // 20 FPS - optimizado para balance visual/performance
+                delay(33L) // ~30 FPS for smoother glitch movement
                 for (i in drops.indices) {
-                    // Random reset logic - cuando la gota llega al fondo
-                    if (drops[i] * fontSizePx > screenHeight && Random.nextFloat() > 0.975f) {
-                        drops[i] = 0f // Reset to top
+                    if (i < drops.size && i < speeds.size) {
+                        // Reset when reaching bottom
+                        if (drops[i] * fontSizePx > screenHeight && Random.nextFloat() > 0.95f) {
+                            drops[i] = 0f
+                            speeds[i] = Random.nextFloat() * 1.5f + 0.5f // New random speed
+                        }
+                        drops[i] += 1f * speeds[i] // Move by speed
                     }
-                    drops[i] += 1f // Move down by 1 row unit
                 }
             }
         }
@@ -85,33 +90,43 @@ fun MatrixBackground(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black) // Matrix black base
+            .background(Color.Black)
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val letterSpacing = fontSizePx
             
             drops.forEachIndexed { i, dropY ->
-                // Draw the "Head" (Bright)
+                // Safety check for index out of bounds if resized
+                if (i >= drops.size) return@forEachIndexed
+
                 val text = characters.random().toString()
-                val x = i * letterSpacing
+                
+                // GLITCH JITTER: Random horizontal offset
+                val jitterX = if (Random.nextFloat() > 0.98f) (Random.nextFloat() - 0.5f) * letterSpacing else 0f
+                
+                val x = i * letterSpacing + jitterX
                 val y = dropY * letterSpacing
 
-                // Only draw if visible
-                if (y > -letterSpacing && y < size.height + letterSpacing) {
+                // Only draw if visible and valid dimensions
+                if (size.height > 0 && y > -letterSpacing && y < size.height + letterSpacing) {
                     
-                    // Removed heavy "Trail" text rendering for optimization.
-                    // Only drawing the head character significantly reduces GPU/CPU load.
-                    
-                    // Head
+                    // GLITCH COLOR: Occasional white/cyan flash instead of green
+                    val isGlitch = Random.nextFloat() > 0.97f
+                    val color = if (isGlitch) {
+                        if (Random.nextBoolean()) Color.White else Color(0xFF00FFFF) // Cyan
+                    } else {
+                        Color(0xFF00FF41) // Matrix Green
+                    }
+
                     drawText(
                         textMeasurer = textMeasurer,
                         text = text,
                         topLeft = Offset(x, y),
                         style = TextStyle(
-                            color = Color(0xFF00FF41), // Hardcoded Matrix Green for safety
-                            fontSize = fontSize,
+                            color = color,
+                            fontSize = if (isGlitch) fontSize * 1.2f else fontSize, // Glitch size bump
                             fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = if (isGlitch) FontWeight.Black else FontWeight.Bold
                         )
                     )
                 }

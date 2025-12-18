@@ -91,6 +91,7 @@ fun ResultadoIAScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch() // Apply Breakcore visual effects
         ) {
             cl.duocuc.aulaviva.presentation.ui.common.MatrixBackground()
             

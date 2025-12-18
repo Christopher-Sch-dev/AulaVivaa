@@ -47,8 +47,10 @@ fun LoginScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(error) {
         error?.let {
-            snackbarHostState.showSnackbar(it)
-            viewModel.clearError() // Asumiendo que existe, sino ignora
+            if (it.isNotBlank()) {
+                snackbarHostState.showSnackbar(it)
+            }
+            viewModel.clearError() // Limpiar error siempre para evitar loops
         }
     }
     

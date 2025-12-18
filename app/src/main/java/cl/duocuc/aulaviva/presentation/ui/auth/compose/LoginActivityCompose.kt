@@ -117,6 +117,11 @@ class LoginActivityCompose : ComponentActivity() {
                         },
                         onNavigateBack = {
                             finish()
+                        },
+                        onNavigateToRegister = {
+                            // Navegar a la pantalla de registro
+                            val intent = Intent(this@LoginActivityCompose, RegisterActivityCompose::class.java)
+                            startActivity(intent)
                         }
                     )
                 }

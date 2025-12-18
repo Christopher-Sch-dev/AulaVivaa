@@ -149,13 +149,13 @@ fun Modifier.breakcoreGlitch(): Modifier {
             while (true) {
                 time += 0.016f
                 
-                // Glitch aleatorio cada 3-5 segundos
+                // Glitch aleatorio cada 2-4 segundos (Más agresivo - Breakcore Style)
                 if (time >= nextGlitchTime && intensity == 0f) {
-                    intensity = 1f
+                    intensity = Random.nextFloat() * 0.5f + 0.5f // Intensidad 0.5 a 1.0
                     glitchType = Random.nextInt(4).toFloat() // 0-3 (4 tipos)
-                    delay(500) // 500ms de glitch (más largo que antes)
+                    delay(Random.nextLong(150, 400)) // Duración variable corta (stuttery)
                     intensity = 0f
-                    nextGlitchTime = time + Random.nextFloat() * 2f + 3f // 3-5 segundos
+                    nextGlitchTime = time + Random.nextFloat() * 2f + 2f // 2-4 segundos
                 }
                 
                 delay(16)
