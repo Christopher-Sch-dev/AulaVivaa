@@ -44,8 +44,8 @@ fun MatrixBackground(
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
 
-    // Parameters - Optimized for performance
-    val fontSize = 20.sp // Increased from 14.sp to reduce column count
+    // Parameters - Optimized for high density visual impact
+    val fontSize = 16.sp // Reduced from 20sp for higher density (more columns)
     val fontSizePx = with(density) { fontSize.toPx() }
     val screenWidth = with(density) { configuration.screenWidthDp.toDp().toPx() }
     val screenHeight = with(density) { configuration.screenHeightDp.toDp().toPx() }
@@ -53,11 +53,11 @@ fun MatrixBackground(
     val columns = (screenWidth / fontSizePx).toInt()
     
     // State for drops: y-position for each column
-    // Initialize with random start positions above screen or on screen
+    // Initialize with random start positions scattered throughout the screen
     val drops = remember { 
         mutableStateListOf<Float>().apply {
             repeat(columns) { 
-                add(Random.nextFloat() * screenHeight * -1f) // Start above screen
+                add(Random.nextFloat() * screenHeight) // Random start on screen (full effect immediately)
             }
         }
     }

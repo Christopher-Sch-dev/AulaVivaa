@@ -1709,12 +1709,30 @@ class IARepository(private val context: Context) : IIARepository {
                     Log.d(TAG, "🎉 [CHAT] Mensaje procesado exitosamente")
                     return@withContext texto
                 } catch (e: Exception) {
+                    val errorMsg = "⚠️ Error de conexión con IA: ${e.message?.take(50)}..."
                     Log.e(TAG, "❌ [CHAT] Error enviando mensaje: ${e.message}", e)
-                    throw e
+                    
+                    // Agregar mensaje de error localmente para que el usuario sepa que falló
+                    currentSessionId?.let { sid ->
+                        chatDao.insertMessage(
+                            ChatMessageEntity(
+                                sessionId = sid,
+                                sender = "ai",
+                                message = errorMsg
+                            )
+                        )
+                    }
+                    return@withContext errorMsg
                 }
             } else {
                 Log.w(TAG, "⚠️ [CHAT] No hay sesión activa, usando fallback stateless")
-                return@withContext llamarGemini(mensaje)
+                try {
+                    return@withContext llamarGemini(mensaje)
+                } catch (e: Exception) {
+                    val errorMsg = "⚠️ Error (stateless): ${e.message?.take(50)}..."
+                    Log.e(TAG, "❌ [CHAT] Error fallback: ${e.message}", e)
+                    return@withContext errorMsg
+                }
             }
         }
     }

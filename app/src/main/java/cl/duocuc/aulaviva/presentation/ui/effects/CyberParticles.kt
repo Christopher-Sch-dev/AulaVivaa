@@ -20,7 +20,7 @@ import kotlin.random.Random
  */
 @Composable
 fun CyberParticleBackground(
-    maxParticles: Int = 30,
+    maxParticles: Int = 80, // Aumentado de 30 para más densidad
     modifier: Modifier = Modifier,
     particleColor: Color = Color(0xFF00FF41) // Default Matrix Green
 ) {
@@ -63,9 +63,9 @@ fun CyberParticleBackground(
 private class CyberParticle {
     var x by mutableFloatStateOf(Random.nextFloat())
     var y by mutableFloatStateOf(Random.nextFloat())
-    var size by mutableFloatStateOf(Random.nextFloat() * 3f + 1f)
-    var alpha by mutableFloatStateOf(Random.nextFloat() * 0.5f)
-    var speedY by mutableFloatStateOf(Random.nextFloat() * 0.005f + 0.001f)
+    var size by mutableFloatStateOf(Random.nextFloat() * 5f + 2f) // Aumentado: 2..7 radius
+    var alpha by mutableFloatStateOf(Random.nextFloat() * 0.8f + 0.2f) // Más visibles
+    var speedY by mutableFloatStateOf(Random.nextFloat() * 0.008f + 0.002f) // Más rápidas
     
     fun update(time: Long) {
         y += speedY

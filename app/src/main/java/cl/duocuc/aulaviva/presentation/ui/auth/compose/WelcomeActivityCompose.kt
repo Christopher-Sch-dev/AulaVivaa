@@ -7,12 +7,15 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.domain.repository.IAuthRepository
+import cl.duocuc.aulaviva.presentation.ui.common.AulaVivaBootScreen
 import cl.duocuc.aulaviva.presentation.ui.main.compose.PanelAlumnoActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.main.compose.PanelPrincipalActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTheme
@@ -35,8 +38,9 @@ class WelcomeActivityCompose : ComponentActivity() {
 
     private val authRepository: IAuthRepository = RepositoryProvider.provideAuthRepository()
     
-    // Variable para controlar cuándo liberar el splash screen
-    private var keepSplashScreen = true
+    // Estado reactivo para controlar splash y mostrar BootScreen con efectos cyberpunk
+    // Usa mutableStateOf para que Compose recomponga la UI cuando cambie
+    private var keepSplashScreen by mutableStateOf(true)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // ✅ CRÍTICO: installSplashScreen() DEBE llamarse ANTES de super.onCreate()
@@ -117,7 +121,20 @@ class WelcomeActivityCompose : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    WelcomeScreen()
+                    // Mostrar BootScreen con efectos cyberpunk mientras verifica sesión
+                    // Transiciona a WelcomeScreen cuando keepSplashScreen = false
+                    if (keepSplashScreen) {
+                        // Pantalla de carga con efectos visuales premium
+                        AulaVivaBootScreen(
+                            onLoadComplete = {
+                                // Callback cuando animación termina - no hacemos nada aquí
+                                // porque la navegación se controla en el lifecycleScope
+                            }
+                        )
+                    } else {
+                        // Pantalla de bienvenida normal (login/register)
+                        WelcomeScreen()
+                    }
                 }
             }
         }
