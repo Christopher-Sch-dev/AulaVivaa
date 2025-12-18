@@ -21,6 +21,7 @@ import cl.duocuc.aulaviva.presentation.ui.main.compose.PanelPrincipalActivityCom
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.activity.addCallback
 
 /**
  * Activity de bienvenida de la aplicación AulaViva.
@@ -91,6 +92,15 @@ class WelcomeActivityCompose : ComponentActivity() {
             }
         }
 
+        onBackPressedDispatcher.addCallback(this) {
+             if (authRepository.isLoggedIn()) {
+                 // Usuario autenticado: no permitir retroceder
+             } else {
+                 isEnabled = false
+                 onBackPressedDispatcher.onBackPressed()
+             }
+        }
+
         setContent {
             AulaVivaTheme {
                 Surface(
@@ -129,17 +139,6 @@ class WelcomeActivityCompose : ComponentActivity() {
         }
     }
 
-    /**
-     * Previene la navegación hacia atrás si el usuario está autenticado.
-     * Si el usuario intenta retroceder estando logueado, se mantiene en la pantalla de bienvenida.
-     * Para salir, el usuario debe cerrar sesión explícitamente.
-     */
-    override fun onBackPressed() {
-        if (authRepository.isLoggedIn()) {
-            // Usuario autenticado: no permitir retroceder, debe cerrar sesión primero
-            return
-        }
-        super.onBackPressed()
-    }
+
 }
 
