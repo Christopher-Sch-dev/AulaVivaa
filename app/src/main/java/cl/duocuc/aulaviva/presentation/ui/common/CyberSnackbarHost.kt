@@ -19,18 +19,20 @@ fun CyberSnackbarHost(
         hostState = hostState,
         modifier = modifier
     ) { data ->
-        Snackbar(
-            modifier = Modifier.padding(16.dp),
-            contentColor = AulaVivaColors.PrimaryCyan,
-            containerColor = AulaVivaColors.SurfaceDark,
-            shape = RoundedCornerShape(4.dp),
-            // Border effect simulated via container color for now, or could use a specific Surface
-        ) {
-            Text(
-                text = data.visuals.message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = AulaVivaColors.TextPrimary
-            )
+        if (data.visuals.message.isNotBlank()) {
+            Snackbar(
+                modifier = Modifier.padding(16.dp),
+                contentColor = AulaVivaColors.PrimaryCyan,
+                containerColor = AulaVivaColors.SurfaceDark,
+                shape = RoundedCornerShape(4.dp),
+                // Border effect simulated via container color for now, or could use a specific Surface
+            ) {
+                Text(
+                    text = data.visuals.message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AulaVivaColors.TextPrimary
+                )
+            }
         }
     }
 }

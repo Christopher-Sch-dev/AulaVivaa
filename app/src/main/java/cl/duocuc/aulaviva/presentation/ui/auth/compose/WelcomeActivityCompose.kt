@@ -40,78 +40,54 @@ class WelcomeActivityCompose : ComponentActivity() {
     
     // Estado reactivo para controlar splash y mostrar BootScreen con efectos cyberpunk
     // Usa mutableStateOf para que Compose recomponga la UI cuando cambie
-    private var keepSplashScreen by mutableStateOf(true)
+    // Estado para controlar la animación de carga personalizada (Boot Screen)
+    private var showBootAnimation by mutableStateOf(true)
+    
+    // Estado para resultados de validación básica
+    private var sessionCheckComplete by mutableStateOf(false)
+    private var targetIntent: Intent? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // ✅ CRÍTICO: installSplashScreen() DEBE llamarse ANTES de super.onCreate()
+        // Splash Nativo: Lo mostramos solo lo mínimo necesario para inicializar
         val splashScreen = installSplashScreen()
-        
-        // Mantener el splash visible mientras verificamos la sesión (sin esperar red)
-        splashScreen.setKeepOnScreenCondition { keepSplashScreen }
+        // Inmediatamente permitimos que se oculte para mostrar nuestra animación personalizada
+        splashScreen.setKeepOnScreenCondition { false } 
         
         super.onCreate(savedInstanceState)
 
-        // Verificar si existe una sesión persistente al iniciar la actividad
-        // Si el usuario ya está autenticado, redirigir automáticamente al panel correspondiente
+        // Iniciamos verificación de sesión en paralelo a la animación
         lifecycleScope.launch {
-            // Esperar un poco más para dar tiempo a que Supabase restaure la sesión desde el almacenamiento
-            delay(300)
-
-            // Verificar sesión múltiples veces para asegurar que se restaure correctamente
+            // No delay artificial aquí, dejemos que la animación mande
+            
             var isAuthenticated = false
-            var attempts = 0
-            val maxAttempts = 3
-
-            while (attempts < maxAttempts && !isAuthenticated) {
+            try {
+                // Check rápido inicial
                 isAuthenticated = authRepository.isLoggedIn()
+                
+                // Si falla o false, reintentar brevemente por si Supabase está despertando
                 if (!isAuthenticated) {
-                    attempts++
-                    if (attempts < maxAttempts) {
-                        delay(200) // Esperar un poco más antes de reintentar
-                    }
+                    delay(200)
+                    isAuthenticated = authRepository.isLoggedIn()
                 }
-            }
 
-            if (isAuthenticated) {
-                try {
-                    android.util.Log.d("WelcomeActivity", "✅ Sesión encontrada, obteniendo rol del usuario...")
-
-                    // Obtener el rol del usuario desde el repositorio de autenticación
+                if (isAuthenticated) {
                     val resultRol = authRepository.obtenerRolUsuario()
                     val rol = resultRol.getOrNull() ?: "docente"
-
-                    android.util.Log.d("WelcomeActivity", "✅ Rol obtenido: $rol, redirigiendo al panel correspondiente")
-
-                    // Crear Intent según el rol del usuario (docente o alumno)
-                    val intent = when (rol.lowercase()) {
-                        "docente" -> Intent(
-                            this@WelcomeActivityCompose,
-                            PanelPrincipalActivityCompose::class.java
-                        )
-                        "alumno" -> Intent(
-                            this@WelcomeActivityCompose,
-                            PanelAlumnoActivityCompose::class.java
-                        )
-                        else -> Intent(
-                            this@WelcomeActivityCompose,
-                            PanelPrincipalActivityCompose::class.java
-                        )
+                    
+                    // Preparamos el intent pero NO lo lanzamos aún
+                    targetIntent = when (rol.lowercase()) {
+                        "docente" -> Intent(this@WelcomeActivityCompose, PanelPrincipalActivityCompose::class.java)
+                        "alumno" -> Intent(this@WelcomeActivityCompose, PanelAlumnoActivityCompose::class.java)
+                        else -> Intent(this@WelcomeActivityCompose, PanelPrincipalActivityCompose::class.java)
+                    }.apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
-
-                    // Limpiar el stack de actividades y navegar al panel correspondiente
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    keepSplashScreen = false // Liberar splash antes de navegar
-                    startActivity(intent)
-                    finish()
-                    return@launch
-                } catch (e: Exception) {
-                    // Si falla la verificación, continuar mostrando la pantalla de bienvenida
-                    android.util.Log.e("WelcomeActivity", "❌ Error verificando sesión o obteniendo rol", e)
-                    keepSplashScreen = false // Liberar splash para mostrar welcome
                 }
-            } else {
-                android.util.Log.d("WelcomeActivity", "⚠️ No hay sesión activa, mostrando pantalla de bienvenida")
-                keepSplashScreen = false // Liberar splash para mostrar welcome
+            } catch (e: Exception) {
+                android.util.Log.e("WelcomeActivity", "Error check session", e)
+            } finally {
+                sessionCheckComplete = true
+                checkNavigation()
             }
         }
 
@@ -121,22 +97,35 @@ class WelcomeActivityCompose : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Mostrar BootScreen con efectos cyberpunk mientras verifica sesión
-                    // Transiciona a WelcomeScreen cuando keepSplashScreen = false
-                    if (keepSplashScreen) {
-                        // Pantalla de carga con efectos visuales premium
+                    // Control de flujo visual
+                    if (showBootAnimation) {
                         AulaVivaBootScreen(
                             onLoadComplete = {
-                                // Callback cuando animación termina - no hacemos nada aquí
-                                // porque la navegación se controla en el lifecycleScope
+                                // La animación terminó.
+                                // Intentamos navegar si la sesión ya se verificó.
+                                // Si la sesión aún verifica, la navegación se disparará en checkNavigation()
+                                showBootAnimation = false
+                                checkNavigation()
                             }
                         )
                     } else {
-                        // Pantalla de bienvenida normal (login/register)
+                        // Si no hay animación, mostramos WelcomeScreen
+                        // (Si hubiera sesión, ya habríamos navegado en checkNavigation)
                         WelcomeScreen()
                     }
                 }
             }
+        }
+    }
+
+    private fun checkNavigation() {
+        // Solo navegamos si la animación terminó Y la verificación de sesión terminó
+        if (!showBootAnimation && sessionCheckComplete) {
+            targetIntent?.let { intent ->
+                startActivity(intent)
+                finish()
+            }
+            // Si targetIntent es null, significa que no hay sesión -> Se queda en WelcomeScreen
         }
     }
 
