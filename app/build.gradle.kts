@@ -76,11 +76,25 @@ android {
             // ✅ Usar configuración de firma
             signingConfig = signingConfigs.getByName("release")
 
-            isMinifyEnabled = false
+            isMinifyEnabled = true // R8 activo
+            isShrinkResources = true // Elimina recursos no usados
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            
+            // CRÍTICO: Habilita optimizaciones de código
+            kotlinOptions {
+                freeCompilerArgs += listOf(
+                    "-Xuse-k2", // Compilador K2 (más rápido)
+                    "-opt-in=kotlin.RequiresOptIn"
+                )
+            }
+        }
+        
+        debug {
+            isMinifyEnabled = false
+            applicationIdSuffix = ".debug"
         }
     }
 
@@ -91,6 +105,13 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        
+        // OPTIMIZACIÓN: Habilita inline functions
+        freeCompilerArgs += listOf(
+            "-Xjvm-default=all",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
+        )
     }
 
     buildFeatures {

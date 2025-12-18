@@ -61,3 +61,28 @@ val TextTertiary = Color(0xFF003B00) // Faint Code
 // Gradients
 val GradientMatrix = listOf(MatrixGreen, MatrixDarkGreen)
 val GradientDarkSurface = listOf(SurfaceDark, BackgroundDark)
+
+// =================================================================
+// SYSTEM DESIGN COMPATIBILITY OBJECT
+// =================================================================
+object AulaVivaColors {
+    val PrimaryDark = cl.duocuc.aulaviva.presentation.ui.theme.PrimaryDark
+    val PrimaryMedium = cl.duocuc.aulaviva.presentation.ui.theme.PrimaryMedium
+    val PrimaryCyan = cl.duocuc.aulaviva.presentation.ui.theme.PrimaryAccent // Mapping PrimaryAccent as PrimaryCyan
+    val SecondaryAccent = cl.duocuc.aulaviva.presentation.ui.theme.SecondaryAccent
+    val TertiaryAccent = cl.duocuc.aulaviva.presentation.ui.theme.TertiaryAccent
+    
+    val SurfaceLight = cl.duocuc.aulaviva.presentation.ui.theme.SurfaceLight
+    val SurfaceDark = cl.duocuc.aulaviva.presentation.ui.theme.SurfaceDark
+    
+    val TextPrimary = cl.duocuc.aulaviva.presentation.ui.theme.TextPrimary
+    val TextSecondary = cl.duocuc.aulaviva.presentation.ui.theme.TextSecondary
+    
+    val SuccessGreen = cl.duocuc.aulaviva.presentation.ui.theme.SuccessGreen
+    val ErrorRed = cl.duocuc.aulaviva.presentation.ui.theme.ErrorRed
+    val WarningOrange = cl.duocuc.aulaviva.presentation.ui.theme.WarningOrange
+    
+    val CyberBlack = cl.duocuc.aulaviva.presentation.ui.theme.CyberBlack
+    val BitcoinGold = cl.duocuc.aulaviva.presentation.ui.theme.TechGold
+    val MatrixGreen = cl.duocuc.aulaviva.presentation.ui.theme.MatrixGreen
+}
