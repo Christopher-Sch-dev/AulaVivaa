@@ -137,39 +137,53 @@ fun Modifier.breakcoreGlitch(): Modifier {
         return this
     }
     
-    val shader = remember { RuntimeShader(breakcoreGlitchShader) }
-    var time by remember { mutableFloatStateOf(0f) }
-    var intensity by remember { mutableFloatStateOf(0f) }
-    var glitchType by remember { mutableFloatStateOf(0f) }
-    var nextGlitchTime by remember { mutableFloatStateOf(3f) }
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    
-    LaunchedEffect(lifecycle) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            while (true) {
-                time += 0.016f
-                
-                // Glitch aleatorio cada 2-4 segundos (Más agresivo - Breakcore Style)
-                if (time >= nextGlitchTime && intensity == 0f) {
-                    intensity = Random.nextFloat() * 0.5f + 0.5f // Intensidad 0.5 a 1.0
-                    glitchType = Random.nextInt(4).toFloat() // 0-3 (4 tipos)
-                    delay(Random.nextLong(150, 400)) // Duración variable corta (stuttery)
-                    intensity = 0f
-                    nextGlitchTime = time + Random.nextFloat() * 2f + 2f // 2-4 segundos
+    var error by remember { mutableStateOf(false) }
+    if (error) return this
+
+    return try {
+        val shader = remember { RuntimeShader(breakcoreGlitchShader) }
+        var time by remember { mutableFloatStateOf(0f) }
+        var intensity by remember { mutableFloatStateOf(0f) }
+        var glitchType by remember { mutableFloatStateOf(0f) }
+        var nextGlitchTime by remember { mutableFloatStateOf(3f) }
+        val lifecycle = LocalLifecycleOwner.current.lifecycle
+        
+        LaunchedEffect(lifecycle) {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    time += 0.016f
+                    
+                    // Glitch aleatorio cada 2-4 segundos (Más agresivo - Breakcore Style)
+                    if (time >= nextGlitchTime && intensity == 0f) {
+                        intensity = Random.nextFloat() * 0.5f + 0.5f // Intensidad 0.5 a 1.0
+                        glitchType = Random.nextInt(4).toFloat() // 0-3 (4 tipos)
+                        delay(Random.nextLong(150, 400)) // Duración variable corta (stuttery)
+                        intensity = 0f
+                        nextGlitchTime = time + Random.nextFloat() * 2f + 2f // 2-4 segundos
+                    }
+                    
+                    delay(16)
                 }
-                
-                delay(16)
             }
         }
-    }
-    
-    return graphicsLayer {
-        shader.setFloatUniform("time", time)
-        shader.setFloatUniform("resolution", size.width, size.height)
-        shader.setFloatUniform("intensity", intensity)
-        shader.setFloatUniform("glitchType", glitchType)
-        renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "composable")
-            .asComposeRenderEffect()
+        
+        this.graphicsLayer {
+            try {
+                shader.setFloatUniform("time", time)
+                shader.setFloatUniform("resolution", size.width, size.height)
+                shader.setFloatUniform("intensity", intensity)
+                shader.setFloatUniform("glitchType", glitchType)
+                renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "composable")
+                    .asComposeRenderEffect()
+            } catch (e: Exception) {
+                // Fail gracefully if shader uniforms fail
+                error = true
+            }
+        }
+    } catch (e: Exception) {
+        // Fallback if shader compilation fails
+        error = true
+        this
     }
 }
 
@@ -182,24 +196,36 @@ fun Modifier.cyberGrid(): Modifier {
         return this
     }
     
-    val shader = remember { RuntimeShader(cyberGridShader) }
-    var time by remember { mutableFloatStateOf(0f) }
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    
-    LaunchedEffect(lifecycle) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            while (true) {
-                time += 0.016f
-                delay(16)
+    var error by remember { mutableStateOf(false) }
+    if (error) return this
+
+    return try {
+        val shader = remember { RuntimeShader(cyberGridShader) }
+        var time by remember { mutableFloatStateOf(0f) }
+        val lifecycle = LocalLifecycleOwner.current.lifecycle
+        
+        LaunchedEffect(lifecycle) {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    time += 0.016f
+                    delay(16)
+                }
             }
         }
-    }
-    
-    return graphicsLayer {
-        shader.setFloatUniform("time", time)
-        shader.setFloatUniform("resolution", size.width, size.height)
-        renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "composable")
-            .asComposeRenderEffect()
+        
+        this.graphicsLayer {
+            try {
+                shader.setFloatUniform("time", time)
+                shader.setFloatUniform("resolution", size.width, size.height)
+                renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "composable")
+                    .asComposeRenderEffect()
+            } catch (e: Exception) {
+                error = true
+            }
+        }
+    } catch (e: Exception) {
+        error = true
+        this
     }
 }
 
@@ -207,23 +233,35 @@ fun Modifier.cyberGrid(): Modifier {
 fun Modifier.aggressiveScanLines(): Modifier {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return this
     
-    val shader = remember { RuntimeShader(aggressiveScanLineShader) }
-    var time by remember { mutableFloatStateOf(0f) }
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    
-    LaunchedEffect(lifecycle) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            while (true) {
-                time += 0.016f
-                delay(16)
+    var error by remember { mutableStateOf(false) }
+    if (error) return this
+
+    return try {
+        val shader = remember { RuntimeShader(aggressiveScanLineShader) }
+        var time by remember { mutableFloatStateOf(0f) }
+        val lifecycle = LocalLifecycleOwner.current.lifecycle
+        
+        LaunchedEffect(lifecycle) {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    time += 0.016f
+                    delay(16)
+                }
             }
         }
-    }
-    
-    return graphicsLayer {
-        shader.setFloatUniform("time", time)
-        shader.setFloatUniform("resolution", size.width, size.height)
-        renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "composable")
-            .asComposeRenderEffect()
+        
+        this.graphicsLayer {
+            try {
+                shader.setFloatUniform("time", time)
+                shader.setFloatUniform("resolution", size.width, size.height)
+                renderEffect = RenderEffect.createRuntimeShaderEffect(shader, "composable")
+                    .asComposeRenderEffect()
+            } catch (e: Exception) {
+                error = true
+            }
+        }
+    } catch (e: Exception) {
+        error = true
+        this
     }
 }

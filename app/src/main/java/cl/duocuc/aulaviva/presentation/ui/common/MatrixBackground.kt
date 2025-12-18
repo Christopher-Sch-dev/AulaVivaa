@@ -36,7 +36,6 @@ import kotlin.random.Random
 fun MatrixBackground(
     modifier: Modifier = Modifier
 ) {
-    // CRITICAL: Obtener lifecycle para pausar animación en background
     val lifecycleOwner = LocalLifecycleOwner.current
     
     val characters = remember { "0123456789ABCDEFアイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン@#$%&*" }
@@ -45,42 +44,49 @@ fun MatrixBackground(
     val density = LocalDensity.current
 
     // Parameters - Optimized for high density visual impact
-    val fontSize = 16.sp // Reduced from 20sp for higher density (more columns)
+    val fontSize = 16.sp 
     val fontSizePx = with(density) { fontSize.toPx() }
     val screenWidth = with(density) { configuration.screenWidthDp.toDp().toPx() }
     val screenHeight = with(density) { configuration.screenHeightDp.toDp().toPx() }
     
     val columns = (screenWidth / fontSizePx).toInt()
     
-    // State for drops: y-position for each column
-    // Initialize with random start positions scattered throughout the screen
     // State for drops and speeds
     val drops = remember { mutableStateListOf<Float>() }
     val speeds = remember { mutableStateListOf<Float>() }
+    // OPTIMIZATION: Track which char to show per column to avoid new String() every frame
+    val charIndices = remember { mutableStateListOf<Int>() }
     
     // Initialize
     LaunchedEffect(Unit) {
         if (drops.isEmpty()) {
             repeat(columns) {
                 drops.add(Random.nextFloat() * screenHeight)
-                speeds.add(Random.nextFloat() * 1.5f + 0.5f) // Speed multiplier 0.5x to 2.0x
+                speeds.add(Random.nextFloat() * 1.5f + 0.5f) 
+                charIndices.add(Random.nextInt(characters.length))
             }
         }
     }
 
-    // CRITICAL OPTIMIZATION: Animation Loop CON LIFECYCLE PAUSE
+    // Animation Loop
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (isActive) {
-                delay(33L) // ~30 FPS for smoother glitch movement
+                delay(33L) 
                 for (i in drops.indices) {
                     if (i < drops.size && i < speeds.size) {
-                        // Reset when reaching bottom
                         if (drops[i] * fontSizePx > screenHeight && Random.nextFloat() > 0.95f) {
                             drops[i] = 0f
-                            speeds[i] = Random.nextFloat() * 1.5f + 0.5f // New random speed
+                            speeds[i] = Random.nextFloat() * 1.5f + 0.5f
                         }
-                        drops[i] += 1f * speeds[i] // Move by speed
+                        drops[i] += 1f * speeds[i]
+                        
+                        // Change character occasionally
+                        if (Random.nextFloat() > 0.90f) {
+                           if (i < charIndices.size) {
+                               charIndices[i] = Random.nextInt(characters.length)
+                           }
+                        }
                     }
                 }
             }
@@ -96,26 +102,22 @@ fun MatrixBackground(
             val letterSpacing = fontSizePx
             
             drops.forEachIndexed { i, dropY ->
-                // Safety check for index out of bounds if resized
-                if (i >= drops.size) return@forEachIndexed
+                if (i >= drops.size || i >= charIndices.size) return@forEachIndexed
 
-                val text = characters.random().toString()
+                // Allocation-free char retrieval
+                val charIndex = charIndices[i]
+                val text = characters[charIndex].toString() // cached string internally by Kotlin usually, or small alloc
                 
-                // GLITCH JITTER: Random horizontal offset
                 val jitterX = if (Random.nextFloat() > 0.98f) (Random.nextFloat() - 0.5f) * letterSpacing else 0f
-                
                 val x = i * letterSpacing + jitterX
                 val y = dropY * letterSpacing
 
-                // Only draw if visible and valid dimensions
                 if (size.height > 0 && y > -letterSpacing && y < size.height + letterSpacing) {
-                    
-                    // GLITCH COLOR: Occasional white/cyan flash instead of green
                     val isGlitch = Random.nextFloat() > 0.97f
                     val color = if (isGlitch) {
-                        if (Random.nextBoolean()) Color.White else Color(0xFF00FFFF) // Cyan
+                        if (Random.nextBoolean()) Color.White else Color(0xFF00FFFF)
                     } else {
-                        Color(0xFF00FF41) // Matrix Green
+                        Color(0xFF00FF41)
                     }
 
                     drawText(
@@ -124,7 +126,7 @@ fun MatrixBackground(
                         topLeft = Offset(x, y),
                         style = TextStyle(
                             color = color,
-                            fontSize = if (isGlitch) fontSize * 1.2f else fontSize, // Glitch size bump
+                            fontSize = if (isGlitch) fontSize * 1.2f else fontSize,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = if (isGlitch) FontWeight.Black else FontWeight.Bold
                         )

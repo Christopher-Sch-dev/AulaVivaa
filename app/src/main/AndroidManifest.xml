@@ -36,7 +36,7 @@
         <activity
             android:name=".presentation.ui.auth.compose.WelcomeActivityCompose"
             android:exported="true"
-            android:theme="@style/Theme.AulaViva">
+            android:theme="@style/Theme.App.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
