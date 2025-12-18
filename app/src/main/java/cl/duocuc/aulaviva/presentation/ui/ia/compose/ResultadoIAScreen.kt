@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.aulaviva.presentation.viewmodel.IAViewModel
+import cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,7 +92,7 @@ fun ResultadoIAScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch() // Apply Breakcore visual effects
+                .breakcoreGlitch() // Apply Breakcore visual effects
         ) {
             cl.duocuc.aulaviva.presentation.ui.common.MatrixBackground()
             

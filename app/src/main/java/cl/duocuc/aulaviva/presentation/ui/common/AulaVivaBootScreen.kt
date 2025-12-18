@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaColors
+import cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch
 import kotlinx.coroutines.delay
 
 /**
@@ -120,7 +121,7 @@ fun AulaVivaBootScreen(
     }
     
     // UI - WRAPPED WITH BREAKCORE GLITCH FOR MAXIMUM INTENSITY
-    Box(modifier = Modifier.fillMaxSize().cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch()) {
+    Box(modifier = Modifier.fillMaxSize().breakcoreGlitch()) {
         AulaVivaScreenFrame(mode = ScreenEffectMode.SPLASH) {
             Column(
                 modifier = Modifier

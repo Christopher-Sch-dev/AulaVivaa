@@ -30,7 +30,8 @@ import kotlin.random.Random
 fun LoginScreen(
     viewModel: AuthViewModel = viewModel(),
     onLoginSuccess: () -> Unit,
-    onNavigateBack: () -> Unit = {} // Kept for compatibility, though not used in new design
+    onNavigateToRegister: () -> Unit, // Added parameter
+    onNavigateBack: () -> Unit = {}
 ) {
     val loginSuccess by viewModel.loginSuccess.observeAsState(false)
     val isLoading by viewModel.isLoading.observeAsState(false)
@@ -57,7 +58,7 @@ fun LoginScreen(
     LoginScreenContent(
         isLoading = isLoading,
         onLogin = { email, password -> viewModel.login(email, password) },
-        onNavigateToRegister = { /* Implementar navegación a registro si necesario */ }
+        onNavigateToRegister = onNavigateToRegister
     )
     
     // Snackbar Host
