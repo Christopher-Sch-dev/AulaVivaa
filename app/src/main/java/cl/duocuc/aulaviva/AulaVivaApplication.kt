@@ -2,7 +2,7 @@ package cl.duocuc.aulaviva
 
 import android.app.Application
 import android.util.Log
-import cl.duocuc.aulaviva.data.remote.SpringBootClient
+import cl.duocuc.aulaviva.data.remote.TokenManager
 
 /**
  * Clase Application personalizada.
@@ -14,7 +14,9 @@ class AulaVivaApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-
+        
+        // Inicializar TokenManager para persistencia de sesión
+        TokenManager.init(this)
         // Verificar configuración de Spring Boot
         try {
             val springBootUrl = BuildConfig.SPRING_BOOT_URL
