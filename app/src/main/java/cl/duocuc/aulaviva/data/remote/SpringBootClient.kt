@@ -35,11 +35,14 @@ object SpringBootClient {
 
     private val authInterceptor = Interceptor { chain ->
         val original = chain.request()
-        val token = TokenManager.getToken()
-
         val requestBuilder = original.newBuilder()
-        if (token != null) {
-            requestBuilder.addHeader("Authorization", "Bearer $token")
+
+        // Solo agregar el token si no existe ya un header Authorization
+        if (original.header("Authorization") == null) {
+            val token = TokenManager.getToken()
+            if (token != null) {
+                requestBuilder.addHeader("Authorization", "Bearer $token")
+            }
         }
 
         val request = requestBuilder.build()
