@@ -45,11 +45,17 @@ fun MatrixBackground(
 
     // Parameters - Optimized for high density visual impact
     val fontSize = 16.sp 
-    val fontSizePx = with(density) { fontSize.toPx() }
+    val fontSizePx = with(density) { fontSize.toPx() }.coerceAtLeast(1f) // Prevent division by zero
     val screenWidth = with(density) { configuration.screenWidthDp.toDp().toPx() }
     val screenHeight = with(density) { configuration.screenHeightDp.toDp().toPx() }
     
-    val columns = (screenWidth / fontSizePx).toInt()
+    // SAFETY: Clamp columns to avoid OOM on huge screens or bugs
+    val columns = (screenWidth / fontSizePx).toInt().coerceIn(1, 150) 
+    
+    // Debug log
+    LaunchedEffect(columns) {
+        android.util.Log.d("MatrixBackground", "Init: columns=$columns, w=$screenWidth, h=$screenHeight, font=$fontSizePx")
+    }
     
     // State for drops and speeds
     val drops = remember { mutableStateListOf<Float>() }
@@ -73,20 +79,20 @@ fun MatrixBackground(
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (isActive) {
                 delay(33L) 
-                for (i in drops.indices) {
-                    if (i < drops.size && i < speeds.size) {
-                        if (drops[i] * fontSizePx > screenHeight && Random.nextFloat() > 0.95f) {
-                            drops[i] = 0f
-                            speeds[i] = Random.nextFloat() * 1.5f + 0.5f
-                        }
-                        drops[i] += 1f * speeds[i]
-                        
-                        // Change character occasionally
-                        if (Random.nextFloat() > 0.90f) {
-                           if (i < charIndices.size) {
-                               charIndices[i] = Random.nextInt(characters.length)
-                           }
-                        }
+                
+                // Safety check to avoid index OOB if state isn't sync'd yet
+                val size = minOf(drops.size, speeds.size, charIndices.size)
+                
+                for (i in 0 until size) {
+                    if (drops[i] * fontSizePx > screenHeight && Random.nextFloat() > 0.95f) {
+                        drops[i] = 0f
+                        speeds[i] = Random.nextFloat() * 1.5f + 0.5f
+                    }
+                    drops[i] += 1f * speeds[i]
+                    
+                    // Change character occasionally
+                    if (Random.nextFloat() > 0.90f) {
+                       charIndices[i] = Random.nextInt(characters.length)
                     }
                 }
             }
@@ -98,39 +104,46 @@ fun MatrixBackground(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val letterSpacing = fontSizePx
-            
-            drops.forEachIndexed { i, dropY ->
-                if (i >= drops.size || i >= charIndices.size) return@forEachIndexed
-
-                // Allocation-free char retrieval
-                val charIndex = charIndices[i]
-                val text = characters[charIndex].toString() // cached string internally by Kotlin usually, or small alloc
+        if (columns > 0) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val letterSpacing = fontSizePx
                 
-                val jitterX = if (Random.nextFloat() > 0.98f) (Random.nextFloat() - 0.5f) * letterSpacing else 0f
-                val x = i * letterSpacing + jitterX
-                val y = dropY * letterSpacing
-
-                if (size.height > 0 && y > -letterSpacing && y < size.height + letterSpacing) {
-                    val isGlitch = Random.nextFloat() > 0.97f
-                    val color = if (isGlitch) {
-                        if (Random.nextBoolean()) Color.White else Color(0xFF00FFFF)
-                    } else {
-                        Color(0xFF00FF41)
+                // Draw loop - highly optimized
+                val count = minOf(drops.size, charIndices.size)
+                
+                for (i in 0 until count) {
+                    val dropY = drops[i]
+                    
+                    val charIndex = charIndices[i]
+                    // Safety check index again
+                    if (charIndex >= 0 && charIndex < characters.length) {
+                        val text = characters[charIndex].toString() 
+                        
+                        val jitterX = if (Random.nextFloat() > 0.98f) (Random.nextFloat() - 0.5f) * letterSpacing else 0f
+                        val x = i * letterSpacing + jitterX
+                        val y = dropY * letterSpacing
+    
+                        if (size.height > 0 && y > -letterSpacing && y < size.height + letterSpacing) {
+                            val isGlitch = Random.nextFloat() > 0.97f
+                            val color = if (isGlitch) {
+                                if (Random.nextBoolean()) Color.White else Color(0xFF00FFFF)
+                            } else {
+                                Color(0xFF00FF41)
+                            }
+    
+                            drawText(
+                                textMeasurer = textMeasurer,
+                                text = text,
+                                topLeft = Offset(x, y),
+                                style = TextStyle(
+                                    color = color,
+                                    fontSize = if (isGlitch) fontSize * 1.2f else fontSize,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = if (isGlitch) FontWeight.Black else FontWeight.Bold
+                                )
+                            )
+                        }
                     }
-
-                    drawText(
-                        textMeasurer = textMeasurer,
-                        text = text,
-                        topLeft = Offset(x, y),
-                        style = TextStyle(
-                            color = color,
-                            fontSize = if (isGlitch) fontSize * 1.2f else fontSize,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = if (isGlitch) FontWeight.Black else FontWeight.Bold
-                        )
-                    )
                 }
             }
         }
