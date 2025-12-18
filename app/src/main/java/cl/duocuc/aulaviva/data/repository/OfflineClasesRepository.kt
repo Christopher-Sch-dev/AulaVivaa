@@ -96,20 +96,28 @@ class OfflineClasesRepository(private val application: Application) : IClaseRepo
 
     override suspend fun crearClase(clase: Clase, onSuccess: () -> Unit, onError: (String) -> Unit) {
         try {
-            // OPTIMISTIC UPDATE: Guardar en local inmediatamente declarándolo NO sincronizado
-            // Esto hace que la UI responda instantáneamente
+            // OPTIMISTIC UPDATE: Guardar en local inmediatamente con ID temporal
             val entityLocal = clase.toEntityLocal(sincronizado = false)
             claseDao.insertarClase(entityLocal)
-            onSuccess() // Confirmar a la UI "ya está guardado"
+            onSuccess() // Feedback inmediato a UI
 
             // Intentar subir en background
             val result = remoteRepo.crearClase(clase)
-            result.onSuccess { 
-                // Si sube bien, actualizamos a sincronizado = true
-                claseDao.insertarClase(clase.toEntityLocal(sincronizado = true))
-                Log.d("OfflineRepo", "✅ Sync upload éxito: ${clase.id}")
+            result.onSuccess { claseCreadaRemota ->
+                // CRITICAL FIX: Gestionar cambio de ID (Local UUID vs Server UUID)
+                if (claseCreadaRemota.id != clase.id) {
+                    Log.d("OfflineRepo", "🔄 ID Swap: ${clase.id} -> ${claseCreadaRemota.id}")
+                    // Eliminar el item con ID temporal (el viejo)
+                    // Nota: remoteRepo ya insertó el nuevo item con el ID correcto
+                    val oldEntity = claseDao.obtenerClasePorId(clase.id)
+                    oldEntity?.let { claseDao.eliminarClase(it) }
+                } else {
+                    // Si el ID se mantuvo (poco probable con Spring Boot), solo actualizamos flag
+                    claseDao.insertarClase(claseCreadaRemota.toEntityLocal(sincronizado = true))
+                    Log.d("OfflineRepo", "✅ ID mantenido: ${clase.id}")
+                }
             }.onFailure {
-                Log.w("OfflineRepo", "⏳ Sync upload falló (guardado para después): ${it.message}")
+                Log.w("OfflineRepo", "⏳ Sync upload falló: ${it.message}. Item queda pendiente localmente.")
             }
         } catch (e: Exception) {
              Log.e("OfflineRepo", "❌ Error crítico creando clase", e)

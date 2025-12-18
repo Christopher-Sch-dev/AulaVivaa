@@ -246,4 +246,73 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
         val asignatura = asignaturas.value?.find { it.id == asignaturaId }
         return asignatura?.codigoAcceso
     }
+
+    /**
+     * Crea datos de demostración: Una asignatura y una clase asociada.
+     * Útil para probar el flujo completo cuando la cuenta está vacía.
+     */
+    fun crearAsignaturaYClaseDemo() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            try {
+                // 1. Crear Asignatura Demo
+                val nombreAsignatura = "Arquitectura de Software (Demo)"
+                val descAsignatura = "Asignatura de demostración creada automáticamente."
+                
+                android.util.Log.d("AsignaturasVM", "🛠️ Creando asignatura demo...")
+                
+                // Usamos el repositorio directamente para tener control del flujo (simulando crearAsignatura normal)
+                repository.crearAsignatura(nombreAsignatura, descAsignatura)
+                    .onSuccess { asignatura ->
+                        android.util.Log.d("AsignaturasVM", "✅ Asignatura demo creada: ${asignatura.id}")
+                        
+                        // 2. Generar Código
+                        repository.generarCodigo(asignatura.id).onSuccess { codigo ->
+                             _codigoGenerado.value = codigo
+                        }
+
+                        // 3. Crear Clase Demo asociada
+                        val nombreClase = "Clase 1: Introducción a Patrones"
+                        val descClase = "Esta es una clase de prueba para verificar la sincronización."
+                        val fechaClase = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+                        
+                        // Usamos el repository de Clases para esto
+                        val nuevaClase = cl.duocuc.aulaviva.data.model.Clase(
+                            id = cl.duocuc.aulaviva.utils.IdUtils.generateId(),
+                            nombre = nombreClase,
+                            descripcion = descClase,
+                            fecha = fechaClase,
+                            creador = authRepository.getCurrentUserId() ?: "",
+                            asignaturaId = asignatura.id,
+                            sincronizado = false // Se sincronizará a continuación
+                        )
+                        
+                        // Insertar en local y tratar de subir
+                        claseRepository.crearClase(nuevaClase)
+                            .onSuccess {
+                                android.util.Log.d("AsignaturasVM", "✅ Clase demo creada en local")
+                                // Forzar sync de clases para subirla
+                                claseRepository.sincronizarDesdeSupabase()
+                                _operationSuccess.value = "Entorno Demo creado exitosamente"
+                            }
+                            .onFailure { e ->
+                                android.util.Log.e("AsignaturasVM", "❌ Error creando clase demo", e)
+                                _operationSuccess.value = "Asignatura creada, pero falló clase demo"
+                            }
+                    }
+                    .onFailure { e ->
+                        _error.value = e.message
+                        android.util.Log.e("AsignaturasVM", "❌ Error creando asignatura demo", e)
+                    }
+
+            } catch (e: Exception) {
+                _error.value = "Error en demo: ${e.message}"
+                android.util.Log.e("AsignaturasVM", "❌ Crash generando demo", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
 }
