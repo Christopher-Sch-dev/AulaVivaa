@@ -46,3 +46,16 @@
 # OPTIMIZACIÓN: Inline functions
 -allowaccessmodification
 -mergeinterfacesaggressively
+
+# KEEP DTOs para Gson (CRÍTICO para login/register y Gemini API)
+-keep class cl.duocuc.aulaviva.data.remote.** { *; }
+-keepclassmembers class cl.duocuc.aulaviva.data.remote.** { *; }
+
+# KEEP Gson serialization
+-keepattributes *Annotation*
+-keepclassmembers,allowobfuscation class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+-keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
+
