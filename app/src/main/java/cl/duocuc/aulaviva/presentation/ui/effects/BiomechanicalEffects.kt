@@ -46,29 +46,32 @@ fun BiomechanicalVeins(
     
     // SAFETY LIMIT: Clamp veinCount to avoid excessive object allocation
     val safeVeinCount = veinCount.coerceIn(1, 20)
+    
+    // OPTIMIZATION: Reuse Path objects to avoid allocation in draw loop
+    val paths = remember(safeVeinCount) { List(safeVeinCount) { Path() } }
 
     Canvas(modifier = modifier.fillMaxSize()) {
         repeat(safeVeinCount) { i ->
             val startX = size.width * (i / safeVeinCount.toFloat())
-            val path = Path().apply {
-                moveTo(startX, 0f)
+            val path = paths[i]
+            path.reset()
+            path.moveTo(startX, 0f)
+            
+            // Curva orgánica (bezier)
+            val segments = 10
+            for (j in 0..segments) {
+                val t = j / segments.toFloat()
+                val x = startX + sin(t * 3.14f + pulsePhase + i) * 50f
+                val y = size.height * t
                 
-                // Curva orgánica (bezier)
-                val segments = 10
-                for (j in 0..segments) {
-                    val t = j / segments.toFloat()
-                    val x = startX + sin(t * 3.14f + pulsePhase + i) * 50f
-                    val y = size.height * t
-                    
-                    if (j == 0) {
-                        lineTo(x, y)
-                    } else {
-                        cubicTo(
-                            x - 20f, y - 50f,
-                            x + 20f, y + 50f,
-                            x, y
-                        )
-                    }
+                if (j == 0) {
+                    path.lineTo(x, y)
+                } else {
+                    path.cubicTo(
+                        x - 20f, y - 50f,
+                        x + 20f, y + 50f,
+                        x, y
+                    )
                 }
             }
             
