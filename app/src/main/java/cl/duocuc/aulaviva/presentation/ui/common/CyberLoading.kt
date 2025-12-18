@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
 
 @Composable
 fun CyberLoading(
@@ -65,6 +66,8 @@ fun CyberLoading(
     }
 }
 
+
+
 @Composable
 fun FullScreenLoading(
     modifier: Modifier = Modifier
@@ -72,7 +75,7 @@ fun FullScreenLoading(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .androidx.compose.foundation.background(MaterialTheme.colorScheme.background.copy(alpha = 0.8f)),
+            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.8f)),
         contentAlignment = Alignment.Center
     ) {
         CyberLoading(size = 64.dp)

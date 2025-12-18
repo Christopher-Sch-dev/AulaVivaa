@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.foundation.border
+
 @Composable
 fun CyberSnackbarHost(
     hostState: SnackbarHostState,
@@ -24,7 +26,7 @@ fun CyberSnackbarHost(
             actionColor = MaterialTheme.colorScheme.primary,
             actionContentColor = MaterialTheme.colorScheme.primary,
             dismissActionContentColor = MaterialTheme.colorScheme.error,
-            modifier = Modifier.androidx.compose.foundation.border(
+            modifier = Modifier.border(
                 BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
                 RoundedCornerShape(8.dp)
             )
