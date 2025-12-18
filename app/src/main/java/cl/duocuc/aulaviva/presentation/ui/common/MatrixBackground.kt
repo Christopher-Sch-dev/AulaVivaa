@@ -37,8 +37,8 @@ fun MatrixBackground(
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
 
-    // Parameters
-    val fontSize = 14.sp
+    // Parameters - Optimized for performance
+    val fontSize = 20.sp // Increased from 14.sp to reduce column count
     val fontSizePx = with(density) { fontSize.toPx() }
     val screenWidth = with(density) { configuration.screenWidthDp.toDp().toPx() }
     val screenHeight = with(density) { configuration.screenHeightDp.toDp().toPx() }
@@ -58,8 +58,9 @@ fun MatrixBackground(
     // Animation Loop
     LaunchedEffect(Unit) {
         while (true) {
-            delay(33) // ~30 FPS
+            delay(50L) // Reduced to 20 FPS (was 33ms) for optimization
             for (i in drops.indices) {
+                // Random reset logic
                 if (drops[i] * fontSizePx > screenHeight && Random.nextFloat() > 0.975f) {
                     drops[i] = 0f // Reset to top
                 }
@@ -85,22 +86,8 @@ fun MatrixBackground(
                 // Only draw if visible
                 if (y > -letterSpacing && y < size.height + letterSpacing) {
                     
-                    // Draw Trail (Fading)
-                    // We simulate trail by just drawing the head. 
-                    // To do a real trail efficiently in Compose without buffer is tricky.
-                    // Instead, we will draw a few characters above the head.
-                    
-                    // Tail 1
-                     drawText(
-                        textMeasurer = textMeasurer,
-                        text = characters.random().toString(),
-                        topLeft = Offset(x, y - letterSpacing),
-                        style = TextStyle(
-                            color = MatrixGreen.copy(alpha = 0.6f),
-                            fontSize = fontSize,
-                            fontFamily = FontFamily.Monospace
-                        )
-                    )
+                    // Removed heavy "Trail" text rendering for optimization.
+                    // Only drawing the head character significantly reduces GPU/CPU load.
                     
                     // Head
                     drawText(
@@ -108,7 +95,7 @@ fun MatrixBackground(
                         text = text,
                         topLeft = Offset(x, y),
                         style = TextStyle(
-                            color = Color.White, // Head is white/bright
+                            color = Color(0xFF00FF41), // Hardcoded Matrix Green for safety
                             fontSize = fontSize,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold
