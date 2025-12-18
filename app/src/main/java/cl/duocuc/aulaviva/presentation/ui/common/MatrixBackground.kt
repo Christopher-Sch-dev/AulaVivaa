@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Constraints
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import cl.duocuc.aulaviva.presentation.ui.theme.MatrixGreen
@@ -61,6 +62,44 @@ fun MatrixBackground(
     val drops = remember { mutableStateListOf<Float>() }
     val speeds = remember { mutableStateListOf<Float>() }
     // OPTIMIZATION: Track which char to show per column to avoid new String() every frame
+    // Styles for optimization
+    val normalStyle = remember(fontSize) {
+        TextStyle(
+            fontSize = fontSize,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold
+        )
+    }
+    val glitchStyle = remember(fontSize) {
+        TextStyle(
+            fontSize = fontSize * 1.2f,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Black
+        )
+    }
+
+    // Pre-measure characters to optimize performance and avoid Constraints crash
+    val characterCache = remember(textMeasurer, characters, fontSize) {
+        characters.associate { char ->
+            val charStr = char.toString()
+            val constraints = Constraints() // Open constraints (0 to Inf)
+
+            val normal = textMeasurer.measure(
+                text = charStr,
+                style = normalStyle,
+                softWrap = false,
+                constraints = constraints
+            )
+            val glitch = textMeasurer.measure(
+                text = charStr,
+                style = glitchStyle,
+                softWrap = false,
+                constraints = constraints
+            )
+            char to (normal to glitch)
+        }
+    }
+
     val charIndices = remember { mutableStateListOf<Int>() }
     
     // Initialize
@@ -131,17 +170,18 @@ fun MatrixBackground(
                                 Color(0xFF00FF41)
                             }
     
-                            drawText(
-                                textMeasurer = textMeasurer,
-                                text = text,
-                                topLeft = Offset(x, y),
-                                style = TextStyle(
+                            // Use cached layout to avoid measurement during draw text (fixes crash & optimizes)
+                            val cache = characterCache[characters[charIndex]]
+                            if (cache != null) {
+                                val (normalLayout, glitchLayout) = cache
+                                val layoutToDraw = if (isGlitch) glitchLayout else normalLayout
+
+                                drawText(
+                                    textLayoutResult = layoutToDraw,
                                     color = color,
-                                    fontSize = if (isGlitch) fontSize * 1.2f else fontSize,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = if (isGlitch) FontWeight.Black else FontWeight.Bold
+                                    topLeft = Offset(x, y)
                                 )
-                            )
+                            }
                         }
                     }
                 }
