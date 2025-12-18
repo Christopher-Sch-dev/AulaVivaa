@@ -8,6 +8,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -137,21 +140,24 @@ fun Modifier.breakcoreGlitch(): Modifier {
     var intensity by remember { mutableFloatStateOf(0f) }
     var glitchType by remember { mutableFloatStateOf(0f) }
     var nextGlitchTime by remember { mutableFloatStateOf(3f) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     
-    LaunchedEffect(Unit) {
-        while (true) {
-            time += 0.016f
-            
-            // Glitch aleatorio cada 3-5 segundos
-            if (time >= nextGlitchTime && intensity == 0f) {
-                intensity = 1f
-                glitchType = Random.nextInt(4).toFloat() // 0-3 (4 tipos)
-                delay(500) // 500ms de glitch (más largo que antes)
-                intensity = 0f
-                nextGlitchTime = time + Random.nextFloat() * 2f + 3f // 3-5 segundos
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                time += 0.016f
+                
+                // Glitch aleatorio cada 3-5 segundos
+                if (time >= nextGlitchTime && intensity == 0f) {
+                    intensity = 1f
+                    glitchType = Random.nextInt(4).toFloat() // 0-3 (4 tipos)
+                    delay(500) // 500ms de glitch (más largo que antes)
+                    intensity = 0f
+                    nextGlitchTime = time + Random.nextFloat() * 2f + 3f // 3-5 segundos
+                }
+                
+                delay(16)
             }
-            
-            delay(16)
         }
     }
     
@@ -176,11 +182,14 @@ fun Modifier.cyberGrid(): Modifier {
     
     val shader = remember { RuntimeShader(cyberGridShader) }
     var time by remember { mutableFloatStateOf(0f) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     
-    LaunchedEffect(Unit) {
-        while (true) {
-            time += 0.016f
-            delay(16)
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                time += 0.016f
+                delay(16)
+            }
         }
     }
     
@@ -198,11 +207,14 @@ fun Modifier.aggressiveScanLines(): Modifier {
     
     val shader = remember { RuntimeShader(aggressiveScanLineShader) }
     var time by remember { mutableFloatStateOf(0f) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     
-    LaunchedEffect(Unit) {
-        while (true) {
-            time += 0.016f
-            delay(16)
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (true) {
+                time += 0.016f
+                delay(16)
+            }
         }
     }
     
