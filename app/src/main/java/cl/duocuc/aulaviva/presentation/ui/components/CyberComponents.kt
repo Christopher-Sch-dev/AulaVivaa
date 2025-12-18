@@ -3,6 +3,7 @@ package cl.duocuc.aulaviva.presentation.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -22,20 +23,37 @@ import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTypography
 @Composable
 fun CyberCard(
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp), // Un poco más suave que cut corner para "Professional"
-        border = BorderStroke(1.dp, SolidColor(AulaVivaColors.PrimaryCyan.copy(alpha = 0.5f))),
-        colors = CardDefaults.cardColors(
-            containerColor = AulaVivaColors.SurfaceDark.copy(alpha = 0.9f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        // Wrapper interno para padding coherente
-        androidx.compose.foundation.layout.Box(modifier = Modifier.padding(16.dp)) {
-            content()
+    if (onClick != null) {
+        Card(
+            onClick = onClick,
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            border = BorderStroke(1.dp, SolidColor(AulaVivaColors.PrimaryCyan.copy(alpha = 0.5f))),
+            colors = CardDefaults.cardColors(
+                containerColor = AulaVivaColors.SurfaceDark.copy(alpha = 0.9f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            androidx.compose.foundation.layout.Box(modifier = Modifier.padding(16.dp)) {
+                content()
+            }
+        }
+    } else {
+        Card(
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            border = BorderStroke(1.dp, SolidColor(AulaVivaColors.PrimaryCyan.copy(alpha = 0.5f))),
+            colors = CardDefaults.cardColors(
+                containerColor = AulaVivaColors.SurfaceDark.copy(alpha = 0.9f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            androidx.compose.foundation.layout.Box(modifier = Modifier.padding(16.dp)) {
+                content()
+            }
         }
     }
 }
@@ -59,7 +77,8 @@ fun CyberButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     loading: Boolean = false,
-    variant: CyberButtonVariant = CyberButtonVariant.PRIMARY
+    variant: CyberButtonVariant = CyberButtonVariant.PRIMARY,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null
 ) {
     val containerColor = when (variant) {
         CyberButtonVariant.PRIMARY -> AulaVivaColors.PrimaryCyan
@@ -90,6 +109,14 @@ fun CyberButton(
                 modifier = Modifier.padding(end = 8.dp),
                 color = contentColor,
                 strokeWidth = 2.dp
+            )
+        }
+        if (icon != null && !loading) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp).padding(end = 8.dp),
+                tint = contentColor
             )
         }
         Text(

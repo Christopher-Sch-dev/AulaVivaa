@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExitToApp
@@ -31,6 +30,13 @@ import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.activity.compose.AlumnoClasesActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.auth.compose.LoginActivityCompose
 import cl.duocuc.aulaviva.presentation.viewmodel.AlumnoViewModel
+import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaColors
+import cl.duocuc.aulaviva.presentation.ui.components.CyberButton
+import cl.duocuc.aulaviva.presentation.ui.components.CyberButtonVariant
+import cl.duocuc.aulaviva.presentation.ui.components.CyberCard
+import cl.duocuc.aulaviva.presentation.ui.components.CyberTextField
+import cl.duocuc.aulaviva.presentation.ui.effects.CyberParticleBackground
+import cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +59,7 @@ fun PanelAlumnoScreen(
 
     // Manejar logout
     LaunchedEffect(logoutEvent) {
-        if (logoutEvent == true) {
+        if (logoutEvent) {
             val intent = Intent(context, LoginActivityCompose::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             context.startActivity(intent)
@@ -74,7 +80,7 @@ fun PanelAlumnoScreen(
     LaunchedEffect(inscripcionExitosa) {
         inscripcionExitosa?.let { asignatura ->
             scope.launch {
-                snackbarHostState.showSnackbar("✓ ACCESO CONCEDIDO: ${asignatura.nombre}")
+                snackbarHostState.showSnackbar("✓ ACCESO RED CONCEDIDO: ${asignatura.nombre}")
             }
             showInscripcionDialog = false
             codigoInscripcion = ""
@@ -91,7 +97,7 @@ fun PanelAlumnoScreen(
         viewModel.sincronizarAsignaturasInscritas()
         scope.launch {
             delay(Constants.REFRESH_DELAY_MS)
-            snackbarHostState.showSnackbar("SISTEMAS SINCRONIZADOS")
+            snackbarHostState.showSnackbar("ENLACE NEURONAL REESTABLECIDO")
         }
     }
 
@@ -101,26 +107,28 @@ fun PanelAlumnoScreen(
             TopAppBar(
                 title = { 
                     cl.duocuc.aulaviva.presentation.ui.common.GlitchText(
-                        text = "PANEL ALUMNO", 
+                        text = "PANEL ESTUDIANTE", 
                         style = MaterialTheme.typography.titleLarge
                     ) 
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
-                    titleContentColor = MaterialTheme.colorScheme.primary
+                    containerColor = AulaVivaColors.CyberBlack.copy(alpha = 0.9f),
+                    titleContentColor = AulaVivaColors.PrimaryCyan
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = AulaVivaColors.CyberBlack
     ) { paddingValues ->
         
-        // Matrix Rain Background
+        // Cyber Particle Layout
         Box(
              modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(AulaVivaColors.CyberBlack)
         ) {
-            cl.duocuc.aulaviva.presentation.ui.common.MatrixBackground()
+            CyberParticleBackground()
+            
             if (isLoading && asignaturas.isEmpty()) {
                 cl.duocuc.aulaviva.presentation.ui.common.FullScreenLoading()
             } else {
@@ -135,33 +143,22 @@ fun PanelAlumnoScreen(
                     ) {
                         // Card de bienvenida
                         item {
-                            Card(
+                            CyberCard(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp),
-                                shape = androidx.compose.foundation.shape.CutCornerShape(
-                                    topStart = 0.dp, 
-                                    topEnd = 16.dp, 
-                                    bottomStart = 16.dp, 
-                                    bottomEnd = 0.dp
-                                ),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
-                                ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                    .padding(horizontal = 16.dp)
                             ) {
                                 Column(
-                                    modifier = Modifier.padding(24.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    // Icono de bienvenida
-                                    Icon(
-                                        imageVector = androidx.compose.material.icons.Icons.Default.School,
-                                        contentDescription = "Student",
-                                        modifier = Modifier.size(64.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
+                                    // Icono de bienvenida con glitch
+                                    Box(modifier = Modifier.breakcoreGlitch()) {
+                                        Icon(
+                                            imageVector = androidx.compose.material.icons.Icons.Default.School,
+                                            contentDescription = "Student",
+                                            modifier = Modifier.size(64.dp),
+                                            tint = AulaVivaColors.PrimaryCyan
+                                        )
+                                    }
 
                                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -170,14 +167,14 @@ fun PanelAlumnoScreen(
                                         text = "ESTUDIANTE ${userEmail?.substringBefore("@")?.uppercase() ?: "ALUMNO"}",
                                         style = MaterialTheme.typography.headlineSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                        color = AulaVivaColors.TextPrimary,
                                         textAlign = TextAlign.Center
                                     )
 
                                     Text(
-                                        text = "REGISTRO ACADÉMICO Y CURSOS",
+                                        text = "REGISTRO ACADÉMICO GLOBAL",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.tertiary,
+                                        color = AulaVivaColors.TextSecondary,
                                         textAlign = TextAlign.Center,
                                         letterSpacing = 1.sp,
                                         modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
@@ -187,7 +184,7 @@ fun PanelAlumnoScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(vertical = 16.dp),
-                                        color = MaterialTheme.colorScheme.outlineVariant
+                                        color = AulaVivaColors.PrimaryCyan.copy(alpha = 0.3f)
                                     )
 
                                     // Información y botón de inscripción
@@ -195,41 +192,24 @@ fun PanelAlumnoScreen(
                                         text = "GESTIÓN DE MATRÍCULA",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.secondary
+                                        color = AulaVivaColors.SecondaryAccent
                                     )
 
                                     Spacer(modifier = Modifier.height(8.dp))
 
                                     Text(
-                                        text = "Ingrese código único de acceso para inscribir nueva asignatura.",
+                                        text = "Ingrese token de acceso para desbloquear módulo.",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = AulaVivaColors.TextSecondary,
                                         textAlign = TextAlign.Center,
                                         modifier = Modifier.padding(bottom = 16.dp)
                                     )
 
                                     // Botón de inscripción
-                                    Button(
-                                        onClick = { showInscripcionDialog = true },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(56.dp),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.primary
-                                        )
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Add,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "INSCRIBIR ASIGNATURA",
-                                            style = MaterialTheme.typography.labelLarge
-                                        )
-                                    }
+                                    CyberButton(
+                                        text = "INSCRIBIR ASIGNATURA >",
+                                        onClick = { showInscripcionDialog = true }
+                                    )
                                 }
                             }
                         }
@@ -241,7 +221,7 @@ fun PanelAlumnoScreen(
                                     text = "MIS ASIGNATURAS",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground,
+                                    color = AulaVivaColors.TextPrimary,
                                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                                     letterSpacing = 1.sp
                                 )
@@ -264,14 +244,14 @@ fun PanelAlumnoScreen(
                                             imageVector = Icons.Default.Book,
                                             contentDescription = null,
                                             modifier = Modifier.size(48.dp),
-                                            tint = MaterialTheme.colorScheme.outline
+                                            tint = AulaVivaColors.TextSecondary
                                         )
                                         Spacer(modifier = Modifier.height(16.dp))
                                         Text(
-                                            text = "NO HAY REGISTROS",
+                                            text = "NO HAY DATA",
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.outline
+                                            color = AulaVivaColors.TextSecondary
                                         )
                                     }
                                 }
@@ -299,25 +279,12 @@ fun PanelAlumnoScreen(
                         // Botón de cerrar sesión
                         item {
                             Spacer(modifier = Modifier.height(16.dp))
-                            OutlinedButton(
+                            CyberButton(
+                                text = "DESCONECTAR",
                                 onClick = { showLogoutDialog = true },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
-                                ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                            ) {
-                                Icon(
-                                    Icons.Default.ExitToApp,
-                                    contentDescription = null
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "CERRAR SESIÓN")
-                            }
+                                variant = CyberButtonVariant.SECONDARY,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
                             Spacer(modifier = Modifier.height(24.dp))
                         }
                     }
@@ -330,35 +297,29 @@ fun PanelAlumnoScreen(
     if (showInscripcionDialog) {
         AlertDialog(
             onDismissRequest = { showInscripcionDialog = false },
-            title = { Text("Inscripción de Código", style = MaterialTheme.typography.titleLarge) },
+            title = { Text("TOKEN DE ACCESO", style = MaterialTheme.typography.titleLarge, color = AulaVivaColors.TextPrimary) },
             text = {
-                OutlinedTextField(
+                CyberTextField(
                     value = codigoInscripcion,
                     onValueChange = { codigoInscripcion = it.uppercase() },
-                    label = { Text("INGRESE CÓDIGO") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
+                    label = "INGRESE CÓDIGO"
                 )
             },
+            containerColor = AulaVivaColors.SurfaceDark,
             confirmButton = {
-                Button(
+                TextButton(
                     onClick = {
                         if (codigoInscripcion.isNotBlank()) {
                             viewModel.inscribirConCodigo(codigoInscripcion.trim())
                         }
                     }
                 ) {
-                    Text("INSCRIBIR")
+                    Text("AUTORIZAR", color = AulaVivaColors.PrimaryCyan)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showInscripcionDialog = false }) {
-                    Text("CANCELAR")
+                    Text("ABORTAR", color = AulaVivaColors.TextSecondary)
                 }
             }
         )
@@ -368,8 +329,9 @@ fun PanelAlumnoScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Terminar Sesión") },
-            text = { Text("¿Confirmar desconexión del sistema?") },
+            title = { Text("Terminar Sesión", color = AulaVivaColors.TextPrimary) },
+            text = { Text("¿Confirmar desconexión del sistema?", color = AulaVivaColors.TextSecondary) },
+            containerColor = AulaVivaColors.SurfaceDark,
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -377,12 +339,12 @@ fun PanelAlumnoScreen(
                         viewModel.logout()
                     }
                 ) {
-                    Text("DESCONECTAR", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    Text("SALIR", color = AulaVivaColors.ErrorRed, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("CANCELAR")
+                    Text("CANCELAR", color = AulaVivaColors.TextSecondary)
                 }
             }
         )
@@ -396,20 +358,12 @@ fun AsignaturaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        onClick = onClick,
+    CyberCard(
         modifier = modifier,
-        shape = androidx.compose.foundation.shape.CutCornerShape(
-            topStart = 8.dp, topEnd = 0.dp, bottomStart = 0.dp, bottomEnd = 8.dp
-        ),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        onClick = onClick
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -417,7 +371,7 @@ fun AsignaturaCard(
                  Icon(
                     imageVector = Icons.Default.Book,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary,
+                    tint = AulaVivaColors.SecondaryAccent,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
@@ -425,7 +379,7 @@ fun AsignaturaCard(
                     text = asignatura.nombre,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = AulaVivaColors.TextPrimary
                 )
             }
             
@@ -434,7 +388,7 @@ fun AsignaturaCard(
                 Text(
                     text = asignatura.descripcion,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = AulaVivaColors.TextSecondary,
                     maxLines = 2,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
@@ -442,17 +396,16 @@ fun AsignaturaCard(
             Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                    .background(AulaVivaColors.SurfaceLight.copy(alpha = 0.3f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = "ID: ${asignatura.codigoAcceso}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = AulaVivaColors.PrimaryCyan,
                     fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                 )
             }
         }
     }
 }
-
