@@ -86,7 +86,6 @@ android {
             // CRÍTICO: Habilita optimizaciones de código
             kotlinOptions {
                 freeCompilerArgs += listOf(
-                    "-Xuse-k2", // Compilador K2 (más rápido)
                     "-opt-in=kotlin.RequiresOptIn"
                 )
             }
@@ -94,7 +93,6 @@ android {
         
         debug {
             isMinifyEnabled = false
-            applicationIdSuffix = ".debug"
         }
     }
 

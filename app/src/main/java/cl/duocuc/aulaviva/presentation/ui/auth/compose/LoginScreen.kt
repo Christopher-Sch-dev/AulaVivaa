@@ -20,6 +20,9 @@ import cl.duocuc.aulaviva.presentation.ui.effects.aggressiveScanLines
 import cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch
 import cl.duocuc.aulaviva.presentation.ui.effects.cyberGrid
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaColors
+import cl.duocuc.aulaviva.presentation.viewmodel.AuthViewModel
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.getValue
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -29,9 +32,9 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateBack: () -> Unit = {} // Kept for compatibility, though not used in new design
 ) {
-    val loginSuccess by viewModel.loginSuccess.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val loginSuccess by viewModel.loginSuccess.observeAsState(false)
+    val isLoading by viewModel.isLoading.observeAsState(false)
+    val error by viewModel.error.observeAsState()
     
     // Observar login exitoso
     LaunchedEffect(loginSuccess) {
