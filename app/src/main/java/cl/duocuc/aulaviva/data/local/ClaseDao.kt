@@ -63,12 +63,14 @@ interface ClaseDao {
      * Inserta o reemplaza una clase en la BD local.
      * onConflict = REPLACE significa que si el ID ya existe, lo actualiza.
      */
+    @androidx.room.Transaction
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarClase(clase: ClaseEntity)
 
     /**
      * Inserta múltiples clases de una vez (útil para sincronizar desde Supabase)
      */
+    @androidx.room.Transaction
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarVarias(clases: List<ClaseEntity>)
 
