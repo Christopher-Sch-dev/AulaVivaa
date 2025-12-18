@@ -48,9 +48,13 @@ class IARepository(private val context: Context) : IIARepository {
 
     private val GEMINI_API_KEY = BuildConfig.GEMINI_API_KEY
 
-    private val googleAiModel by lazy {
+    // Modelos Gemini con fallback: primario gemini-3-flash-preview, fallback gemini-2.5-flash
+    private val primaryModelName = "gemini-3-flash-preview"
+    private val fallbackModelName = "gemini-2.5-flash"
+    
+    private val googleAiModelPrimary by lazy {
         GenerativeModel(
-            modelName = "gemini-2.5-flash",
+            modelName = primaryModelName,
             apiKey = GEMINI_API_KEY,
             generationConfig = com.google.ai.client.generativeai.type.generationConfig {
                 temperature = 0.7f
@@ -60,6 +64,22 @@ class IARepository(private val context: Context) : IIARepository {
             }
         )
     }
+    
+    private val googleAiModelFallback by lazy {
+        GenerativeModel(
+            modelName = fallbackModelName,
+            apiKey = GEMINI_API_KEY,
+            generationConfig = com.google.ai.client.generativeai.type.generationConfig {
+                temperature = 0.7f
+                topK = 40
+                topP = 0.95f
+                maxOutputTokens = 8192
+            }
+        )
+    }
+    
+    // Modelo activo (se usa el primario, fallback si falla)
+    private var googleAiModel = googleAiModelPrimary
 
     private var chatSession: com.google.ai.client.generativeai.Chat? = null
 
@@ -109,6 +129,7 @@ class IARepository(private val context: Context) : IIARepository {
                     var ultimoError: Exception? = null
                     val maxIntentos = 3
                     var resultado: String? = null
+                    var usandoFallback = false
 
                     val baseDelay = 1000L // 1s
 
@@ -120,8 +141,16 @@ class IARepository(private val context: Context) : IIARepository {
                                     temperature = 0.6f, topP = 0.9f, maxOutputTokens = 4096
                                 )
                             )
-                            Log.d(TAG, "🔁 [GEMINI] Intento ${intento + 1}/$maxIntentos — enviando petición a Gemini")
-                            val response = geminiService.generateContent(GEMINI_API_KEY, request)
+                            
+                            // Usar modelo primario o fallback según estado
+                            val modelName = if (usandoFallback) fallbackModelName else primaryModelName
+                            Log.d(TAG, "🔁 [GEMINI] Intento ${intento + 1}/$maxIntentos — usando modelo: $modelName")
+                            
+                            val response = if (usandoFallback) {
+                                geminiService.generateContentFallback(GEMINI_API_KEY, request)
+                            } else {
+                                geminiService.generateContentPrimary(GEMINI_API_KEY, request)
+                            }
                             if (response.isSuccessful) {
                                 val text = response.body()
                                     ?.candidates
@@ -157,10 +186,25 @@ class IARepository(private val context: Context) : IIARepository {
                                 val message = response.message()
                                 ultimoError =
                                     Exception("HTTP error en Gemini: respuesta no exitosa (code=${code}, message=${message})")
+                                
+                                // Si es 404 y no estamos usando fallback, activar fallback
+                                if (code == 404 && !usandoFallback) {
+                                    Log.w(TAG, "⚠️ Modelo primario ($primaryModelName) no disponible, activando fallback a $fallbackModelName")
+                                    usandoFallback = true
+                                    continue // Reintentar inmediatamente con fallback
+                                }
+                                
                                 // decidir retry para 429 o 5xx
                                 val shouldRetryHttp = (code == 429) || (code >= 500)
                                 intento++
                                 if (!shouldRetryHttp || intento >= maxIntentos) {
+                                    // Si aún no probamos fallback, activarlo antes de rendirse
+                                    if (!usandoFallback && code != 404) {
+                                        Log.w(TAG, "⚠️ Modelo primario falló, intentando con fallback $fallbackModelName")
+                                        usandoFallback = true
+                                        intento = 0 // Reset intentos para fallback
+                                        continue
+                                    }
                                     Log.w(
                                         TAG,
                                         "⚠️ Gemini HTTP failure code=${code}, will not retry further (attempt ${intento})"

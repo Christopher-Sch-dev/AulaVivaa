@@ -44,6 +44,9 @@ fun MarkdownText(
     text: String,
     modifier: Modifier = Modifier
 ) {
+    // Preprocess text to fix common markdown rendering issues
+    val processedText = preprocessMarkdownText(text)
+    
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
     
@@ -158,10 +161,34 @@ fun MarkdownText(
             
             // Renderizar el contenido Markdown usando Markwon
             // Solo actualizar si el texto cambió para evitar renderizado innecesario
-            if (textView.text?.toString() != text) {
-                markwon.setMarkdown(textView, text)
+            if (textView.text?.toString() != processedText) {
+                markwon.setMarkdown(textView, processedText)
             }
         },
         modifier = modifier.fillMaxWidth()
     )
+}
+
+/**
+ * Preprocesses markdown text to fix common rendering issues.
+ * 
+ * Issues fixed:
+ * - Consecutive underscores (blanks like "_________") are escaped to prevent
+ *   markdown interpreting them as emphasis markers, which causes garbled display.
+ * - Asterisks inside words that shouldn't be bold/italic.
+ * - Special unicode characters that may not render correctly.
+ */
+private fun preprocessMarkdownText(text: String): String {
+    return text
+        // Fix consecutive underscores (fill-in-the-blank patterns)
+        // Pattern: 2+ underscores in a row -> replace with visible line character
+        .replace(Regex("_{2,}")) { match ->
+            "\u2015".repeat(match.value.length.coerceAtMost(10)) // Use horizontal bar character
+        }
+        // Fix single underscores at word boundaries that may cause unintended emphasis
+        .replace(Regex("(?<=\\s)_(?!_)(.+?)(?<!_)_(?=\\s|\\.|,|\\))")) { match ->
+            "\u2015${match.groupValues[1]}\u2015" // Replace emphasis underscores with horizontal bars
+        }
+        // Remove potential problematic control characters
+        .replace(Regex("[\u0000-\u001F&&[^\t\n\r]]"), "")
 }

@@ -6,12 +6,28 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 
 /**
- * 🤖 Interfaz Retrofit para Gemini API
- * Modelo: gemini-2.5-flash (más rápido, menor consumo de tokens)
+ * Interfaz Retrofit para Gemini API
+ * Modelo primario: gemini-3-flash-preview
+ * Modelo fallback: gemini-2.5-flash-lite
  */
 interface GeminiApiService {
 
+    // Modelo primario: gemini-3-flash-preview (más nuevo y potente)
+    @POST("v1beta/models/gemini-3-flash-preview:generateContent")
+    suspend fun generateContentPrimary(
+        @Query("key") apiKey: String,
+        @Body request: GeminiRequest
+    ): Response<GeminiResponse>
+    
+    // Modelo fallback: gemini-2.5-flash-lite (estable y probado)
     @POST("v1beta/models/gemini-2.5-flash-lite:generateContent")
+    suspend fun generateContentFallback(
+        @Query("key") apiKey: String,
+        @Body request: GeminiRequest
+    ): Response<GeminiResponse>
+    
+    // Mantener compatibilidad: alias al modelo primario
+    @POST("v1beta/models/gemini-3-flash-preview:generateContent")
     suspend fun generateContent(
         @Query("key") apiKey: String,
         @Body request: GeminiRequest
