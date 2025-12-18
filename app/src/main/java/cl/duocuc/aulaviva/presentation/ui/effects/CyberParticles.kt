@@ -27,8 +27,10 @@ fun CyberParticleBackground(
     // CRITICAL: Obtener lifecycle para pausar en background
     val lifecycleOwner = LocalLifecycleOwner.current
     
-    val particles = remember {
-        List(maxParticles) {
+    // SAFETY LIMIT: Clamp maxParticles to avoid OOM or lag
+    val safeMaxParticles = maxParticles.coerceIn(1, 200)
+    val particles = remember(safeMaxParticles) {
+        List(safeMaxParticles) {
             CyberParticle()
         }
     }

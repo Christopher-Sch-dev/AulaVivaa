@@ -44,9 +44,12 @@ fun BiomechanicalVeins(
         }
     }
     
+    // SAFETY LIMIT: Clamp veinCount to avoid excessive object allocation
+    val safeVeinCount = veinCount.coerceIn(1, 20)
+
     Canvas(modifier = modifier.fillMaxSize()) {
-        repeat(veinCount) { i ->
-            val startX = size.width * (i / veinCount.toFloat())
+        repeat(safeVeinCount) { i ->
+            val startX = size.width * (i / safeVeinCount.toFloat())
             val path = Path().apply {
                 moveTo(startX, 0f)
                 
