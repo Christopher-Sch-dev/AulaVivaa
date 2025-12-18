@@ -40,12 +40,13 @@ import kotlinx.coroutines.delay
 fun AulaVivaBootScreen(
     onLoadComplete: () -> Unit,
     loadingMessages: List<String> = listOf(
-        "Inicializando sistema...",
-        "Conectando con servidor...",
-        "Cargando configuración...",
-        "Verificando credenciales...",
-        "Preparando interfaz...",
-        "Sistema listo."
+        "INITIALIZING CORE KERNEL...",
+        "BYPASSING SECURITY PROTOCOLS...",
+        "CONNECTING TO NEURAL NET...",
+        "DECRYPTING USER DATA...",
+        "LOADING MATRIX ENVIRONMENT...",
+        "DISSOCIATING REALITY...",
+        "SYSTEM OVERRIDE: SUCCESS."
     ),
     title: String = "AULA VIVA",
     subtitle: String = "SISTEMA EDUCATIVO v2.0"
@@ -89,22 +90,21 @@ fun AulaVivaBootScreen(
         label = "cursorBlink"
     )
     
-    // Efecto de carga secuencial
+    // Efecto de carga secuencial - Aumentado a ~5 segundos con textos dramáticos
     LaunchedEffect(Unit) {
-        // Mostrar título
-        delay(200)
+        // Fase 1: Inicialización (1s)
+        delay(500)
         showTitle = true
-        
-        // Mostrar subtítulo
-        delay(400)
+        delay(500)
         showSubtitle = true
         
-        // Mostrar barra de progreso
-        delay(300)
+        // Fase 2: Progreso intenso (3s)
+        delay(500)
         showProgress = true
         
-        // Progreso y mensajes
-        val messageDelay = 400L
+        // Calcular delay por mensaje para llenar ~3.5 segundos restantes
+        val totalMessageTime = 3500L
+        val messageDelay = totalMessageTime / loadingMessages.size
         val progressStep = 1f / loadingMessages.size
         
         for (i in loadingMessages.indices) {
@@ -113,123 +113,126 @@ fun AulaVivaBootScreen(
             progress = (i + 1) * progressStep
         }
         
-        // Pequeña pausa antes de completar
-        delay(300)
+        // Fase 3: Finalización y estabilización (0.5s)
+        progress = 1f
+        delay(500)
         onLoadComplete()
     }
     
-    // UI
-    AulaVivaScreenFrame(mode = ScreenEffectMode.SPLASH) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-            
-            // Título principal con efecto typewriter
-            Text(
-                text = "[ $title ]",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Monospace,
-                color = AulaVivaColors.PrimaryCyan,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .alpha(titleAlpha)
-                    .padding(bottom = 8.dp)
-            )
-            
-            // Subtítulo
-            Text(
-                text = subtitle,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
-                fontFamily = FontFamily.Monospace,
-                color = AulaVivaColors.TextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .alpha(subtitleAlpha)
-                    .padding(bottom = 48.dp)
-            )
-            
-            // Barra de progreso estilizada
+    // UI - WRAPPED WITH BREAKCORE GLITCH FOR MAXIMUM INTENSITY
+    Box(modifier = Modifier.fillMaxSize().cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch()) {
+        AulaVivaScreenFrame(mode = ScreenEffectMode.SPLASH) {
             Column(
                 modifier = Modifier
-                    .alpha(progressAlpha)
-                    .fillMaxWidth(0.8f),
-                horizontalAlignment = Alignment.Start
+                    .fillMaxSize()
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                // Mensaje de estado actual
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                ) {
-                    Text(
-                        text = "> ",
-                        fontSize = 14.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = AulaVivaColors.PrimaryCyan
-                    )
-                    Text(
-                        text = if (currentMessageIndex < loadingMessages.size) {
-                            loadingMessages[currentMessageIndex]
-                        } else {
-                            "Listo."
-                        },
-                        fontSize = 14.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = AulaVivaColors.TextPrimary
-                    )
-                    // Cursor parpadeante
-                    Text(
-                        text = "_",
-                        fontSize = 14.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = AulaVivaColors.PrimaryCyan,
-                        modifier = Modifier.alpha(cursorAlpha)
-                    )
-                }
+                Spacer(modifier = Modifier.weight(1f))
                 
-                // Barra de progreso visual
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .background(AulaVivaColors.SurfaceDark)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(progress)
-                            .fillMaxHeight()
-                            .background(AulaVivaColors.PrimaryCyan)
-                    )
-                }
-                
-                // Porcentaje
+                // Título principal con efecto typewriter
                 Text(
-                    text = "${(progress * 100).toInt()}%",
-                    fontSize = 12.sp,
+                    text = "[ $title ]",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    color = AulaVivaColors.PrimaryCyan,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .alpha(titleAlpha)
+                        .padding(bottom = 8.dp)
+                )
+                
+                // Subtítulo
+                Text(
+                    text = subtitle,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
                     fontFamily = FontFamily.Monospace,
                     color = AulaVivaColors.TextSecondary,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(top = 4.dp)
+                        .alpha(subtitleAlpha)
+                        .padding(bottom = 48.dp)
+                )
+                
+                // Barra de progreso estilizada
+                Column(
+                    modifier = Modifier
+                        .alpha(progressAlpha)
+                        .fillMaxWidth(0.8f),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    // Mensaje de estado actual con efecto "Glitch text" simulado
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = "> ",
+                            fontSize = 14.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = AulaVivaColors.PrimaryCyan
+                        )
+                        Text(
+                            text = if (currentMessageIndex < loadingMessages.size) {
+                                loadingMessages[currentMessageIndex]
+                            } else {
+                                "SYSTEM_READY // ACCESS_GRANTED"
+                            },
+                            fontSize = 14.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = AulaVivaColors.TextPrimary
+                        )
+                        // Cursor parpadeante
+                        Text(
+                            text = "_",
+                            fontSize = 14.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = AulaVivaColors.PrimaryCyan,
+                            modifier = Modifier.alpha(cursorAlpha)
+                        )
+                    }
+                    
+                    // Barra de progreso visual
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .background(AulaVivaColors.SurfaceDark)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(progress)
+                                .fillMaxHeight()
+                                .background(AulaVivaColors.PrimaryCyan)
+                        )
+                    }
+                    
+                    // Porcentaje
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = AulaVivaColors.TextSecondary,
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(top = 4.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.weight(1.5f))
+                
+                // Footer
+                Text(
+                    text = "DEV-CHRIS.sch | DUOC UC 2025",
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = AulaVivaColors.TextSecondary.copy(alpha = 0.5f),
+                    textAlign = TextAlign.Center
                 )
             }
-            
-            Spacer(modifier = Modifier.weight(1.5f))
-            
-            // Footer
-            Text(
-                text = "DEV-CHRIS.sch | DUOC UC 2025",
-                fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace,
-                color = AulaVivaColors.TextSecondary.copy(alpha = 0.5f),
-                textAlign = TextAlign.Center
-            )
         }
     }
 }
