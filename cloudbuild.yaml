@@ -26,6 +26,8 @@ steps:
       - '--allow-unauthenticated'
       - '--project'
       - '$PROJECT_ID'
+      - '--set-env-vars'
+      - 'SUPABASE_DB_HOST=aws-1-sa-east-1.pooler.supabase.com,SUPABASE_DB_PORT=5432,SUPABASE_DB_NAME=postgres,SUPABASE_DB_USER=postgres.xcnkcmzfevimydfpyjrr,SUPABASE_DB_PASSWORD=Colo12colo13!!,SUPABASE_URL=https://xcnkcmzfevimydfpyjrr.supabase.co,SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjbmtjbXpmZXZpbXlkZnB5anJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyOTUxNzYsImV4cCI6MjA3Nzg3MTE3Nn0.0llGaPrB-ThexZ3AbGg9VXYo8b_0ZwgzBIxGAeezFiM,SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjbmtjbXpmZXZpbXlkZnB5anJyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjI5NTE3NiwiZXhwIjoyMDc3ODcxMTc2fQ.U7WKCn5X3M6Nosd_cSOk7NUCDCYOrC_w9jOzmo6rWDk,JWT_SECRET=78E649EACE8DEE5B4286810C82A2A1897492C8BFED6B0BC7FFE5F282BDCEA5F6'
 
 images:
   - 'gcr.io/$PROJECT_ID/aulaviva-backend:$COMMIT_SHA'
