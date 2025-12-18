@@ -52,7 +52,7 @@ class AlumnoRepository(
                         createdAt = entity.createdAt,
                         updatedAt = entity.updatedAt
                     )
-                }
+                }.distinctBy { it.id } // Ensure unique keys for LazyColumn
             }
         }
     }

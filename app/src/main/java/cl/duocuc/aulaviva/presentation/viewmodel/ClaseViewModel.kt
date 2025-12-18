@@ -62,11 +62,22 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                sincronizarClasesUseCase()  // Usa Supabase vía UseCase
+                val result = sincronizarClasesUseCase()  // Usa Supabase vía UseCase
+                result.fold(
+                    onSuccess = {
+                        _isLoading.value = false
+                        // Opcional: _operationSuccess.value = "Sincronización completa"
+                    },
+                    onFailure = { e ->
+                        _isLoading.value = false
+                        _error.value = "Error de sincronización: ${e.message}"
+                        android.util.Log.e("ClaseVM", "❌ Sincronización fallida", e)
+                    }
+                )
+            } catch (e: Exception) {
                 _isLoading.value = false
-            } catch (_: Exception) {
-                _isLoading.value = false
-                // No muestro error porque Room sigue funcionando offline
+                _error.value = "Error crítico de sincronización: ${e.message}"
+                android.util.Log.e("ClaseVM", "❌ Error crítico sync", e)
             }
         }
     }
@@ -113,6 +124,15 @@ class ClaseViewModel(application: Application) : AndroidViewModel(application) {
 
         if (fecha.trim().isEmpty()) {
             _error.value = "La fecha es obligatoria"
+            return
+        }
+
+        if (asignaturaId.isEmpty()) {
+             // For compatibility or Demo handling: If empty, try to fetch classes or warn user.
+             // But for now, enforce it strictly if we are following the rules.
+             // If this is for "Demo", the demo method in PanelPrincipalVM passes valid ID so it's fine.
+             // If user tries to create manual class without selecting subject...
+            _error.value = "Debes seleccionar una asignatura asociada"
             return
         }
 

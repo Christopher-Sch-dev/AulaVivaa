@@ -5,14 +5,15 @@ import android.content.Intent
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +24,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
@@ -31,6 +31,14 @@ import cl.duocuc.aulaviva.presentation.activity.compose.DocenteAsignaturasActivi
 import cl.duocuc.aulaviva.presentation.ui.auth.compose.LoginActivityCompose
 import cl.duocuc.aulaviva.presentation.viewmodel.PanelPrincipalViewModel
 import cl.duocuc.aulaviva.utils.NotificationHelper
+import cl.duocuc.aulaviva.presentation.ui.components.CyberButton
+import cl.duocuc.aulaviva.presentation.ui.components.CyberCard
+import cl.duocuc.aulaviva.presentation.ui.effects.BiomechanicalVeins
+import cl.duocuc.aulaviva.presentation.ui.effects.CyberParticleBackground
+import cl.duocuc.aulaviva.presentation.ui.effects.aggressiveScanLines
+import cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch
+import cl.duocuc.aulaviva.presentation.ui.effects.cyberGrid
+import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,16 +77,10 @@ fun PanelPrincipalScreen(
                     Manifest.permission.POST_NOTIFICATIONS
                 ) == android.content.pm.PackageManager.PERMISSION_GRANTED
             ) {
-                val email = userEmail ?: "Usuario"
-                val nombre = email.substringBefore("@")
-                notificationHelper.enviarNotificacionBienvenida(nombre)
+                // Ya tiene permiso
             } else {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
-        } else {
-            val email = userEmail ?: "Usuario"
-            val nombre = email.substringBefore("@")
-            notificationHelper.enviarNotificacionBienvenida(nombre)
         }
     }
 
@@ -105,7 +107,7 @@ fun PanelPrincipalScreen(
 
     // Manejar logout
     LaunchedEffect(logoutEvent) {
-        if (logoutEvent == true) {
+        if (logoutEvent) {
             val intent = Intent(context, LoginActivityCompose::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             context.startActivity(intent)
@@ -113,275 +115,180 @@ fun PanelPrincipalScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { cl.duocuc.aulaviva.presentation.ui.common.CyberSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Panel Principal") },
+                title = { 
+                    cl.duocuc.aulaviva.presentation.ui.common.GlitchText(
+                        text = "PANEL DOCENTE", 
+                        style = MaterialTheme.typography.titleLarge
+                    ) 
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = AulaVivaColors.CyberBlack.copy(alpha = 0.9f), // Cyber Black
+                    titleContentColor = AulaVivaColors.PrimaryCyan
                 )
             )
-        }
+        },
+        containerColor = AulaVivaColors.CyberBlack // Cyber background
     ) { paddingValues ->
-        Column(
+        
+        // BREAKCORE BACKGROUND STACK
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(scrollState)
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(AulaVivaColors.CyberBlack)
+                .cyberGrid()          // Capa 1: Grid Infinito
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Icono de bienvenida
-            Card(
-                modifier = Modifier.size(80.dp),
-                shape = RoundedCornerShape(40.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            BiomechanicalVeins()      // Capa 2: Venas orgánicas
+            CyberParticleBackground() // Capa 3: Partículas flotantes
+            
+            // Capa 4: Contenido UI
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .aggressiveScanLines() // Scanlines sobre el contenido
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Avatar con Glitch
                 Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier.breakcoreGlitch()
                 ) {
-                    Text(
-                        text = "🎓",
-                        fontSize = 42.sp
+                    Icon(
+                        imageVector = Icons.Default.AccountCircle, 
+                        contentDescription = "Profile",
+                        modifier = Modifier.size(64.dp),
+                        tint = AulaVivaColors.PrimaryCyan
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Mensaje de bienvenida
-            Text(
-                text = "👨‍🏫 Bienvenido Profesor ${userEmail?.substringBefore("@") ?: "Usuario"}",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-            )
+                // Mensaje de bienvenida
+                Text(
+                    text = "PROFESOR ${userEmail?.substringBefore("@")?.uppercase() ?: "USUARIO"}",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = AulaVivaColors.TextPrimary,
+                    textAlign = TextAlign.Center
+                )
 
-            Text(
-                text = "Gestiona tus asignaturas y clases",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
+                Text(
+                    text = "CONTROL DE MANDO ACADÉMICO",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AulaVivaColors.TextSecondary,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.padding(bottom = 32.dp, top = 8.dp)
+                )
 
-            // Card: Mis Asignaturas
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Card: Mis Asignaturas
+                CyberCard(
+                    modifier = Modifier.padding(bottom = 16.dp)
                 ) {
-                    Text(text = "📚", fontSize = 40.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Mis Asignaturas",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            val intent = Intent(context, DocenteAsignaturasActivityCompose::class.java)
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
                             imageVector = Icons.Default.Book,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = AulaVivaColors.SecondaryAccent,
+                            modifier = Modifier.size(40.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Ver Mis Asignaturas",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            text = "MIS ASIGNATURAS",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = AulaVivaColors.TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        CyberButton(
+                            text = "ACCEDER A CLASES >>",
+                            onClick = {
+                                val intent = Intent(context, DocenteAsignaturasActivityCompose::class.java)
+                                context.startActivity(intent)
+                            }
                         )
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Crea asignaturas, genera códigos y gestiona tus clases",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
                 }
-            }
 
-            // Card: Modo Demostración
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Card: Modo Demostración
+                CyberCard(
+                    modifier = Modifier.padding(bottom = 16.dp)
                 ) {
-                    Text(text = "🧪", fontSize = 40.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "🎓 Modo Demostración",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            if (!isCreatingDemo) {
-                                showConfirmDialog = true
-                            }
-                        },
-                        enabled = !isCreatingDemo,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary
-                        )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
                             imageVector = Icons.Default.Science,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = AulaVivaColors.BitcoinGold, // Tech Gold contrast
+                            modifier = Modifier.size(40.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        if (isCreatingDemo) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text(
-                                text = "Crear Demo",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "MODO DEMOSTRACIÓN",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = AulaVivaColors.TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        CyberButton(
+                            text = "PERTURBAR REALIDAD (GEN DATA)",
+                            onClick = {
+                                if (!isCreatingDemo) {
+                                    showConfirmDialog = true
+                                }
+                            },
+                            enabled = !isCreatingDemo,
+                            loading = isCreatingDemo,
+                            variant = cl.duocuc.aulaviva.presentation.ui.components.CyberButtonVariant.SECONDARY
+                        )
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Crea una asignatura y clase de demostración completa",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
+                }
+
+                // Dialogs
+                if (showConfirmDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showConfirmDialog = false },
+                        title = { Text("Generar Entorno Demo", color = AulaVivaColors.TextPrimary) },
+                        text = { Text("Se generará una asignatura y clase de prueba de forma instantánea.", color = AulaVivaColors.TextSecondary) },
+                        containerColor = AulaVivaColors.SurfaceDark,
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    showConfirmDialog = false
+                                    isCreatingDemo = true
+                                    viewModel.crearAsignaturaYClaseDemo()
+                                }
+                            ) {
+                                Text("CONFIRMAR", color = AulaVivaColors.PrimaryCyan)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showConfirmDialog = false }) {
+                                Text("CANCELAR", color = AulaVivaColors.TextSecondary)
+                            }
+                        }
                     )
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Botón cerrar sesión (Estilo Cyber Outlined manual o custom button con variante danger si existiera, usaremos Secondary por ahora)
+                CyberButton(
+                    text = "DESCONECTAR SISTEMA",
+                    onClick = { showLogoutDialog = true },
+                    variant = cl.duocuc.aulaviva.presentation.ui.components.CyberButtonVariant.SECONDARY
+                ) 
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
-
-            // Dialog de confirmación para crear demo
-            if (showConfirmDialog) {
-                AlertDialog(
-                    onDismissRequest = { showConfirmDialog = false },
-                    title = { Text("🎓 Crear Asignatura Demo") },
-                    text = {
-                        Column {
-                            Text(
-                                text = "Se creará una asignatura de demostración con:",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            Text(
-                                text = "• Asignatura: Programación Móvil DEMO",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
-                            )
-                            Text(
-                                text = "• Clase: Introducción a Kotlin para Android",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
-                            )
-                            Text(
-                                text = "• Material PDF incluido",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
-                            )
-                            Text(
-                                text = "• Código de acceso generado automáticamente",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp)
-                            )
-                        }
-                    },
-                    confirmButton = {
-                        Button(
-                            onClick = {
-                                showConfirmDialog = false
-                                isCreatingDemo = true
-                                viewModel.crearAsignaturaYClaseDemo()
-                            }
-                        ) {
-                            Text("Sí, crear")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showConfirmDialog = false }) {
-                            Text("Cancelar")
-                        }
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Botón cerrar sesión
-            OutlinedButton(
-                onClick = { showLogoutDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                ),
-                border = ButtonDefaults.outlinedButtonBorder.copy(
-                    width = 2.dp,
-                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.error,
-                            MaterialTheme.colorScheme.error
-                        )
-                    )
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ExitToApp,
-                    contentDescription = null
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Cerrar Sesión",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
@@ -389,8 +296,9 @@ fun PanelPrincipalScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Cerrar sesión") },
-            text = { Text("¿Estás seguro que quieres salir de Aula Viva?") },
+            title = { Text("Terminar Sesión", color = AulaVivaColors.TextPrimary) },
+            text = { Text("¿Desea desconectarse del nodo?", color = AulaVivaColors.TextSecondary) },
+            containerColor = AulaVivaColors.SurfaceDark,
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -398,15 +306,14 @@ fun PanelPrincipalScreen(
                         viewModel.logout()
                     }
                 ) {
-                    Text("Sí, salir", color = MaterialTheme.colorScheme.error)
+                    Text("SALIR", color = AulaVivaColors.ErrorRed, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancelar")
+                    Text("CANCELAR", color = AulaVivaColors.TextSecondary)
                 }
             }
         )
     }
 }
-

@@ -1,13 +1,15 @@
 package cl.duocuc.aulaviva.presentation.ui.main.compose
 
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +30,13 @@ import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.activity.compose.AlumnoClasesActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.auth.compose.LoginActivityCompose
 import cl.duocuc.aulaviva.presentation.viewmodel.AlumnoViewModel
+import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaColors
+import cl.duocuc.aulaviva.presentation.ui.components.CyberButton
+import cl.duocuc.aulaviva.presentation.ui.components.CyberButtonVariant
+import cl.duocuc.aulaviva.presentation.ui.components.CyberCard
+import cl.duocuc.aulaviva.presentation.ui.components.CyberTextField
+import cl.duocuc.aulaviva.presentation.ui.effects.CyberParticleBackground
+import cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,7 +59,7 @@ fun PanelAlumnoScreen(
 
     // Manejar logout
     LaunchedEffect(logoutEvent) {
-        if (logoutEvent == true) {
+        if (logoutEvent) {
             val intent = Intent(context, LoginActivityCompose::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             context.startActivity(intent)
@@ -71,7 +80,7 @@ fun PanelAlumnoScreen(
     LaunchedEffect(inscripcionExitosa) {
         inscripcionExitosa?.let { asignatura ->
             scope.launch {
-                snackbarHostState.showSnackbar("✓ Inscrito exitosamente en ${asignatura.nombre}")
+                snackbarHostState.showSnackbar("✓ ACCESO RED CONCEDIDO: ${asignatura.nombre}")
             }
             showInscripcionDialog = false
             codigoInscripcion = ""
@@ -84,275 +93,200 @@ fun PanelAlumnoScreen(
     }
 
     // Callback para manejar el gesto de pull-to-refresh
-    // Sincroniza las asignaturas inscritas y muestra un mensaje de confirmación
     val onRefresh: () -> Unit = {
         viewModel.sincronizarAsignaturasInscritas()
         scope.launch {
             delay(Constants.REFRESH_DELAY_MS)
-            snackbarHostState.showSnackbar("Datos actualizados")
+            snackbarHostState.showSnackbar("ENLACE NEURONAL REESTABLECIDO")
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { cl.duocuc.aulaviva.presentation.ui.common.CyberSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Panel Alumno") },
+                title = { 
+                    cl.duocuc.aulaviva.presentation.ui.common.GlitchText(
+                        text = "PANEL ESTUDIANTE", 
+                        style = MaterialTheme.typography.titleLarge
+                    ) 
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = AulaVivaColors.CyberBlack.copy(alpha = 0.9f),
+                    titleContentColor = AulaVivaColors.PrimaryCyan
                 )
             )
-        }
+        },
+        containerColor = AulaVivaColors.CyberBlack
     ) { paddingValues ->
-        // Usar LazyColumn en lugar de Column con verticalScroll para evitar restricciones infinitas
-        if (isLoading && asignaturas.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            PullToRefreshContainer(
-                isRefreshing = isLoading,
-                onRefresh = onRefresh
-            ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+        
+        // Cyber Particle Layout
+        Box(
+             modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(AulaVivaColors.CyberBlack)
+        ) {
+            CyberParticleBackground()
+            
+            if (isLoading && asignaturas.isEmpty()) {
+                cl.duocuc.aulaviva.presentation.ui.common.FullScreenLoading()
+            } else {
+                PullToRefreshContainer(
+                    isRefreshing = isLoading,
+                    onRefresh = onRefresh
                 ) {
-                    // Card de bienvenida
-                    item {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                // Icono de bienvenida
-                                Card(
-                                    modifier = Modifier.size(64.dp),
-                                    shape = RoundedCornerShape(32.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.primary
-                                    )
-                                ) {
-                                    Box(
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "👨‍🎓",
-                                            fontSize = 32.sp
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                // Mensaje de bienvenida
-                                Text(
-                                    text = "👨‍🎓 Bienvenido ${userEmail?.substringBefore("@") ?: "Alumno"}",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    textAlign = TextAlign.Center
-                                )
-
-                                Text(
-                                    text = "Gestiona tus asignaturas inscritas",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
-                                )
-
-                                HorizontalDivider(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 16.dp),
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                )
-
-                                // Información y botón de inscripción unidos
-                                Text(
-                                    text = "📚 Mis Asignaturas",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Text(
-                                    text = "Inscríbete con el código que te proporcionó tu profesor",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                )
-
-                                // Botón de inscripción integrado
-                                Button(
-                                    onClick = { showInscripcionDialog = true },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary
-                                    ),
-                                    elevation = ButtonDefaults.buttonElevation(
-                                        defaultElevation = 4.dp,
-                                        pressedElevation = 6.dp
-                                    )
-                                ) {
-                                    Icon(
-                                        Icons.Default.Add,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Inscribirse con código",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Separador visual antes de las asignaturas
-                    if (asignaturas.isNotEmpty()) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Card de bienvenida
                         item {
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            // Título de sección para las asignaturas
-                            Text(
-                                text = "Asignaturas Inscritas",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                    }
-
-                    // Lista de asignaturas o estado vacío
-                    if (asignaturas.isEmpty()) {
-                        item {
-                            Box(
+                            CyberCard(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(32.dp),
-                                contentAlignment = Alignment.Center
+                                    .padding(horizontal = 16.dp)
                             ) {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Text(
-                                        text = "📚",
-                                        style = MaterialTheme.typography.displayMedium
-                                    )
+                                    // Icono de bienvenida con glitch
+                                    Box(modifier = Modifier.breakcoreGlitch()) {
+                                        Icon(
+                                            imageVector = androidx.compose.material.icons.Icons.Default.School,
+                                            contentDescription = "Student",
+                                            modifier = Modifier.size(64.dp),
+                                            tint = AulaVivaColors.PrimaryCyan
+                                        )
+                                    }
+
                                     Spacer(modifier = Modifier.height(16.dp))
+
+                                    // Mensaje de bienvenida
                                     Text(
-                                        text = "No hay asignaturas inscritas",
-                                        style = MaterialTheme.typography.titleLarge,
+                                        text = "ESTUDIANTE ${userEmail?.substringBefore("@")?.uppercase() ?: "ALUMNO"}",
+                                        style = MaterialTheme.typography.headlineSmall,
                                         fontWeight = FontWeight.Bold,
+                                        color = AulaVivaColors.TextPrimary,
                                         textAlign = TextAlign.Center
                                     )
-                                    Spacer(modifier = Modifier.height(8.dp))
+
                                     Text(
-                                        text = "Usa el botón de arriba para inscribirte con un código",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = TextAlign.Center
+                                        text = "REGISTRO ACADÉMICO GLOBAL",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = AulaVivaColors.TextSecondary,
+                                        textAlign = TextAlign.Center,
+                                        letterSpacing = 1.sp,
+                                        modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+                                    )
+
+                                    HorizontalDivider(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 16.dp),
+                                        color = AulaVivaColors.PrimaryCyan.copy(alpha = 0.3f)
+                                    )
+
+                                    // Información y botón de inscripción
+                                    Text(
+                                        text = "GESTIÓN DE MATRÍCULA",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = AulaVivaColors.SecondaryAccent
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = "Ingrese token de acceso para desbloquear módulo.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AulaVivaColors.TextSecondary,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
+
+                                    // Botón de inscripción
+                                    CyberButton(
+                                        text = "INSCRIBIR ASIGNATURA >",
+                                        onClick = { showInscripcionDialog = true }
                                     )
                                 }
                             }
                         }
-                    } else {
-                        items(
-                            items = asignaturas,
-                            key = { it.id }
-                        ) { asignatura ->
-                            AsignaturaCard(
-                                asignatura = asignatura,
-                                onClick = {
-                                    val intent = Intent(context, AlumnoClasesActivityCompose::class.java)
-                                    intent.putExtra("ASIGNATURA_ID", asignatura.id)
-                                    intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
-                                    context.startActivity(intent)
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
 
-                    // Botón de cerrar sesión
-                    item {
-                        Card(
-                            onClick = { showLogoutDialog = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(20.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.ExitToApp,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(24.dp),
-                                    tint = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
+                        // Título de sección
+                        if (asignaturas.isNotEmpty()) {
+                            item {
                                 Text(
-                                    text = "Cerrar Sesión",
+                                    text = "MIS ASIGNATURAS",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                    color = AulaVivaColors.TextPrimary,
+                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                                    letterSpacing = 1.sp
                                 )
                             }
                         }
-                    }
 
-                    // Spacer final
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        // Lista de asignaturas
+                        if (asignaturas.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Book,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(48.dp),
+                                            tint = AulaVivaColors.TextSecondary
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Text(
+                                            text = "NO HAY DATA",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AulaVivaColors.TextSecondary
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            items(
+                                items = asignaturas,
+                                key = { it.id }
+                            ) { asignatura ->
+                                AsignaturaCard(
+                                    asignatura = asignatura,
+                                    onClick = {
+                                        val intent = Intent(context, AlumnoClasesActivityCompose::class.java)
+                                        intent.putExtra("ASIGNATURA_ID", asignatura.id)
+                                        intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
+                                        context.startActivity(intent)
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                )
+                            }
+                        }
+
+                        // Botón de cerrar sesión
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            CyberButton(
+                                text = "DESCONECTAR",
+                                onClick = { showLogoutDialog = true },
+                                variant = CyberButtonVariant.SECONDARY,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
                     }
                 }
             }
@@ -363,30 +297,29 @@ fun PanelAlumnoScreen(
     if (showInscripcionDialog) {
         AlertDialog(
             onDismissRequest = { showInscripcionDialog = false },
-            title = { Text("Inscribirse con código") },
+            title = { Text("TOKEN DE ACCESO", style = MaterialTheme.typography.titleLarge, color = AulaVivaColors.TextPrimary) },
             text = {
-                OutlinedTextField(
+                CyberTextField(
                     value = codigoInscripcion,
-                    onValueChange = { codigoInscripcion = it },
-                    label = { Text("Código de acceso") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    onValueChange = { codigoInscripcion = it.uppercase() },
+                    label = "INGRESE CÓDIGO"
                 )
             },
+            containerColor = AulaVivaColors.SurfaceDark,
             confirmButton = {
-                Button(
+                TextButton(
                     onClick = {
                         if (codigoInscripcion.isNotBlank()) {
                             viewModel.inscribirConCodigo(codigoInscripcion.trim())
                         }
                     }
                 ) {
-                    Text("Inscribirse")
+                    Text("AUTORIZAR", color = AulaVivaColors.PrimaryCyan)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showInscripcionDialog = false }) {
-                    Text("Cancelar")
+                    Text("ABORTAR", color = AulaVivaColors.TextSecondary)
                 }
             }
         )
@@ -396,21 +329,22 @@ fun PanelAlumnoScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Cerrar Sesión") },
-            text = { Text("¿Estás seguro de que deseas cerrar sesión?") },
+            title = { Text("Terminar Sesión", color = AulaVivaColors.TextPrimary) },
+            text = { Text("¿Confirmar desconexión del sistema?", color = AulaVivaColors.TextSecondary) },
+            containerColor = AulaVivaColors.SurfaceDark,
             confirmButton = {
-                Button(
+                TextButton(
                     onClick = {
                         showLogoutDialog = false
                         viewModel.logout()
                     }
                 ) {
-                    Text("Cerrar Sesión")
+                    Text("SALIR", color = AulaVivaColors.ErrorRed, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancelar")
+                    Text("CANCELAR", color = AulaVivaColors.TextSecondary)
                 }
             }
         )
@@ -424,35 +358,54 @@ fun AsignaturaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    CyberCard(
+        modifier = modifier,
+        onClick = onClick
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = asignatura.nombre,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                 Icon(
+                    imageVector = Icons.Default.Book,
+                    contentDescription = null,
+                    tint = AulaVivaColors.SecondaryAccent,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = asignatura.nombre,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AulaVivaColors.TextPrimary
+                )
+            }
+            
             if (asignatura.descripcion.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = asignatura.descripcion,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = AulaVivaColors.TextSecondary,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Código: ${asignatura.codigoAcceso}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .background(AulaVivaColors.SurfaceLight.copy(alpha = 0.3f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = "ID: ${asignatura.codigoAcceso}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AulaVivaColors.PrimaryCyan,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+            }
         }
     }
 }
-

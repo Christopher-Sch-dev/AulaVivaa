@@ -1,95 +1,48 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# OPTIMIZACIONES AGRESIVAS (R8)
+-optimizationpasses 5
+-dontusemixedcaseclassnames
+-dontskipnonpubliclibraryclasses
+-verbose
 
-# ============================================
-# RETROFIT & OKHTTP
-# ============================================
+# KEEP Compose (crítico)
+-keep class androidx.compose.** { *; }
+-keep class androidx.lifecycle.** { *; }
+
+# KEEP Retrofit
 -keepattributes Signature, InnerClasses, EnclosingMethod
 -keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
--keepclassmembers,allowshrinking,allowobfuscation interface * {
-    @retrofit2.http.* <methods>;
-}
--dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
--dontwarn javax.annotation.**
--dontwarn kotlin.Unit
--dontwarn retrofit2.KotlinExtensions
--dontwarn retrofit2.KotlinExtensions$*
+-keep,allowobfuscation,allowshrinking interface retrofit2.Call
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 
-# ============================================
-# ROOM DATABASE
-# ============================================
+# KEEP Room
 -keep class * extends androidx.room.RoomDatabase
 -keep @androidx.room.Entity class *
--keepclassmembers class * {
-    @androidx.room.* <methods>;
-}
 -dontwarn androidx.room.paging.**
 
-# ============================================
-# JETPACK COMPOSE
-# ============================================
--keep class androidx.compose.** { *; }
--keep class kotlin.coroutines.** { *; }
--keepclassmembers class * {
-    @androidx.compose.runtime.Composable <methods>;
-}
-
-# ============================================
-# KOTLIN SERIALIZATION
-# ============================================
--keepattributes *Annotation*, InnerClasses
--dontnote kotlinx.serialization.AnnotationsKt
--keepclassmembers class kotlinx.serialization.json.** {
-    *** Companion;
-}
--keepclasseswithmembers class kotlinx.serialization.json.** {
-    kotlinx.serialization.KSerializer serializer(...);
-}
--keep,includedescriptorclasses class cl.duocuc.aulaviva.data.remote.dto.**$$serializer { *; }
--keepclassmembers class cl.duocuc.aulaviva.data.remote.dto.** {
-    *** Companion;
-}
--keepclasseswithmembers class cl.duocuc.aulaviva.data.remote.dto.** {
-    kotlinx.serialization.KSerializer serializer(...);
-}
-
-# ============================================
-# GSON (Para Retrofit)
-# ============================================
--keepattributes Signature
--keepattributes *Annotation*
--dontwarn sun.misc.**
--keep class com.google.gson.** { *; }
--keep class cl.duocuc.aulaviva.data.remote.dto.** { *; }
--keepclassmembers,allowobfuscation class * {
-  @com.google.gson.annotations.SerializedName <fields>;
-}
-
-# ============================================
-# SUPABASE & JWT
-# ============================================
+# KEEP Supabase
 -keep class io.github.jan.supabase.** { *; }
--keep class cl.duocuc.aulaviva.data.remote.** { *; }
--dontwarn io.github.jan.supabase.**
 
-# ============================================
-# GEMINI AI
-# ============================================
--keep class com.google.ai.client.generativeai.** { *; }
--keep class cl.duocuc.aulaviva.data.remote.Gemini** { *; }
+# KEEP Gemini AI
+-keep class com.google.ai.** { *; }
 
-# ============================================
-# PRESERVAR PARA DEBUGGING
-# ============================================
--keepattributes SourceFile,LineNumberTable
--renamesourcefileattribute SourceFile
+# OPTIMIZACIÓN: Elimina logs en release
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** i(...);
+}
 
-# ============================================
-# NUESTRAS CLASES DE DOMINIO
-# ============================================
--keep class cl.duocuc.aulaviva.data.model.** { *; }
--keep class cl.duocuc.aulaviva.domain.** { *; }
+# KEEP Markwon (Markdown)
+-dontwarn io.noties.markwon.**
+-dontwarn com.caverock.androidsvg.**
+-dontwarn pl.droidsonroids.gif.**
+
+# KEEP PDFBox
+-dontwarn com.tom_roush.pdfbox.**
+-dontwarn com.gemalto.jp2.**
+-dontwarn org.apache.commons.logging.**
+
+# OPTIMIZACIÓN: Inline functions
+-allowaccessmodification
+-mergeinterfacesaggressively

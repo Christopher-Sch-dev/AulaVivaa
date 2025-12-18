@@ -34,12 +34,12 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "cl.duocuc.aulaviva"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "cl.duocuc.aulaviva"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 2  // ✅ Incrementado para evitar conflicto con versión anterior
         versionName = "1.1"  // ✅ Actualizado para reflejar nueva versión
 
@@ -73,14 +73,27 @@ android {
 
     buildTypes {
         release {
-            // ✅ Usar configuración de firma
-            signingConfig = signingConfigs.getByName("release")
+            // ✅ Usar configuración de firma (Fallback a debug si no hay keystore)
+            val releaseSigning = signingConfigs.getByName("release")
+            signingConfig = if (keystorePropertiesFile.exists()) releaseSigning else signingConfigs.getByName("debug")
 
-            isMinifyEnabled = false
+            isMinifyEnabled = true // R8 activo
+            isShrinkResources = true // Elimina recursos no usados
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            
+            // CRÍTICO: Habilita optimizaciones de código
+            kotlinOptions {
+                freeCompilerArgs += listOf(
+                    "-opt-in=kotlin.RequiresOptIn"
+                )
+            }
+        }
+        
+        debug {
+            isMinifyEnabled = false
         }
     }
 
@@ -91,6 +104,13 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        
+        // OPTIMIZACIÓN: Habilita inline functions
+        freeCompilerArgs += listOf(
+            "-Xjvm-default=all",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
+        )
     }
 
     buildFeatures {
@@ -109,6 +129,7 @@ android {
 dependencies {
     // Core Android
     implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.core:core-splashscreen:1.0.1") // SplashScreen API para cold start fluido
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.material:material:1.13.0")
     implementation("androidx.constraintlayout:constraintlayout:2.2.0")

@@ -246,4 +246,89 @@ class AsignaturasViewModel(application: Application) : AndroidViewModel(applicat
         val asignatura = asignaturas.value?.find { it.id == asignaturaId }
         return asignatura?.codigoAcceso
     }
+
+    /**
+     * Crea datos de demostración: Una asignatura y una clase asociada.
+     * Útil para probar el flujo completo cuando la cuenta está vacía.
+     */
+    /**
+     * Crea datos de demostración: Una asignatura y una clase asociada.
+     * Útil para probar el flujo completo cuando la cuenta está vacía.
+     */
+    fun crearAsignaturaYClaseDemo() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            try {
+                // 1. Crear Asignatura Demo
+                val nombreAsignatura = "Arquitectura de Software (Demo)"
+                val descAsignatura = "Asignatura de demostración creada automáticamente."
+                
+                android.util.Log.d("AsignaturasVM", "🛠️ Creando asignatura demo...")
+                
+                // Usamos el repositorio directamente para tener control del flujo
+                repository.crearAsignatura(nombreAsignatura, descAsignatura)
+                    .onSuccess { asignatura ->
+                        android.util.Log.d("AsignaturasVM", "✅ Asignatura demo creada: ${asignatura.id}")
+                        
+                        // 2. Generar Código
+                        repository.generarCodigo(asignatura.id).onSuccess { codigo ->
+                             _codigoGenerado.value = codigo
+                        }
+
+                        // 3. Crear Clase Demo asociada
+                        val nombreClase = "Clase 1: Introducción a Patrones"
+                        val descClase = "Esta es una clase de prueba para verificar la sincronización."
+                        val fechaClase = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+                        
+                        // FIX: 'sincronizado' no es parte del modelo Clase, solo de la entidad local.
+                        val nuevaClase = cl.duocuc.aulaviva.data.model.Clase(
+                            id = cl.duocuc.aulaviva.utils.IdUtils.generateId(),
+                            nombre = nombreClase,
+                            descripcion = descClase,
+                            fecha = fechaClase,
+                            creador = authRepository.getCurrentUserId() ?: "",
+                            asignaturaId = asignatura.id
+                            // sincronizado = false // REMOVED: No existe en el constructor de Clase
+                        )
+                        
+                        // FIX: pasar callbacks onSuccess/onError, no es un Result
+                        claseRepository.crearClase(
+                            clase = nuevaClase,
+                            onSuccess = {
+                                android.util.Log.d("AsignaturasVM", "✅ Clase demo creada en local")
+                                _operationSuccess.value = "Entorno Demo creado exitosamente"
+                                
+                                // Forzar sync de clases (se lanza en otra coroutine porque onSuccess no es suspend)
+                                viewModelScope.launch {
+                                    try {
+                                        claseRepository.sincronizarDesdeSupabase()
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("AsignaturasVM", "⚠️ Sync falló en demo", e)
+                                    }
+                                }
+                            },
+                            onError = { errorMsg ->
+                                android.util.Log.e("AsignaturasVM", "❌ Error creando clase demo: $errorMsg")
+                                _operationSuccess.value = "Asignatura creada, pero falló clase demo: $errorMsg"
+                            }
+                        )
+                    }
+                    .onFailure { e ->
+                        _error.value = e.message
+                        android.util.Log.e("AsignaturasVM", "❌ Error creando asignatura demo", e)
+                    }
+
+            } catch (e: Exception) {
+                _error.value = "Error en demo: ${e.message}"
+                android.util.Log.e("AsignaturasVM", "❌ Crash generando demo", e)
+            } finally {
+                // _isLoading se maneja dentro de los callbacks u observando el repositorio
+                // Dejamos un delay pequeño para que la UI no parpadee si fue muy rápido
+                delay(500)
+                _isLoading.value = false
+            }
+        }
+    }
 }

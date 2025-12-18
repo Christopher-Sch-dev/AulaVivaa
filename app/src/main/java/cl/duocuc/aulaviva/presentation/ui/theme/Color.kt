@@ -2,41 +2,88 @@ package cl.duocuc.aulaviva.presentation.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Paleta de colores AulaViva - Material Design 3
-// Inspirada en educación: tonos violeta/púrpura con acentos vibrantes
+// =================================================================
+// SYSTEM DESIGN V2 - PROFESSIONAL (NEW)
+// =================================================================
 
-// Primary (Violeta educativo)
-val Purple80 = Color(0xFFD0BCFF)
-val Purple40 = Color(0xFF6650A4)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val PurpleGrey40 = Color(0xFF625B71)
+// Colores primarios (degradados sofisticados)
+val PrimaryDark = Color(0xFF0F172A)      // Azul oscuro profundo
+val PrimaryMedium = Color(0xFF1E293B)    // Gris-azul suave
+val PrimaryAccent = Color(0xFF06B6D4)    // Cian (no verde brillante)
 
-// Secondary (Teal académico)
-val Teal80 = Color(0xFF9ECAFF)
-val Teal40 = Color(0xFF00668B)
+// Colores secundarios (para énfasis, NO predominante)
+val SecondaryAccent = Color(0xFF8B5CF6)  // Violeta sutil
+val TertiaryAccent = Color(0xFF0EA5E9)   // Azul claro
 
-// Tertiary (Rosa creativo)
-val Pink80 = Color(0xFFEFB8C8)
-val Pink40 = Color(0xFF7D5260)
+// Neutros
+val SurfaceLight = Color(0xFF1A202C)     // Gris oscuro para tarjetas
+// Note: Overriding legacy TextPrimary with new standard
+val TextPrimary = Color(0xFFE2E8F0)      // Gris claro (no blanco puro)
+val TextSecondary = Color(0xFF94A3B8)    // Gris medio
 
-// Colores personalizados AulaViva
-val AulaVivaPrimary = Color(0xFF6750A4) // Violeta principal
-val AulaVivaSecondary = Color(0xFF03DAC6) // Teal vibrante
-val AulaVivaAccent = Color(0xFFFF6B6B) // Rojo coral para alertas
+// Estados
+val SuccessGreen = Color(0xFF10B981)     // Verde profesional (no fluo)
+val ErrorRed = Color(0xFFF87171)         // Rojo suave
+val WarningOrange = Color(0xFFFB923C)    // Naranja sutil
 
-// Colores de fondo
-val BackgroundLight = Color(0xFFFFFBFE)
-val BackgroundDark = Color(0xFF1C1B1F)
-val SurfaceLight = Color(0xFFFFFBFE)
-val SurfaceDark = Color(0xFF1C1B1F)
+// =================================================================
+// SYSTEM DESIGN V1 - LEGACY (MATRIX/GLITCH)
+// PRESERVED FOR COMPATIBILITY
+// =================================================================
 
-// Colores de estado
-val SuccessGreen = Color(0xFF4CAF50)
-val WarningOrange = Color(0xFFFF9800)
-val ErrorRed = Color(0xFFE53935)
-val InfoBlue = Color(0xFF2196F3)
+// Primary - Terminal Green (Action/Focus)
+val MatrixGreen = Color(0xFF00FF41)
+val MatrixDarkGreen = Color(0xFF003B00)
+val MatrixGreenAlpha = Color(0x3300FF41)
 
-// Gradientes para cards y headers
-val GradientStart = Color(0xFF6750A4)
-val GradientEnd = Color(0xFF9C27B0)
+// Secondary - Glitch Red/Blue (Effects)
+val GlitchRed = Color(0xFFFF003C)
+val GlitchBlue = Color(0xFF04D9FF)
 
+// Backgrounds - OLED Optimized
+val CyberBlack = Color(0xFF000000) // True Black
+val BackgroundDark = Color(0xFF050505) // Deepest Grey
+val SurfaceDark = Color(0xFF0A0A0A) // Card Surface
+val SurfaceHighlight = Color(0xFF111111) // Hover state
+
+// Functional
+val CyberRed = Color(0xFFFF2A6D)
+val NeonGreen = Color(0xFF00FF41)
+val TechGold = Color(0xFFFFD700)
+
+// Text (Legacy)
+// val TextPrimary = Color(0xFFE0E0E0) // REPLACED by V2
+// val TextSecondary = Color(0xFF008F11) // REPLACED by V2 (Name collision) -> Renaming legacy if needed or assuming V2 is acceptable.
+// Renaming legacy TextSecondary to avoid collision if it was used specifically for green text.
+val TextSecondaryLegacy = Color(0xFF008F11) // Matrix Dark Text
+val TextTertiary = Color(0xFF003B00) // Faint Code
+
+// Gradients
+val GradientMatrix = listOf(MatrixGreen, MatrixDarkGreen)
+val GradientDarkSurface = listOf(SurfaceDark, BackgroundDark)
+
+// =================================================================
+// SYSTEM DESIGN COMPATIBILITY OBJECT
+// =================================================================
+object AulaVivaColors {
+    val PrimaryDark = cl.duocuc.aulaviva.presentation.ui.theme.PrimaryDark
+    val PrimaryMedium = cl.duocuc.aulaviva.presentation.ui.theme.PrimaryMedium
+    val PrimaryCyan = cl.duocuc.aulaviva.presentation.ui.theme.PrimaryAccent // Mapping PrimaryAccent as PrimaryCyan
+    val SecondaryAccent = cl.duocuc.aulaviva.presentation.ui.theme.SecondaryAccent
+    val TertiaryAccent = cl.duocuc.aulaviva.presentation.ui.theme.TertiaryAccent
+    
+    val SurfaceLight = cl.duocuc.aulaviva.presentation.ui.theme.SurfaceLight
+    val SurfaceDark = cl.duocuc.aulaviva.presentation.ui.theme.SurfaceDark
+    val BackgroundDark = cl.duocuc.aulaviva.presentation.ui.theme.BackgroundDark // Added for AulaVivaScreenFrame
+    
+    val TextPrimary = cl.duocuc.aulaviva.presentation.ui.theme.TextPrimary
+    val TextSecondary = cl.duocuc.aulaviva.presentation.ui.theme.TextSecondary
+    
+    val SuccessGreen = cl.duocuc.aulaviva.presentation.ui.theme.SuccessGreen
+    val ErrorRed = cl.duocuc.aulaviva.presentation.ui.theme.ErrorRed
+    val WarningOrange = cl.duocuc.aulaviva.presentation.ui.theme.WarningOrange
+    
+    val CyberBlack = cl.duocuc.aulaviva.presentation.ui.theme.CyberBlack
+    val BitcoinGold = cl.duocuc.aulaviva.presentation.ui.theme.TechGold
+    val MatrixGreen = cl.duocuc.aulaviva.presentation.ui.theme.MatrixGreen
+}

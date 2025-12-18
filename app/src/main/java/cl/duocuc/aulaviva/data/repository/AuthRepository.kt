@@ -3,8 +3,10 @@ package cl.duocuc.aulaviva.data.repository
 import cl.duocuc.aulaviva.domain.repository.IAuthRepository
 
 import android.util.Log
+import cl.duocuc.aulaviva.data.remote.JwtDecoder
 import cl.duocuc.aulaviva.data.remote.SpringBootAuthRepository
 import cl.duocuc.aulaviva.data.remote.SpringBootClient
+import cl.duocuc.aulaviva.data.remote.TokenManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -84,19 +86,35 @@ class AuthRepository : IAuthRepository {
 
     /**
      * Obtener rol del usuario actual.
+     * PRIORIDAD: 1) JWT decode (sin red), 2) API call (con red)
+     * Esto evita que alumno vaya a panel docente si la API falla.
      */
     override suspend fun obtenerRolUsuario(): Result<String> = withContext(Dispatchers.IO) {
         try {
+            // PRIMERO: Intentar obtener rol directamente del JWT (sin llamada de red)
+            val token = TokenManager.getToken()
+            if (token != null) {
+                val rolFromToken = JwtDecoder.getRolFromToken(token)
+                if (!rolFromToken.isNullOrBlank()) {
+                    android.util.Log.d("AuthRepo", "✅ Rol obtenido del JWT: $rolFromToken")
+                    return@withContext Result.success(rolFromToken)
+                }
+            }
+            
+            // FALLBACK: Si no se puede obtener del JWT, llamar a la API
+            android.util.Log.d("AuthRepo", "⚠️ Rol no encontrado en JWT, consultando API...")
             val result = springBootAuth.getCurrentUser()
             result.fold(
                 onSuccess = { usuario ->
                     Result.success(usuario.rol)
                 },
                 onFailure = { error ->
+                    android.util.Log.e("AuthRepo", "❌ Error obteniendo rol de API: ${error.message}")
                     Result.failure(error)
                 }
             )
         } catch (e: Exception) {
+            android.util.Log.e("AuthRepo", "❌ Excepción obteniendo rol", e)
             Result.failure(Exception("Error obteniendo rol: ${e.message}"))
         }
     }

@@ -1,23 +1,25 @@
 package cl.duocuc.aulaviva.presentation.ui.clases.compose
 
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.PresentToAll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duocuc.aulaviva.data.model.Clase
 import cl.duocuc.aulaviva.presentation.ui.ia.compose.ResultadoIAActivityCompose
@@ -25,6 +27,15 @@ import cl.duocuc.aulaviva.presentation.viewmodel.ClaseViewModel
 import cl.duocuc.aulaviva.presentation.viewmodel.IAViewModel
 import cl.duocuc.aulaviva.utils.PdfUtils
 import kotlinx.coroutines.launch
+import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaColors
+import cl.duocuc.aulaviva.presentation.ui.components.CyberButton
+import cl.duocuc.aulaviva.presentation.ui.components.CyberButtonVariant
+import cl.duocuc.aulaviva.presentation.ui.components.CyberCard
+import cl.duocuc.aulaviva.presentation.ui.common.CyberSnackbarHost
+import cl.duocuc.aulaviva.presentation.ui.common.GlitchText
+import cl.duocuc.aulaviva.presentation.ui.effects.aggressiveScanLines
+import cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch
+import cl.duocuc.aulaviva.presentation.ui.effects.cyberGrid
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +60,7 @@ fun DetalleClaseScreen(
             claseViewModel.obtenerClasePorId(claseId)?.let {
                 claseActual = it
             } ?: run {
-                snackbarHostState.showSnackbar("No se pudo cargar la clase")
+                snackbarHostState.showSnackbar("ERROR SISTEMA: DATA NO ENCONTRADA")
             }
         }
     }
@@ -57,410 +68,316 @@ fun DetalleClaseScreen(
     val clase = claseActual ?: return
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { CyberSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Detalle de Clase") },
+                title = { 
+                     GlitchText(
+                        text = "DETALLE DE CLASE", 
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         (context as? android.app.Activity)?.finish()
                     }) {
-                        Icon(Icons.Default.ArrowBack, "Volver")
+                        Icon(Icons.Default.ArrowBack, "Volver", tint = AulaVivaColors.PrimaryCyan)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = AulaVivaColors.CyberBlack.copy(alpha = 0.9f),
+                    titleContentColor = AulaVivaColors.PrimaryCyan
                 )
             )
-        }
+        },
+        containerColor = AulaVivaColors.CyberBlack
     ) { paddingValues ->
-        Column(
+        
+        // Breakcore Grid Background
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp)
+                .background(AulaVivaColors.CyberBlack)
+                .cyberGrid()
         ) {
-            // Título
-            Text(
-                text = clase.nombre,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            // Fecha
-            Text(
-                text = "Fecha: ${clase.fecha}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 20.dp)
-            )
-
-            // Card descripción
-            Card(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .aggressiveScanLines() // Effect overlay on content
+                    .padding(20.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "📝 Descripción",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        text = clase.descripcion,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+                // Título
+                Text(
+                    text = clase.nombre.uppercase(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = AulaVivaColors.TextPrimary,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
 
-            // Card PDF
-            if (clase.archivoPdfUrl.isNotEmpty()) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                // Fecha
+                Text(
+                    text = "FECHA: ${clase.fecha}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = AulaVivaColors.TextSecondary,
+                    modifier = Modifier.padding(bottom = 20.dp),
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+
+                // Card descripción
+                CyberCard(
+                    modifier = Modifier.padding(bottom = 16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "📄 Material PDF",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        Text(
-                            text = clase.archivoPdfNombre.ifEmpty { "Material disponible" },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        Button(
-                            onClick = {
-                                PdfUtils.abrirPdfExterno(context, clase.archivoPdfUrl)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.PictureAsPdf, null)
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Description, null, tint = AulaVivaColors.SecondaryAccent)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Ver PDF")
+                            Text(
+                                text = "DESCRIPCIÓN",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 4.dp),
+                                color = AulaVivaColors.SecondaryAccent
+                            )
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = AulaVivaColors.PrimaryCyan.copy(alpha = 0.3f))
+                        Text(
+                            text = clase.descripcion,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AulaVivaColors.TextPrimary
+                        )
+                    }
+                }
+
+                // Card PDF
+                if (clase.archivoPdfUrl.isNotEmpty()) {
+                    CyberCard(
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    ) {
+                        Column {
+                            Text(
+                                text = "MATERIAL DE ESTUDIO",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                                color = AulaVivaColors.PrimaryCyan
+                            )
+                            Text(
+                                text = clase.archivoPdfNombre.ifEmpty { "DOCUMENTO PDF DISPONIBLE" },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = AulaVivaColors.TextSecondary,
+                                modifier = Modifier.padding(bottom = 12.dp),
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                            )
+                            CyberButton(
+                                text = "VISUALIZAR DOCUMENTO",
+                                onClick = {
+                                    PdfUtils.abrirPdfExterno(context, clase.archivoPdfUrl)
+                                },
+                                icon = Icons.Default.PictureAsPdf
+                            )
                         }
                     }
                 }
-            }
 
-            // Botones IA para DOCENTE
-            if (!esAlumno) {
-                Text(
-                    text = "🤖 Funciones IA para Docente",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
+                // Botones IA para DOCENTE
+                if (!esAlumno) {
+                    Text(
+                        text = "CORE INTELLIGENCE // DOCENTE",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = AulaVivaColors.BitcoinGold,
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        letterSpacing = 1.sp
+                    )
 
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    IAButton(
-                        icon = Icons.Default.Lightbulb,
-                        text = "💡 Generar Ideas",
-                        onClick = {
-                            ejecutarIA(
-                                iaViewModel = iaViewModel,
-                                lifecycleOwner = lifecycleOwner,
-                                isLoading = { isLoading = it },
-                                onSuccess = { contenido ->
-                                    mostrarResultadoIA(
-                                        context,
-                                        "💡 Ideas para tu clase",
-                                        contenido,
-                                        clase,
-                                        "IDEAS"
-                                    )
-                                },
-                                onError = { error ->
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(error)
-                                    }
-                                }
-                            ) {
-                                iaViewModel.generarIdeasParaClase(
-                                    clase.nombre,
-                                    clase.descripcion,
-                                    clase.archivoPdfUrl
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CyberButton(
+                            text = "GENERAR IDEAS",
+                            icon = Icons.Default.Lightbulb,
+                            onClick = {
+                                ejecutarIA(
+                                    iaViewModel = iaViewModel,
+                                    lifecycleOwner = lifecycleOwner,
+                                    isLoading = { isLoading = it },
+                                    onSuccess = { contenido ->
+                                        mostrarResultadoIA(context, "IDEAS PRELIMINARES", contenido, clase, "IDEAS")
+                                    },
+                                    onError = { error -> scope.launch { snackbarHostState.showSnackbar(error) } },
+                                    llamadaIA = { iaViewModel.generarIdeasParaClase(clase.nombre, clase.descripcion, clase.archivoPdfUrl) }
                                 )
-                            }
-                        },
-                        enabled = isLoading == false
-                    )
+                            },
+                            enabled = !isLoading,
+                            loading = isLoading,
+                            variant = CyberButtonVariant.SECONDARY
+                        )
 
-                    IAButton(
-                        icon = Icons.Default.Event,
-                        text = "🎯 Sugerir Actividades",
-                        onClick = {
-                            ejecutarIA(
-                                iaViewModel = iaViewModel,
-                                lifecycleOwner = lifecycleOwner,
-                                isLoading = { isLoading = it },
-                                onSuccess = { contenido ->
-                                    mostrarResultadoIA(
-                                        context,
-                                        "🎯 Actividades sugeridas",
-                                        contenido,
-                                        clase,
-                                        "IDEAS"
-                                    )
-                                },
-                                onError = { error ->
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(error)
-                                    }
-                                }
-                            ) {
-                                iaViewModel.sugerirActividades(
-                                    clase.nombre,
-                                    clase.descripcion,
-                                    clase.archivoPdfUrl
+                        CyberButton(
+                            text = "SUGERIR ACTIVIDADES",
+                            icon = Icons.Default.Event,
+                            onClick = {
+                                ejecutarIA(
+                                    iaViewModel = iaViewModel,
+                                    lifecycleOwner = lifecycleOwner,
+                                    isLoading = { isLoading = it },
+                                    onSuccess = { contenido ->
+                                        mostrarResultadoIA(context, "ACTIVIDADES SUGERIDAS", contenido, clase, "IDEAS")
+                                    },
+                                    onError = { error -> scope.launch { snackbarHostState.showSnackbar(error) } },
+                                    llamadaIA = { iaViewModel.sugerirActividades(clase.nombre, clase.descripcion, clase.archivoPdfUrl) }
                                 )
-                            }
-                        },
-                        enabled = isLoading == false
-                    )
+                            },
+                            enabled = !isLoading,
+                            loading = isLoading,
+                            variant = CyberButtonVariant.SECONDARY
+                        )
 
-                    IAButton(
-                        icon = Icons.Default.Schedule,
-                        text = "⏱️ Estructurar por Tiempo",
-                        onClick = { showDuracionDialog = true },
-                        enabled = isLoading == false
-                    )
+                        CyberButton(
+                            text = "ESTRUCTURAR TIEMPO",
+                            icon = Icons.Default.Schedule,
+                            onClick = { showDuracionDialog = true },
+                            enabled = !isLoading,
+                            variant = CyberButtonVariant.SECONDARY
+                        )
 
-                    IAButton(
-                        icon = Icons.Default.Summarize,
-                        text = "📝 Resumir PDF",
-                        onClick = {
-                            ejecutarIA(
-                                iaViewModel = iaViewModel,
-                                lifecycleOwner = lifecycleOwner,
-                                isLoading = { isLoading = it },
-                                onSuccess = { contenido ->
-                                    mostrarResultadoIA(
-                                        context,
-                                        "📝 Resumen del contenido",
-                                        contenido,
-                                        clase
-                                    )
-                                },
-                                onError = { error ->
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(error)
-                                    }
-                                }
-                            ) {
-                                iaViewModel.resumirContenidoPdf(
-                                    clase.nombre,
-                                    clase.descripcion,
-                                    clase.archivoPdfUrl
+                        CyberButton(
+                            text = "RESUMIR PDF",
+                            icon = Icons.Default.Summarize,
+                            onClick = {
+                                ejecutarIA(
+                                    iaViewModel = iaViewModel,
+                                    lifecycleOwner = lifecycleOwner,
+                                    isLoading = { isLoading = it },
+                                    onSuccess = { contenido ->
+                                        mostrarResultadoIA(context, "RESUMEN DE CONTENIDO", contenido, clase)
+                                    },
+                                    onError = { error -> scope.launch { snackbarHostState.showSnackbar(error) } },
+                                    llamadaIA = { iaViewModel.resumirContenidoPdf(clase.nombre, clase.descripcion, clase.archivoPdfUrl) }
                                 )
-                            }
-                        },
-                        enabled = isLoading == false
-                    )
+                            },
+                            enabled = !isLoading,
+                            loading = isLoading,
+                            variant = CyberButtonVariant.SECONDARY
+                        )
 
-                    IAButton(
-                        icon = Icons.Default.PresentToAll,
-                        text = "🎤 Guía de Presentación",
-                        onClick = {
-                            ejecutarIA(
-                                iaViewModel = iaViewModel,
-                                lifecycleOwner = lifecycleOwner,
-                                isLoading = { isLoading = it },
-                                onSuccess = { contenido ->
-                                    mostrarResultadoIA(
-                                        context,
-                                        "🎤 Guía de Presentación",
-                                        contenido,
-                                        clase
-                                    )
-                                },
-                                onError = { error ->
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(error)
-                                    }
-                                }
-                            ) {
-                                iaViewModel.generarGuiaPresentacion(
-                                    clase.nombre,
-                                    clase.descripcion,
-                                    clase.archivoPdfUrl
+                        CyberButton(
+                            text = "GUÍA DE PRESENTACIÓN",
+                            icon = Icons.Default.PresentToAll,
+                            onClick = {
+                                ejecutarIA(
+                                    iaViewModel = iaViewModel,
+                                    lifecycleOwner = lifecycleOwner,
+                                    isLoading = { isLoading = it },
+                                    onSuccess = { contenido ->
+                                        mostrarResultadoIA(context, "GUÍA DE PRESENTACIÓN", contenido, clase)
+                                    },
+                                    onError = { error -> scope.launch { snackbarHostState.showSnackbar(error) } },
+                                    llamadaIA = { iaViewModel.generarGuiaPresentacion(clase.nombre, clase.descripcion, clase.archivoPdfUrl) }
                                 )
-                            }
-                        },
-                        enabled = isLoading == false
-                    )
-
-                    IAButton(
-                        icon = Icons.Default.Games,
-                        text = "🎮 Actividades Interactivas",
-                        onClick = {
-                            ejecutarIA(
-                                iaViewModel = iaViewModel,
-                                lifecycleOwner = lifecycleOwner,
-                                isLoading = { isLoading = it },
-                                onSuccess = { contenido ->
-                                    mostrarResultadoIA(
-                                        context,
-                                        "🎮 Actividades Interactivas",
-                                        contenido,
-                                        clase
-                                    )
-                                },
-                                onError = { error ->
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(error)
-                                    }
-                                }
-                            ) {
-                                iaViewModel.generarActividadesInteractivas(
-                                    clase.nombre,
-                                    clase.descripcion,
-                                    clase.archivoPdfUrl
+                            },
+                            enabled = !isLoading,
+                            loading = isLoading,
+                            variant = CyberButtonVariant.SECONDARY
+                        )
+                        
+                        CyberButton(
+                            text = "ACTIVIDADES INTERACTIVAS",
+                            icon = Icons.Default.Games,
+                            onClick = {
+                                ejecutarIA(
+                                    iaViewModel = iaViewModel,
+                                    lifecycleOwner = lifecycleOwner,
+                                    isLoading = { isLoading = it },
+                                    onSuccess = { contenido ->
+                                        mostrarResultadoIA(context, "ACTIVIDADES INTERACTIVAS", contenido, clase)
+                                    },
+                                    onError = { error -> scope.launch { snackbarHostState.showSnackbar(error) } },
+                                    llamadaIA = { iaViewModel.generarActividadesInteractivas(clase.nombre, clase.descripcion, clase.archivoPdfUrl) }
                                 )
-                            }
-                        },
-                        enabled = isLoading == false
+                            },
+                            enabled = !isLoading,
+                            loading = isLoading,
+                            variant = CyberButtonVariant.SECONDARY
+                        )
+                    }
+                } else {
+                    // Botones IA para ALUMNO
+                    Text(
+                        text = "CORE INTELLIGENCE // ALUMNO",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = AulaVivaColors.BitcoinGold,
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        letterSpacing = 1.sp
                     )
-                }
-            } else {
-                // Botones IA para ALUMNO
-                Text(
-                    text = "🤖 Funciones IA para Alumno",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
 
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    IAButton(
-                        icon = Icons.Default.School,
-                        text = "📚 Explicar Conceptos",
-                        onClick = {
-                            ejecutarIA(
-                                iaViewModel = iaViewModel,
-                                lifecycleOwner = lifecycleOwner,
-                                isLoading = { isLoading = it },
-                                onSuccess = { contenido ->
-                                    mostrarResultadoIA(
-                                        context,
-                                        "📚 Explicación de Conceptos",
-                                        contenido,
-                                        clase
-                                    )
-                                },
-                                onError = { error ->
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(error)
-                                    }
-                                }
-                            ) {
-                                iaViewModel.explicarConceptosParaAlumno(
-                                    clase.nombre,
-                                    clase.descripcion,
-                                    clase.archivoPdfUrl
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CyberButton(
+                            text = "EXPLICAR CONCEPTOS",
+                            icon = Icons.Default.School,
+                            onClick = {
+                                ejecutarIA(
+                                    iaViewModel = iaViewModel,
+                                    lifecycleOwner = lifecycleOwner,
+                                    isLoading = { isLoading = it },
+                                    onSuccess = { contenido ->
+                                        mostrarResultadoIA(context, "EXPLICACIÓN DE CONCEPTOS", contenido, clase)
+                                    },
+                                    onError = { error -> scope.launch { snackbarHostState.showSnackbar(error) } },
+                                    llamadaIA = { iaViewModel.explicarConceptosParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfUrl) }
                                 )
-                            }
-                        },
-                        enabled = isLoading == false
-                    )
+                            },
+                            enabled = !isLoading,
+                            loading = isLoading,
+                            variant = CyberButtonVariant.SECONDARY
+                        )
 
-                    IAButton(
-                        icon = Icons.Default.Assignment,
-                        text = "✏️ Generar Ejercicios",
-                        onClick = {
-                            ejecutarIA(
-                                iaViewModel = iaViewModel,
-                                lifecycleOwner = lifecycleOwner,
-                                isLoading = { isLoading = it },
-                                onSuccess = { contenido ->
-                                    mostrarResultadoIA(
-                                        context,
-                                        "✏️ Ejercicios Generados",
-                                        contenido,
-                                        clase
-                                    )
-                                },
-                                onError = { error ->
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(error)
-                                    }
-                                }
-                            ) {
-                                iaViewModel.generarEjerciciosParaAlumno(
-                                    clase.nombre,
-                                    clase.descripcion,
-                                    clase.archivoPdfUrl
+                        CyberButton(
+                            text = "GENERAR EJERCICIOS",
+                            icon = Icons.Default.Assignment,
+                            onClick = {
+                                ejecutarIA(
+                                    iaViewModel = iaViewModel,
+                                    lifecycleOwner = lifecycleOwner,
+                                    isLoading = { isLoading = it },
+                                    onSuccess = { contenido ->
+                                        mostrarResultadoIA(context, "EJERCICIOS GENERADOS", contenido, clase)
+                                    },
+                                    onError = { error -> scope.launch { snackbarHostState.showSnackbar(error) } },
+                                    llamadaIA = { iaViewModel.generarEjerciciosParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfUrl) }
                                 )
-                            }
-                        },
-                        enabled = isLoading == false
-                    )
+                            },
+                            enabled = !isLoading,
+                            loading = isLoading,
+                            variant = CyberButtonVariant.SECONDARY
+                        )
 
-                    IAButton(
-                        icon = Icons.Default.Book,
-                        text = "📖 Crear Resumen de Estudio",
-                        onClick = {
-                            ejecutarIA(
-                                iaViewModel = iaViewModel,
-                                lifecycleOwner = lifecycleOwner,
-                                isLoading = { isLoading = it },
-                                onSuccess = { contenido ->
-                                    mostrarResultadoIA(
-                                        context,
-                                        "📖 Resumen de Estudio",
-                                        contenido,
-                                        clase
-                                    )
-                                },
-                                onError = { error ->
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(error)
-                                    }
-                                }
-                            ) {
-                                iaViewModel.crearResumenEstudioParaAlumno(
-                                    clase.nombre,
-                                    clase.descripcion,
-                                    clase.archivoPdfUrl
+                        CyberButton(
+                            text = "CREAR RESUMEN ESTUDIO",
+                            icon = Icons.Default.Book,
+                            onClick = {
+                                ejecutarIA(
+                                    iaViewModel = iaViewModel,
+                                    lifecycleOwner = lifecycleOwner,
+                                    isLoading = { isLoading = it },
+                                    onSuccess = { contenido ->
+                                        mostrarResultadoIA(context, "RESUMEN DE ESTUDIO", contenido, clase)
+                                    },
+                                    onError = { error -> scope.launch { snackbarHostState.showSnackbar(error) } },
+                                    llamadaIA = { iaViewModel.crearResumenEstudioParaAlumno(clase.nombre, clase.descripcion, clase.archivoPdfUrl) }
                                 )
-                            }
-                        },
-                        enabled = isLoading == false
-                    )
-                }
-            }
-
-            if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+                            },
+                            enabled = !isLoading,
+                            loading = isLoading,
+                            variant = CyberButtonVariant.SECONDARY
+                        )
+                    }
                 }
             }
         }
@@ -470,10 +387,11 @@ fun DetalleClaseScreen(
     if (showDuracionDialog) {
         AlertDialog(
             onDismissRequest = { showDuracionDialog = false },
-            title = { Text("⏱️ Duración de la clase") },
+            title = { Text("DURACIÓN ESTIMADA", style = MaterialTheme.typography.titleMedium, color = AulaVivaColors.TextPrimary) },
+            containerColor = AulaVivaColors.SurfaceDark,
             text = {
                 Column {
-                    listOf("45 minutos", "60 minutos", "90 minutos", "120 minutos").forEach { duracion ->
+                    listOf("45 MINUTOS", "60 MINUTOS", "90 MINUTOS", "120 MINUTOS").forEach { duracion ->
                         TextButton(
                             onClick = {
                                 showDuracionDialog = false
@@ -482,63 +400,25 @@ fun DetalleClaseScreen(
                                     lifecycleOwner = lifecycleOwner,
                                     isLoading = { isLoading = it },
                                     onSuccess = { contenido ->
-                                        mostrarResultadoIA(
-                                            context,
-                                            "⏱️ Estructura de $duracion",
-                                            contenido,
-                                            clase
-                                        )
+                                        mostrarResultadoIA(context, "ESTRUCTURA DE $duracion", contenido, clase)
                                     },
-                                    onError = { error ->
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar(error)
-                                        }
-                                    }
-                                ) {
-                                    iaViewModel.estructurarClasePorTiempo(
-                                        clase.nombre,
-                                        clase.descripcion,
-                                        duracion,
-                                        clase.archivoPdfUrl
-                                    )
-                                }
+                                    onError = { error -> scope.launch { snackbarHostState.showSnackbar(error) } },
+                                    llamadaIA = { iaViewModel.estructurarClasePorTiempo(clase.nombre, clase.descripcion, duracion, clase.archivoPdfUrl) }
+                                )
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(duracion)
+                            Text(duracion, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = AulaVivaColors.PrimaryCyan)
                         }
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { showDuracionDialog = false }) {
-                    Text("Cancelar")
+                    Text("CANCELAR", color = AulaVivaColors.TextSecondary)
                 }
             }
         )
-    }
-}
-
-@Composable
-fun IAButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String,
-    onClick: () -> Unit,
-    enabled: Boolean = true
-) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-        )
-    ) {
-        Icon(icon, null)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text, style = MaterialTheme.typography.titleMedium)
     }
 }
 
@@ -552,13 +432,14 @@ fun ejecutarIA(
 ) {
     isLoading(true)
     val live = llamadaIA()
+    // Generic logic preserved, observing LiveData
     var observer: androidx.lifecycle.Observer<Result<String>>? = null
     observer = androidx.lifecycle.Observer<Result<String>> { result ->
         isLoading(false)
         if (result.isSuccess) {
             onSuccess(result.getOrNull() ?: "")
         } else {
-            onError(result.exceptionOrNull()?.message ?: "Error desconocido")
+            onError(result.exceptionOrNull()?.message ?: "ERROR DESCONOCIDO")
         }
         observer?.let { live.removeObserver(it) }
     }

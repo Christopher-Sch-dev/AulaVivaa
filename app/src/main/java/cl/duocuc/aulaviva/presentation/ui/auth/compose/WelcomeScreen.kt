@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cl.duocuc.aulaviva.presentation.ui.auth.compose.LoginActivityCompose
 import cl.duocuc.aulaviva.presentation.ui.auth.compose.RegisterActivityCompose
+import cl.duocuc.aulaviva.presentation.ui.common.AulaVivaScreenFrame
+import cl.duocuc.aulaviva.presentation.ui.common.ScreenEffectMode
 import cl.duocuc.aulaviva.presentation.ui.theme.AulaVivaTheme
 
 /**
@@ -68,11 +70,9 @@ fun WelcomeScreen() {
         label = "translationYSignUp"
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    // Aplicar efectos visuales consistentes con AulaVivaScreenFrame
+    // Modo AUTH: cyberGrid + scanLines + particles (30)
+    AulaVivaScreenFrame(mode = ScreenEffectMode.AUTH) {
         Column(
             modifier = Modifier
                 .fillMaxSize()

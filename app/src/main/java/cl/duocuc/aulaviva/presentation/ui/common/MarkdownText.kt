@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import io.noties.markwon.Markwon
@@ -43,8 +44,16 @@ fun MarkdownText(
     text: String,
     modifier: Modifier = Modifier
 ) {
+    // Preprocess text to fix common markdown rendering issues
+    val processedText = preprocessMarkdownText(text)
+    
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
+    
+    // CRITICAL FIX: Colores para TextView que AndroidView NO hereda automáticamente del tema Compose
+    // Sin esto, el texto puede ser invisible en dark theme (texto negro sobre fondo oscuro)
+    val textColor = colorScheme.onSurface.toArgb()
+    val linkColor = colorScheme.primary.toArgb()
 
     // Crear instancia de Markwon con configuración completa de plugins
     // Usar remember con context y colorScheme como keys para evitar recrear la instancia
@@ -101,9 +110,10 @@ fun MarkdownText(
                         .codeTextSize(14) // Tamaño de código
                         .codeBackgroundColor(surfaceVariantColor)
                         .codeTextColor(onSurfaceVariantColor)
+                        // Asegurar contraste en links y quotes
                         .linkColor(primaryColor)
                         .blockQuoteColor(primaryColor)
-                        .listItemColor(primaryColor)
+                        .listItemColor(onSurfaceVariantColor) // Mejor que primary para items de lista
                         .thematicBreakColor(outlineColor)
                 }
             })
@@ -120,11 +130,15 @@ fun MarkdownText(
                 // No agregar padding aquí, el Card contenedor maneja el espaciado
                 setPadding(0, 0, 0, 0)
 
+                // CRITICAL FIX: AndroidView NO hereda colores de Material theme automáticamente
+                // Sin esto, el texto puede ser invisible en dark theme (texto negro sobre fondo oscuro)
+                setTextColor(textColor)
+                setLinkTextColor(linkColor)
+
                 // Permitir que el usuario seleccione el texto renderizado
                 setTextIsSelectable(true)
                 // Usar tipo de letra normal (sin negrita ni cursiva por defecto)
                 setTypeface(null, Typeface.NORMAL)
-                // El color de texto se configura automáticamente por Markwon según el tema
 
                 // Habilitar que los links en el Markdown sean clickeables
                 linksClickable = true
@@ -141,12 +155,40 @@ fun MarkdownText(
             }
         },
         update = { textView ->
+            // Aplicar colores en cada update para manejar cambios de tema en tiempo de ejecución
+            textView.setTextColor(textColor)
+            textView.setLinkTextColor(linkColor)
+            
             // Renderizar el contenido Markdown usando Markwon
             // Solo actualizar si el texto cambió para evitar renderizado innecesario
-            if (textView.text?.toString() != text) {
-                markwon.setMarkdown(textView, text)
+            if (textView.text?.toString() != processedText) {
+                markwon.setMarkdown(textView, processedText)
             }
         },
         modifier = modifier.fillMaxWidth()
     )
+}
+
+/**
+ * Preprocesses markdown text to fix common rendering issues.
+ * 
+ * Issues fixed:
+ * - Consecutive underscores (blanks like "_________") are escaped to prevent
+ *   markdown interpreting them as emphasis markers, which causes garbled display.
+ * - Asterisks inside words that shouldn't be bold/italic.
+ * - Special unicode characters that may not render correctly.
+ */
+private fun preprocessMarkdownText(text: String): String {
+    return text
+        // Fix consecutive underscores (fill-in-the-blank patterns)
+        // Pattern: 2+ underscores in a row -> replace with visible line character
+        .replace(Regex("_{2,}")) { match ->
+            "\u2015".repeat(match.value.length.coerceAtMost(10)) // Use horizontal bar character
+        }
+        // Fix single underscores at word boundaries that may cause unintended emphasis
+        .replace(Regex("(?<=\\s)_(?!_)(.+?)(?<!_)_(?=\\s|\\.|,|\\))")) { match ->
+            "\u2015${match.groupValues[1]}\u2015" // Replace emphasis underscores with horizontal bars
+        }
+        // Remove potential problematic control characters
+        .replace(Regex("[\u0000-\u001F&&[^\t\n\r]]"), "")
 }

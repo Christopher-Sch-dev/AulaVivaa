@@ -41,12 +41,29 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
     /**
      * Crea una asignatura demo y una clase demo. Public API para la Activity.
      */
-    fun crearAsignaturaYClaseDemo() {
-        viewModelScope.launch {
-            try {
-                val asignaturasRepo = RepositoryProvider.provideAsignaturasRepository(app)
-                val clasesRepo = RepositoryProvider.provideClaseRepository(app)
+    private val asignaturasRepo = RepositoryProvider.provideAsignaturasRepository(app)
+    private val clasesRepo = RepositoryProvider.provideClaseRepository(app)
+    
+    private val sincronizarAsignaturasUseCase = cl.duocuc.aulaviva.domain.usecase.SincronizarAsignaturasUseCase(asignaturasRepo)
+    private val sincronizarClasesUseCase = cl.duocuc.aulaviva.domain.usecase.SincronizarClasesUseCase(clasesRepo)
 
+    /**
+     * Crea una asignatura demo y una clase demo. Public API para la Activity.
+     */
+    private val _isLoading = MutableLiveData<Boolean>(false)
+    val isLoading: LiveData<Boolean> = _isLoading
+
+    /**
+     * Crea una asignatura demo y una clase demo. Public API para la Activity.
+     */
+    fun crearAsignaturaYClaseDemo() {
+        if (_isLoading.value == true) return
+        _isLoading.value = true
+
+        viewModelScope.launch {
+            // _isLoading.postValue(true) // Ya seteado arriba
+            try {
+                // ... (existing demo logic remains same, but maybe use repos directly or UseCases)
                 val resultAsignatura = asignaturasRepo.crearAsignatura(
                     nombre = "Programación Móvil DEMO",
                     descripcion = "Asignatura de demostración con clase de prueba incluida"
@@ -87,9 +104,13 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
                             onSuccess = {
                                 _toastMessage.postValue("✅ ¡Demo creada! Código: $codigoFinal")
                                 _demoCodigo.postValue(codigoFinal)
+                                // Refrescar datos para que aparezcan de inmediato
+                                refreshData()
+                                _isLoading.postValue(false)
                             },
                             onError = { error ->
                                 _toastMessage.postValue("⚠️ Asignatura creada, pero error en clase: $error")
+                                _isLoading.postValue(false)
                             },
                             scope = viewModelScope
                         )
@@ -97,11 +118,13 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
                     onFailure = { error ->
                         android.util.Log.e("PanelPrincipalVM", "❌ Error subiendo PDF demo", error)
                         _toastMessage.postValue("⚠️ Asignatura creada, pero error subiendo PDF: ${error.message}")
+                        _isLoading.postValue(false)
                     }
                 )
 
             } catch (e: Exception) {
                 _toastMessage.postValue("❌ Error al crear demo: ${e.message}")
+                _isLoading.postValue(false)
             }
         }
     }
@@ -116,8 +139,47 @@ class PanelPrincipalViewModel(application: Application) : AndroidViewModel(appli
             if (authRepository.isLoggedIn()) {
                 _userEmail.value = authRepository.getCurrentUserEmail()
                 _userId.value = authRepository.getCurrentUserId()
+                
+                // Sincronizar datos automáticamente al iniciar el panel
+                refreshData()
             } else {
                 android.util.Log.w("PanelPrincipalVM", "⚠️ Usuario no autenticado, no se pueden obtener datos del usuario")
+            }
+        }
+    }
+
+    /**
+     * Sincroniza asignaturas y clases desde el backend.
+     */
+    fun refreshData() {
+        viewModelScope.launch {
+            android.util.Log.d("PanelPrincipalVM", "🔄 Iniciando sincronización de datos...")
+            try {
+                // 1. Sincronizar Asignaturas
+                val resultAsignaturas = sincronizarAsignaturasUseCase()
+                resultAsignaturas.fold(
+                    onSuccess = {
+                        android.util.Log.d("PanelPrincipalVM", "✅ Asignaturas sincronizadas")
+                    },
+                    onFailure = { e ->
+                        android.util.Log.e("PanelPrincipalVM", "❌ Error sincronizando asignaturas", e)
+                    }
+                )
+
+                // 2. Sincronizar Clases (solo si el user es docente, o general sync logic)
+                // SincronizarClasesUseCase maneja la lógica interna de sync
+                val resultClases = sincronizarClasesUseCase()
+                resultClases.fold(
+                    onSuccess = {
+                        android.util.Log.d("PanelPrincipalVM", "✅ Clases sincronizadas")
+                    },
+                    onFailure = { e ->
+                        android.util.Log.e("PanelPrincipalVM", "❌ Error sincronizando clases", e)
+                    }
+                )
+
+            } catch (e: Exception) {
+                android.util.Log.e("PanelPrincipalVM", "❌ Excepción en refreshData", e)
             }
         }
     }

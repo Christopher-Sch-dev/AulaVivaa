@@ -6,20 +6,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Observer
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.DisposableEffect
 import cl.duocuc.aulaviva.presentation.viewmodel.IAViewModel
+import cl.duocuc.aulaviva.presentation.ui.effects.breakcoreGlitch
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,130 +58,153 @@ fun ResultadoIAScreen(
         ).observe(lifecycleOwner) { result ->
             if (result.isFailure) {
                 scope.launch {
-                    snackbarHostState.showSnackbar("Error iniciando chat: ${result.exceptionOrNull()?.message}")
+                    snackbarHostState.showSnackbar("ERROR INICIANDO CORE IA: ${result.exceptionOrNull()?.message}")
                 }
             }
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { cl.duocuc.aulaviva.presentation.ui.common.CyberSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(titulo) },
+                title = { 
+                    cl.duocuc.aulaviva.presentation.ui.common.GlitchText(
+                        text = titulo.uppercase(), 
+                        style = MaterialTheme.typography.titleLarge
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         (context as? android.app.Activity)?.finish()
                     }) {
-                        Icon(Icons.Default.ArrowBack, "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = MaterialTheme.colorScheme.primary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
+                    titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
+        // Matrix Rain Background
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .breakcoreGlitch() // Apply Breakcore visual effects
         ) {
-            // Chat messages
+            cl.duocuc.aulaviva.presentation.ui.common.MatrixBackground()
+            
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxSize()
             ) {
-                mensajes.forEach { mensaje ->
-                    MensajeChatCard(mensaje = mensaje)
-                }
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .align(Alignment.Start)
-                            .padding(16.dp)
-                    )
-                }
-            }
-
-            Divider()
-
-            // Contador de mensajes
-            Text(
-                text = if (mensajesRestantes > 0) {
-                    "💬 Puedes enviar $mensajesRestantes mensajes más"
-                } else {
-                    "⚠️ Has alcanzado el límite de mensajes"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = if (mensajesRestantes > 0) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.error
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
-
-            // Input de mensaje
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = mensajeTexto,
-                    onValueChange = { mensajeTexto = it },
-                    modifier = Modifier.weight(1f),
-                    enabled = mensajesRestantes > 0 && !isLoading,
-                    placeholder = { Text("Escribe tu mensaje a la IA...") },
-                    maxLines = 4,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                IconButton(
-                    onClick = {
-                        if (mensajeTexto.isNotBlank() && mensajesRestantes > 0 && !isLoading) {
-                            val mensaje = mensajeTexto
-                            mensajeTexto = ""
-                            isLoading = true
-                            mensajesRestantes--
-
-                            // Agregar mensaje del usuario
-                            mensajes = mensajes + MensajeChat(esUsuario = true, contenido = mensaje)
-
-                            // Enviar a IA
-                            val live = iaViewModel.enviarMensajeChat(mensaje)
-                            var observer: androidx.lifecycle.Observer<Result<String>>? = null
-                            observer = androidx.lifecycle.Observer<Result<String>> { result ->
-                                isLoading = false
-                                if (result.isSuccess) {
-                                    val respuesta = result.getOrNull() ?: ""
-                                    mensajes = mensajes + MensajeChat(esUsuario = false, contenido = respuesta)
-                                } else {
-                                    mensajesRestantes++
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            "Error: ${result.exceptionOrNull()?.message}"
-                                        )
-                                    }
-                                }
-                                observer?.let { live.removeObserver(it) }
-                            }
-                            live.observe(lifecycleOwner, observer)
-                        }
-                    },
-                    enabled = mensajeTexto.isNotBlank() && mensajesRestantes > 0 && isLoading == false
+                // Chat messages
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp) // More space between bubbles
                 ) {
-                    Icon(Icons.Default.Send, "Enviar")
+                    mensajes.forEach { mensaje ->
+                        MensajeChatCard(mensaje = mensaje)
+                    }
+                    if (isLoading) {
+                        cl.duocuc.aulaviva.presentation.ui.common.CyberLoading(
+                            modifier = Modifier
+                                .align(Alignment.Start)
+                                .padding(16.dp),
+                            size = 32.dp
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha=0.5f))
+
+                // Contador de mensajes
+                Text(
+                    text = if (mensajesRestantes > 0) {
+                        "// SYSTEM STATUS: $mensajesRestantes MENSAJES DISPONIBLES"
+                    } else {
+                        "// SYSTEM WARNING: LÍMITE DE PROCESAMIENTO ALCANZADO"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (mensajesRestantes > 0) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+
+                // Input de mensaje
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = mensajeTexto,
+                        onValueChange = { mensajeTexto = it },
+                        modifier = Modifier.weight(1f),
+                        enabled = mensajesRestantes > 0 && !isLoading,
+                        placeholder = { Text("INGRESAR COMANDO DE CONSULTA...", style = MaterialTheme.typography.bodySmall) },
+                        maxLines = 4,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                        ),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                    )
+                    IconButton(
+                        onClick = {
+                            if (mensajeTexto.isNotBlank() && mensajesRestantes > 0 && !isLoading) {
+                                val mensaje = mensajeTexto
+                                mensajeTexto = ""
+                                isLoading = true
+                                mensajesRestantes--
+
+                                // Agregar mensaje del usuario
+                                mensajes = mensajes + MensajeChat(esUsuario = true, contenido = mensaje)
+
+                                // Enviar a IA
+                                val live = iaViewModel.enviarMensajeChat(mensaje)
+                                var observer: androidx.lifecycle.Observer<Result<String>>? = null
+                                observer = androidx.lifecycle.Observer<Result<String>> { result ->
+                                    isLoading = false
+                                    if (result.isSuccess) {
+                                        val respuesta = result.getOrNull() ?: ""
+                                        mensajes = mensajes + MensajeChat(esUsuario = false, contenido = respuesta)
+                                    } else {
+                                        mensajesRestantes++
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(
+                                                "ERROR: ${result.exceptionOrNull()?.message}"
+                                            )
+                                        }
+                                    }
+                                    observer?.let { live.removeObserver(it) }
+                                }
+                                live.observe(lifecycleOwner, observer)
+                            }
+                        },
+                        enabled = mensajeTexto.isNotBlank() && mensajesRestantes > 0 && isLoading == false
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.Send, "ENVIAR", tint = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
         }
@@ -203,42 +228,53 @@ fun MensajeChatCard(mensaje: MensajeChat) {
     ) {
         Card(
             modifier = Modifier
-                .widthIn(max = if (mensaje.esUsuario) 280.dp else 320.dp) // ✅ Más ancho para IA
-                .fillMaxWidth(0.85f), // ✅ Usar 85% del ancho disponible
-            shape = RoundedCornerShape(16.dp), // ✅ Bordes más redondeados
+                .widthIn(max = if (mensaje.esUsuario) 280.dp else 340.dp) 
+                .fillMaxWidth(0.9f), 
+            shape = androidx.compose.foundation.shape.CutCornerShape(
+                topStart = 0.dp, 
+                topEnd = 16.dp, 
+                bottomStart = 16.dp, 
+                bottomEnd = 0.dp
+            ),
             colors = CardDefaults.cardColors(
                 containerColor = if (mensaje.esUsuario) {
-                    MaterialTheme.colorScheme.primary
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha=0.3f) 
                 } else {
-                    MaterialTheme.colorScheme.surfaceVariant // ✅ Mejor contraste
+                    MaterialTheme.colorScheme.surface.copy(alpha=0.9f) 
                 }
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp) // ✅ Más elevación
+            border = if (mensaje.esUsuario) {
+                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+            } else {
+                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            },
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) 
         ) {
             Column(
-                modifier = Modifier.padding(20.dp) // ✅ Más padding para mejor legibilidad
+                modifier = Modifier.padding(16.dp) 
             ) {
                 Text(
-                    text = if (mensaje.esUsuario) "👤 Tú:" else "🤖 AulaViva IA:",
-                    style = MaterialTheme.typography.labelMedium,
+                    text = if (mensaje.esUsuario) "USUARIO // AUTHENTICATED" else "AULA VIVA // CORE AI",
+                    style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = if (mensaje.esUsuario) {
-                        MaterialTheme.colorScheme.onPrimary
+                        MaterialTheme.colorScheme.onPrimaryContainer
                     } else {
-                        MaterialTheme.colorScheme.onSurface
+                        MaterialTheme.colorScheme.primary
                     },
-                    modifier = Modifier.padding(bottom = 4.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                 )
                 // ✅ Renderizar Markdown para respuestas de IA
                 if (mensaje.esUsuario) {
                     Text(
                         text = mensaje.contenido,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 } else {
                     // ✅ Usar Markwon para renderizar Markdown (como antes)
-                    cl.duocuc.aulaviva.presentation.ui.common.MarkdownText(
+                     cl.duocuc.aulaviva.presentation.ui.common.MarkdownText( // Keep full path to ensure resolution if imports missing
                         text = mensaje.contenido,
                         modifier = Modifier.fillMaxWidth()
                     )

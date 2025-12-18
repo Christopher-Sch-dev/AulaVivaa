@@ -8,7 +8,7 @@ interface IClaseRepository {
     fun obtenerClasesPorAsignatura(asignaturaId: String): Flow<List<Clase>>
     fun obtenerClasesPorAsignaturas(asignaturasIds: List<String>): Flow<List<Clase>>
     suspend fun obtenerClasePorId(claseId: String): Clase?
-    suspend fun sincronizarDesdeSupabase()
+    suspend fun sincronizarDesdeSupabase(): Result<Unit>
     suspend fun sincronizarClasesPorAsignatura(asignaturaId: String)
     suspend fun crearClase(
         clase: Clase,

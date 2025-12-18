@@ -25,7 +25,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.activity.compose.AlumnoClasesActivityCompose
+import cl.duocuc.aulaviva.presentation.ui.common.AulaVivaScreenFrame
 import cl.duocuc.aulaviva.presentation.ui.common.PullToRefreshContainer
+import cl.duocuc.aulaviva.presentation.ui.common.ScreenEffectMode
 import cl.duocuc.aulaviva.presentation.viewmodel.AlumnoViewModel
 import cl.duocuc.aulaviva.utils.Constants
 import cl.duocuc.aulaviva.R
@@ -80,8 +82,8 @@ fun AlumnoAsignaturasScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -94,11 +96,13 @@ fun AlumnoAsignaturasScreen(
             }
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        // Aplicar efectos visuales - Modo LIST: solo scanLines (performance primero en listas)
+        AulaVivaScreenFrame(mode = ScreenEffectMode.LIST) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
             if (isLoading && asignaturas.isEmpty()) {
                 CircularProgressIndicator(Modifier.align(Alignment.Center))
             } else if (asignaturas.isEmpty()) {
@@ -145,6 +149,7 @@ fun AlumnoAsignaturasScreen(
                         .fillMaxWidth()
                         .align(Alignment.TopCenter)
                 )
+            }
             }
         }
     }

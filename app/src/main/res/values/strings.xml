@@ -62,6 +62,7 @@
     <string name="msg_codigo_copiado">✓ Código copiado: %1$s</string>
     <string name="msg_asignatura_eliminada">✓ Asignatura eliminada</string>
     <string name="msg_clase_eliminada">✓ Clase eliminada</string>
+    <string name="confirmar_eliminacion">Confirmar eliminación</string>
     <string name="msg_baja_exitosa">✓ Te has dado de baja de %1$s</string>
 
     <!-- Mensajes de error -->

@@ -35,11 +35,14 @@ object SpringBootClient {
 
     private val authInterceptor = Interceptor { chain ->
         val original = chain.request()
-        val token = TokenManager.getToken()
-
         val requestBuilder = original.newBuilder()
-        if (token != null) {
-            requestBuilder.addHeader("Authorization", "Bearer $token")
+
+        // Solo agregar el token si no existe ya un header Authorization
+        if (original.header("Authorization") == null) {
+            val token = TokenManager.getToken()
+            if (token != null) {
+                requestBuilder.addHeader("Authorization", "Bearer $token")
+            }
         }
 
         val request = requestBuilder.build()
@@ -64,24 +67,44 @@ object SpringBootClient {
 }
 
 /**
- * Gestor de tokens JWT.
- * Guarda y recupera el token de autenticación.
+ * Gestor de tokens JWT con persistencia.
+ * Guarda el token en SharedPreferences para que persista al cerrar la app.
+ * La sesión se mantiene hasta que el usuario cierre sesión manualmente.
  */
 object TokenManager {
-    private var token: String? = null
-
-    fun saveToken(newToken: String) {
-        token = newToken
-        Log.d("TokenManager", "Token guardado")
+    private const val PREFS_NAME = "aulaviva_session"
+    private const val KEY_TOKEN = "jwt_token"
+    
+    private var cachedToken: String? = null
+    private var prefs: android.content.SharedPreferences? = null
+    
+    /**
+     * Inicializa el TokenManager con el contexto de la aplicación.
+     * Debe llamarse en Application.onCreate()
+     */
+    fun init(context: android.content.Context) {
+        prefs = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+        // Cargar token desde SharedPreferences al iniciar
+        cachedToken = prefs?.getString(KEY_TOKEN, null)
+        if (cachedToken != null) {
+            Log.d("TokenManager", "Token restaurado desde almacenamiento")
+        }
     }
 
-    fun getToken(): String? = token
+    fun saveToken(newToken: String) {
+        cachedToken = newToken
+        prefs?.edit()?.putString(KEY_TOKEN, newToken)?.apply()
+        Log.d("TokenManager", "Token guardado (persistente)")
+    }
+
+    fun getToken(): String? = cachedToken
 
     fun clearToken() {
-        token = null
+        cachedToken = null
+        prefs?.edit()?.remove(KEY_TOKEN)?.apply()
         Log.d("TokenManager", "Token eliminado")
     }
 
-    fun hasToken(): Boolean = token != null
+    fun hasToken(): Boolean = cachedToken != null
 }
 

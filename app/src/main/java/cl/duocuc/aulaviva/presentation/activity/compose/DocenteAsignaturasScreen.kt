@@ -31,7 +31,9 @@ import kotlinx.coroutines.launch
 import cl.duocuc.aulaviva.data.model.Asignatura
 import cl.duocuc.aulaviva.presentation.activity.compose.DocenteClasesActivityCompose
 import cl.duocuc.aulaviva.presentation.activity.compose.InscritosActivityCompose
+import cl.duocuc.aulaviva.presentation.ui.common.AulaVivaScreenFrame
 import cl.duocuc.aulaviva.presentation.ui.common.PullToRefreshContainer
+import cl.duocuc.aulaviva.presentation.ui.common.ScreenEffectMode
 import cl.duocuc.aulaviva.presentation.viewmodel.AsignaturasViewModel
 import cl.duocuc.aulaviva.utils.ClipboardHelper
 import cl.duocuc.aulaviva.utils.Constants
@@ -105,8 +107,8 @@ fun DocenteAsignaturasScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -119,11 +121,13 @@ fun DocenteAsignaturasScreen(
             }
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        // Aplicar efectos visuales - Modo LIST: solo scanLines (performance primero en listas)
+        AulaVivaScreenFrame(mode = ScreenEffectMode.LIST) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
             if (isLoading && asignaturas.isEmpty()) {
                 CircularProgressIndicator(Modifier.align(Alignment.Center))
             } else if (asignaturas.isEmpty()) {
@@ -212,6 +216,7 @@ fun DocenteAsignaturasScreen(
                         .align(Alignment.TopCenter)
                 )
             }
+        }
         }
     }
 

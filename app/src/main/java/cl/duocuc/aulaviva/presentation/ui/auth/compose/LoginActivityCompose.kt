@@ -15,6 +15,7 @@ import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.domain.repository.IAuthRepository
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import androidx.activity.addCallback
 
 /**
  * Activity de inicio de sesión de la aplicación AulaViva.
@@ -67,6 +68,40 @@ class LoginActivityCompose : ComponentActivity() {
             }
         }
 
+        onBackPressedDispatcher.addCallback(this) {
+            if (authRepository.isLoggedIn()) {
+                lifecycleScope.launch {
+                    try {
+                        val resultRol = authRepository.obtenerRolUsuario()
+                        val rol = resultRol.getOrNull() ?: "docente"
+                        val intent = when (rol.lowercase()) {
+                            "docente" -> Intent(
+                                this@LoginActivityCompose,
+                                PanelPrincipalActivityCompose::class.java
+                            )
+                            "alumno" -> Intent(
+                                this@LoginActivityCompose,
+                                PanelAlumnoActivityCompose::class.java
+                            )
+                            else -> Intent(
+                                this@LoginActivityCompose,
+                                PanelPrincipalActivityCompose::class.java
+                            )
+                        }
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    } catch (e: Exception) {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+            } else {
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+            }
+        }
+
         setContent {
             AulaVivaTheme {
                 Surface(
@@ -81,7 +116,7 @@ class LoginActivityCompose : ComponentActivity() {
                                 try {
                                     // Obtener el rol del usuario desde el repositorio
                                     val resultRol = authRepository.obtenerRolUsuario()
-                                    val rol = resultRol.getOrNull() ?: "docente"
+                                    val rol = resultRol.getOrNull() ?: "alumno" // Default to Alumno
 
                                     // Crear Intent según el rol del usuario
                                     val intent = when (rol.lowercase()) {
@@ -95,7 +130,7 @@ class LoginActivityCompose : ComponentActivity() {
                                         )
                                         else -> Intent(
                                             this@LoginActivityCompose,
-                                            PanelPrincipalActivityCompose::class.java
+                                            PanelAlumnoActivityCompose::class.java
                                         )
                                     }
 
@@ -104,10 +139,10 @@ class LoginActivityCompose : ComponentActivity() {
                                     startActivity(intent)
                                     finish()
                                 } catch (e: Exception) {
-                                    // Si falla la obtención del rol, redirigir al panel docente por defecto
+                                    // Si falla la obtención del rol, redirigir al panel ALUMNO por defecto (seguridad)
                                     val intent = Intent(
                                         this@LoginActivityCompose,
-                                        PanelPrincipalActivityCompose::class.java
+                                        PanelAlumnoActivityCompose::class.java
                                     )
                                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     startActivity(intent)
@@ -117,6 +152,11 @@ class LoginActivityCompose : ComponentActivity() {
                         },
                         onNavigateBack = {
                             finish()
+                        },
+                        onNavigateToRegister = {
+                            // Navegar a la pantalla de registro
+                            val intent = Intent(this@LoginActivityCompose, RegisterActivityCompose::class.java)
+                            startActivity(intent)
                         }
                     )
                 }
@@ -124,48 +164,6 @@ class LoginActivityCompose : ComponentActivity() {
         }
     }
 
-    /**
-     * Maneja la navegación hacia atrás cuando el usuario presiona el botón de retroceso.
-     * Si el usuario está autenticado, redirige al panel correspondiente en lugar de retroceder.
-     * Si no está autenticado, permite la navegación normal hacia atrás.
-     */
-    override fun onBackPressed() {
-        if (authRepository.isLoggedIn()) {
-            // Usuario autenticado: redirigir al panel correspondiente en lugar de retroceder
-            lifecycleScope.launch {
-                try {
-                    // Obtener el rol del usuario y crear el Intent correspondiente
-                    val resultRol = authRepository.obtenerRolUsuario()
-                    val rol = resultRol.getOrNull() ?: "docente"
 
-                    val intent = when (rol.lowercase()) {
-                        "docente" -> Intent(
-                            this@LoginActivityCompose,
-                            PanelPrincipalActivityCompose::class.java
-                        )
-                        "alumno" -> Intent(
-                            this@LoginActivityCompose,
-                            PanelAlumnoActivityCompose::class.java
-                        )
-                        else -> Intent(
-                            this@LoginActivityCompose,
-                            PanelPrincipalActivityCompose::class.java
-                        )
-                    }
-
-                    // Limpiar el stack y navegar al panel
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
-                    finish()
-                } catch (e: Exception) {
-                    // Si falla, permitir la navegación normal hacia atrás
-                    super.onBackPressed()
-                }
-            }
-        } else {
-            // Usuario no autenticado: permitir navegación normal hacia atrás
-            super.onBackPressed()
-        }
-    }
 }
 
