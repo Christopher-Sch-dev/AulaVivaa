@@ -62,20 +62,31 @@ class AuthViewModel : ViewModel() {
 
     // Registro
     fun register(email: String, password: String, rol: String = "alumno") {
+        android.util.Log.d("AuthViewModel", "📝 Intentando registrar usuario: $email, Rol: $rol")
         _isLoading.value = true
         _error.value = null
 
         viewModelScope.launch {
             val result = repository.register(email, password, rol)
             result.fold(onSuccess = {
+                android.util.Log.d("AuthViewModel", "✅ Registro exitoso para: $email")
                 _isLoading.value = false
                 _registerSuccess.value = true
             }, onFailure = { e ->
+                android.util.Log.e("AuthViewModel", "❌ Error en registro: ${e.message}", e)
                 _isLoading.value = false
-                if (e.message == "pending_confirmation") {
-                    _error.value = "Cuenta creada. Revisa tu email para confirmar la cuenta."
-                } else {
-                    _error.value = e.message
+                
+                val lowerMsg = e.message?.lowercase() ?: ""
+                when {
+                    lowerMsg == "pending_confirmation" -> {
+                        _error.value = "Cuenta creada. Revisa tu email para confirmar la cuenta."
+                    }
+                    lowerMsg.contains("403") || lowerMsg.contains("forbidden") -> {
+                        _error.value = "Error de servidor (403): Acceso denegado. Contacta a soporte."
+                    }
+                    else -> {
+                        _error.value = e.message
+                    }
                 }
             })
         }
