@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import cl.duocuc.aulaviva.data.repository.RepositoryProvider
 import cl.duocuc.aulaviva.domain.repository.IAuthRepository
@@ -25,12 +26,25 @@ import kotlinx.coroutines.launch
  * - Verifica si existe una sesión activa al iniciar la actividad
  * - Si hay sesión activa, redirige automáticamente al panel correspondiente según el rol del usuario
  * - Previene navegación hacia atrás si el usuario está autenticado
+ * 
+ * SplashScreen API:
+ * - Muestra splash nativo durante cold start
+ * - Mantiene splash mientras verifica sesión (sin esperar red)
  */
 class WelcomeActivityCompose : ComponentActivity() {
 
     private val authRepository: IAuthRepository = RepositoryProvider.provideAuthRepository()
+    
+    // Variable para controlar cuándo liberar el splash screen
+    private var keepSplashScreen = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // ✅ CRÍTICO: installSplashScreen() DEBE llamarse ANTES de super.onCreate()
+        val splashScreen = installSplashScreen()
+        
+        // Mantener el splash visible mientras verificamos la sesión (sin esperar red)
+        splashScreen.setKeepOnScreenCondition { keepSplashScreen }
+        
         super.onCreate(savedInstanceState)
 
         // Verificar si existe una sesión persistente al iniciar la actividad
@@ -82,15 +96,18 @@ class WelcomeActivityCompose : ComponentActivity() {
 
                     // Limpiar el stack de actividades y navegar al panel correspondiente
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    keepSplashScreen = false // Liberar splash antes de navegar
                     startActivity(intent)
                     finish()
                     return@launch
                 } catch (e: Exception) {
                     // Si falla la verificación, continuar mostrando la pantalla de bienvenida
                     android.util.Log.e("WelcomeActivity", "❌ Error verificando sesión o obteniendo rol", e)
+                    keepSplashScreen = false // Liberar splash para mostrar welcome
                 }
             } else {
                 android.util.Log.d("WelcomeActivity", "⚠️ No hay sesión activa, mostrando pantalla de bienvenida")
+                keepSplashScreen = false // Liberar splash para mostrar welcome
             }
         }
 
