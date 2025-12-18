@@ -2,41 +2,35 @@ package cl.duocuc.aulaviva.presentation.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Paleta de colores AulaViva - Material Design 3
-// Inspirada en educación: tonos violeta/púrpura con acentos vibrantes
+// Cyber-Academic Palette - Aula Viva
+// High performance, professional, deep dark mode with electric accents.
 
-// Primary (Violeta educativo)
-val Purple80 = Color(0xFFD0BCFF)
-val Purple40 = Color(0xFF6650A4)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val PurpleGrey40 = Color(0xFF625B71)
+// Primary - Electric Blue (Action/Focus)
+val ElectricBlue = Color(0xFF00F0FF) 
+val ElectricBlueDark = Color(0xFF00B8C4)
+val ElectricBlueAlpha = Color(0x3300F0FF) // For glows
 
-// Secondary (Teal académico)
-val Teal80 = Color(0xFF9ECAFF)
-val Teal40 = Color(0xFF00668B)
+// Secondary - Deep Purple (Creative/Depth)
+val DeepPurple = Color(0xFF7000FF)
+val DeepPurpleLight = Color(0xFF9E47FF)
 
-// Tertiary (Rosa creativo)
-val Pink80 = Color(0xFFEFB8C8)
-val Pink40 = Color(0xFF7D5260)
+// Backgrounds - OLED Optimized
+val CyberBlack = Color(0xFF050505) // Absolute darkest background
+val BackgroundDark = Color(0xFF0A0E14) // Main background (Deep Blue-Grey)
+val SurfaceDark = Color(0xFF11161D) // Cards/Surfaces
+val SurfaceHighlight = Color(0xFF1A212C) // Hover/Active states
 
-// Colores personalizados AulaViva
-val AulaVivaPrimary = Color(0xFF6750A4) // Violeta principal
-val AulaVivaSecondary = Color(0xFF03DAC6) // Teal vibrante
-val AulaVivaAccent = Color(0xFFFF6B6B) // Rojo coral para alertas
+// Functional / State Colors
+val CyberRed = Color(0xFFFF2A6D) // Critical Error / Stop
+val NeonGreen = Color(0xFF00FF9D) // Success / Online
+val TechGold = Color(0xFFFFD600) // Warning / Attention
 
-// Colores de fondo
-val BackgroundLight = Color(0xFFFFFBFE)
-val BackgroundDark = Color(0xFF1C1B1F)
-val SurfaceLight = Color(0xFFFFFBFE)
-val SurfaceDark = Color(0xFF1C1B1F)
+// Text Colors
+val TextPrimary = Color(0xFFF0F0F0) // Almost white for readability
+val TextSecondary = Color(0xFFAAAAAA) // De-emphasized text
+val TextTertiary = Color(0xFF666666) // Disabled/Hint
 
-// Colores de estado
-val SuccessGreen = Color(0xFF4CAF50)
-val WarningOrange = Color(0xFFFF9800)
-val ErrorRed = Color(0xFFE53935)
-val InfoBlue = Color(0xFF2196F3)
-
-// Gradientes para cards y headers
-val GradientStart = Color(0xFF6750A4)
-val GradientEnd = Color(0xFF9C27B0)
+// Gradients
+val GradientCyberMain = listOf(ElectricBlue, DeepPurple)
+val GradientDarkSurface = listOf(SurfaceDark, BackgroundDark)
 

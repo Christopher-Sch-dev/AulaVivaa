@@ -38,7 +38,9 @@ fun PullToRefreshContainer(
         PullRefreshIndicator(
             refreshing = isRefreshing,
             state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter)
+            modifier = Modifier.align(Alignment.TopCenter),
+            backgroundColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
         )
     }
 }

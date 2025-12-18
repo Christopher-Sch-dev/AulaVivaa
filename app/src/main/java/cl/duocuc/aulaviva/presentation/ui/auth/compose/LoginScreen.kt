@@ -1,5 +1,6 @@
 package cl.duocuc.aulaviva.presentation.ui.auth.compose
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +11,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -63,50 +66,28 @@ fun LoginScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Observar login exitoso y mostrar bienvenida + navegar automáticamente
+    // Observar login exitoso
     LaunchedEffect(loginSuccess) {
         if (loginSuccess) {
-            // Mostrar mensaje de bienvenida y navegar automáticamente
             val nombre = email.substringBefore("@").takeIf { it.isNotEmpty() } ?: "Usuario"
             scope.launch {
                 snackbarHostState.showSnackbar(
-                    message = "¡Bienvenido $nombre! 👋",
+                    message = "Acceso Concedido: $nombre", // Cyber style text
                     duration = SnackbarDuration.Short
                 )
-                // Navegar inmediatamente (el snackbar se verá en la siguiente pantalla)
                 onLoginSuccess()
             }
         }
     }
 
-    // Mostrar errores con Snackbar
-    LaunchedEffect(error) {
-        error?.let {
-            // El error se mostrará en el Snackbar
-        }
-    }
+    // Gestionar errores visuales
+    LaunchedEffect(email) { if (emailError != null && email.isNotEmpty()) emailError = null }
+    LaunchedEffect(password) { if (passwordError != null && password.isNotEmpty()) passwordError = null }
 
-    // Limpiar errores cuando cambian los campos
-    LaunchedEffect(email) {
-        if (emailError != null && email.isNotEmpty()) {
-            emailError = null
-        }
-    }
-
-    LaunchedEffect(password) {
-        if (passwordError != null && password.isNotEmpty()) {
-            passwordError = null
-        }
-    }
-
-    // Mostrar Snackbar cuando hay error
     LaunchedEffect(error) {
         error?.let { errorMessage ->
             scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = errorMessage,
-                    duration = SnackbarDuration.Long
-                )
+                snackbarHostState.showSnackbar(message = errorMessage, duration = SnackbarDuration.Long)
                 viewModel.clearError()
             }
         }
@@ -114,222 +95,174 @@ fun LoginScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text("Iniciar Sesión") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        }
+        containerColor = MaterialTheme.colorScheme.background // Ensure dark background
     ) { paddingValues ->
-        Column(
+        
+        // Background with subtle Gradient
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Logo
-            Text(
-                text = "📚",
-                fontSize = 48.sp,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            // Título
-            Text(
-                text = "Aula Viva",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                letterSpacing = 0.5.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            // Subtítulo
-            Text(
-                text = "Gestión de Clases Presenciales",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 48.dp)
-            )
-
-            // Indicador de carga
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .padding(bottom = 16.dp),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            // Campo Email
-            OutlinedTextField(
-                value = email,
-                onValueChange = {
-                    email = it
-                    emailError = null
-                },
-                label = { Text("Correo electrónico") },
-                placeholder = { Text("usuario@ejemplo.com") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    errorBorderColor = MaterialTheme.colorScheme.error
-                ),
-                isError = emailError != null,
-                supportingText = emailError?.let {
-                    { Text(it, color = MaterialTheme.colorScheme.error) }
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            )
-
-            // Campo Contraseña
-            OutlinedTextField(
-                value = password,
-                onValueChange = {
-                    password = it
-                    passwordError = null
-                },
-                label = { Text("Contraseña") },
-                singleLine = true,
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 32.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    errorBorderColor = MaterialTheme.colorScheme.error
-                ),
-                isError = passwordError != null,
-                supportingText = passwordError?.let {
-                    { Text(it, color = MaterialTheme.colorScheme.error) }
-                },
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surfaceVariant
                         )
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Main Login Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp), // Slightly softer for tech look
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Icon / Logo
+                        Icon(
+                            imageVector = Icons.Default.Lock, // Generic robust icon or specific 'School' if available
+                            contentDescription = "Security Lock",
+                            modifier = Modifier
+                                .size(64.dp)
+                                .padding(bottom = 16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+
+                        // Title
+                        Text(
+                            text = "AULA VIVA",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        Text(
+                            text = "FUTURO EDUCATIVO",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.tertiary, // Use secondary/tertiary for subtitle
+                            modifier = Modifier.padding(bottom = 32.dp),
+                            letterSpacing = 2.sp
+                        )
+
+                        // Spinner if loading (centered in card)
+                        if (isLoading) {
+                            cl.duocuc.aulaviva.presentation.ui.common.CyberLoading(
+                                modifier = Modifier
+                                    .padding(bottom = 16.dp),
+                                size = 48.dp
+                            )
+                        }
+
+                        // Inputs
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = {
+                                email = it
+                                emailError = null
+                            },
+                            label = { Text("ID DE USUARIO / CORREO") },
+                            placeholder = { Text("usuario@duocuc.cl") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            isError = emailError != null,
+                            supportingText = emailError?.let { { Text(it) } },
+                            leadingIcon = {
+                                Icon(Icons.Default.Person, contentDescription = null)
+                            }
+                        )
+
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = {
+                                password = it
+                                passwordError = null
+                            },
+                            label = { Text("CLAVE DE ACCESO") }, // Uppercase for tech feel
+                            singleLine = true,
+                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+                            isError = passwordError != null,
+                            supportingText = passwordError?.let { { Text(it) } },
+                            trailingIcon = {
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(
+                                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                        contentDescription = "Toggle Password"
+                                    )
+                                }
+                            }
+                        )
+
+                        // Action Buttons
+                        Button(
+                            onClick = {
+                                var isValid = true
+                                if (!viewModel.isValidEmail(email)) {
+                                    emailError = "Formato de correo inválido"
+                                    isValid = false
+                                }
+                                if (!viewModel.isValidPassword(password)) {
+                                    passwordError = "Mínimo 6 caracteres requeridos"
+                                    isValid = false
+                                }
+                                if (isValid) viewModel.login(email, password)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            enabled = !isLoading
+                        ) {
+                           Text("INICIAR SESIÓN")
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        TextButton(
+                            onClick = onNavigateBack,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("CANCELAR OPERACIÓN")
+                        }
                     }
                 }
-            )
-
-            // Botón Login
-            Button(
-                onClick = {
-                    // Validar campos
-                    var isValid = true
-
-                    if (!viewModel.isValidEmail(email)) {
-                        emailError = "Correo inválido"
-                        isValid = false
-                    }
-
-                    if (!viewModel.isValidPassword(password)) {
-                        passwordError = "La contraseña debe tener al menos 6 caracteres"
-                        isValid = false
-                    }
-
-                    if (isValid) {
-                        viewModel.login(email, password)
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                enabled = isLoading == false,
-                elevation = ButtonDefaults.buttonElevation(
-                    defaultElevation = 4.dp,
-                    pressedElevation = 6.dp
-                )
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
+                
+                // Footer (outside card)
+                Spacer(modifier = Modifier.height(32.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Info, // Minimal info icon
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                } else {
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Iniciar Sesión",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        text = "SISTEMA SEGURO v2.0",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
-
-            // Botón Volver
-            TextButton(
-                onClick = onNavigateBack,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Volver",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Footer
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 24.dp)
-            ) {
-                Text(
-                    text = "DESARROLLADO POR DEV-CHRIS.sch 🎓",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }

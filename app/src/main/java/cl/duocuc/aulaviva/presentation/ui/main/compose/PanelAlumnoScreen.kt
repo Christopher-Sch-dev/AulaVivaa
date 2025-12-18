@@ -1,6 +1,7 @@
 package cl.duocuc.aulaviva.presentation.ui.main.compose
 
 import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -71,7 +74,7 @@ fun PanelAlumnoScreen(
     LaunchedEffect(inscripcionExitosa) {
         inscripcionExitosa?.let { asignatura ->
             scope.launch {
-                snackbarHostState.showSnackbar("✓ Inscrito exitosamente en ${asignatura.nombre}")
+                snackbarHostState.showSnackbar("✓ ACCESO CONCEDIDO: ${asignatura.nombre}")
             }
             showInscripcionDialog = false
             codigoInscripcion = ""
@@ -84,275 +87,236 @@ fun PanelAlumnoScreen(
     }
 
     // Callback para manejar el gesto de pull-to-refresh
-    // Sincroniza las asignaturas inscritas y muestra un mensaje de confirmación
     val onRefresh: () -> Unit = {
         viewModel.sincronizarAsignaturasInscritas()
         scope.launch {
             delay(Constants.REFRESH_DELAY_MS)
-            snackbarHostState.showSnackbar("Datos actualizados")
+            snackbarHostState.showSnackbar("SISTEMAS SINCRONIZADOS")
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { cl.duocuc.aulaviva.presentation.ui.common.CyberSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Panel Alumno") },
+                title = { Text("PANEL ALUMNO", fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        // Usar LazyColumn en lugar de Column con verticalScroll para evitar restricciones infinitas
-        if (isLoading && asignaturas.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            PullToRefreshContainer(
-                isRefreshing = isLoading,
-                onRefresh = onRefresh
-            ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+        
+        // Background Gradient
+        Box(
+             modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                             MaterialTheme.colorScheme.background,
+                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        )
+                    )
+                )
+                .padding(paddingValues)
+        ) {
+            if (isLoading && asignaturas.isEmpty()) {
+                cl.duocuc.aulaviva.presentation.ui.common.FullScreenLoading()
+            } else {
+                PullToRefreshContainer(
+                    isRefreshing = isLoading,
+                    onRefresh = onRefresh
                 ) {
-                    // Card de bienvenida
-                    item {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(24.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Card de bienvenida
+                        item {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                             ) {
-                                // Icono de bienvenida
-                                Card(
-                                    modifier = Modifier.size(64.dp),
-                                    shape = RoundedCornerShape(32.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.primary
-                                    )
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Box(
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.Center
+                                    // Icono de bienvenida
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.School,
+                                        contentDescription = "Student",
+                                        modifier = Modifier.size(64.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    // Mensaje de bienvenida
+                                    Text(
+                                        text = "ESTUDIANTE ${userEmail?.substringBefore("@")?.uppercase() ?: "ALUMNO"}",
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        textAlign = TextAlign.Center
+                                    )
+
+                                    Text(
+                                        text = "REGISTRO ACADÉMICO Y CURSOS",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        textAlign = TextAlign.Center,
+                                        letterSpacing = 1.sp,
+                                        modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+                                    )
+
+                                    HorizontalDivider(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 16.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant
+                                    )
+
+                                    // Información y botón de inscripción
+                                    Text(
+                                        text = "GESTIÓN DE MATRÍCULA",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = "Ingrese código único de acceso para inscribir nueva asignatura.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
+
+                                    // Botón de inscripción
+                                    Button(
+                                        onClick = { showInscripcionDialog = true },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(56.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary
+                                        )
                                     ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = "👨‍🎓",
-                                            fontSize = 32.sp
+                                            text = "INSCRIBIR ASIGNATURA",
+                                            style = MaterialTheme.typography.labelLarge
                                         )
                                     }
                                 }
-
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                // Mensaje de bienvenida
-                                Text(
-                                    text = "👨‍🎓 Bienvenido ${userEmail?.substringBefore("@") ?: "Alumno"}",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    textAlign = TextAlign.Center
-                                )
-
-                                Text(
-                                    text = "Gestiona tus asignaturas inscritas",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
-                                )
-
-                                HorizontalDivider(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 16.dp),
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                                )
-
-                                // Información y botón de inscripción unidos
-                                Text(
-                                    text = "📚 Mis Asignaturas",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Text(
-                                    text = "Inscríbete con el código que te proporcionó tu profesor",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                )
-
-                                // Botón de inscripción integrado
-                                Button(
-                                    onClick = { showInscripcionDialog = true },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = MaterialTheme.colorScheme.primary
-                                    ),
-                                    elevation = ButtonDefaults.buttonElevation(
-                                        defaultElevation = 4.dp,
-                                        pressedElevation = 6.dp
-                                    )
-                                ) {
-                                    Icon(
-                                        Icons.Default.Add,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Inscribirse con código",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
                             }
                         }
-                    }
 
-                    // Separador visual antes de las asignaturas
-                    if (asignaturas.isNotEmpty()) {
+                        // Título de sección
+                        if (asignaturas.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "MIS ASIGNATURAS",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                                    letterSpacing = 1.sp
+                                )
+                            }
+                        }
+
+                        // Lista de asignaturas
+                        if (asignaturas.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Book,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(48.dp),
+                                            tint = MaterialTheme.colorScheme.outline
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Text(
+                                            text = "NO HAY REGISTROS",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.outline
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            items(
+                                items = asignaturas,
+                                key = { it.id }
+                            ) { asignatura ->
+                                AsignaturaCard(
+                                    asignatura = asignatura,
+                                    onClick = {
+                                        val intent = Intent(context, AlumnoClasesActivityCompose::class.java)
+                                        intent.putExtra("ASIGNATURA_ID", asignatura.id)
+                                        intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
+                                        context.startActivity(intent)
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                )
+                            }
+                        }
+
+                        // Botón de cerrar sesión
                         item {
                             Spacer(modifier = Modifier.height(16.dp))
-
-                            // Título de sección para las asignaturas
-                            Text(
-                                text = "Asignaturas Inscritas",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                    }
-
-                    // Lista de asignaturas o estado vacío
-                    if (asignaturas.isEmpty()) {
-                        item {
-                            Box(
+                            OutlinedButton(
+                                onClick = { showLogoutDialog = true },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = "📚",
-                                        style = MaterialTheme.typography.displayMedium
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text(
-                                        text = "No hay asignaturas inscritas",
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.Center
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = "Usa el botón de arriba para inscribirte con un código",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        items(
-                            items = asignaturas,
-                            key = { it.id }
-                        ) { asignatura ->
-                            AsignaturaCard(
-                                asignatura = asignatura,
-                                onClick = {
-                                    val intent = Intent(context, AlumnoClasesActivityCompose::class.java)
-                                    intent.putExtra("ASIGNATURA_ID", asignatura.id)
-                                    intent.putExtra("ASIGNATURA_NOMBRE", asignatura.nombre)
-                                    context.startActivity(intent)
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
-
-                    // Botón de cerrar sesión
-                    item {
-                        Card(
-                            onClick = { showLogoutDialog = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(20.dp),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .padding(horizontal = 16.dp)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
                             ) {
                                 Icon(
                                     Icons.Default.ExitToApp,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(24.dp),
-                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                    contentDescription = null
                                 )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = "Cerrar Sesión",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(text = "CERRAR SESIÓN")
                             }
+                            Spacer(modifier = Modifier.height(24.dp))
                         }
-                    }
-
-                    // Spacer final
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             }
@@ -363,14 +327,19 @@ fun PanelAlumnoScreen(
     if (showInscripcionDialog) {
         AlertDialog(
             onDismissRequest = { showInscripcionDialog = false },
-            title = { Text("Inscribirse con código") },
+            title = { Text("Inscripción de Código", style = MaterialTheme.typography.titleLarge) },
             text = {
                 OutlinedTextField(
                     value = codigoInscripcion,
-                    onValueChange = { codigoInscripcion = it },
-                    label = { Text("Código de acceso") },
+                    onValueChange = { codigoInscripcion = it.uppercase() },
+                    label = { Text("INGRESE CÓDIGO") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    textStyle = androidx.compose.ui.text.TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
                 )
             },
             confirmButton = {
@@ -381,12 +350,12 @@ fun PanelAlumnoScreen(
                         }
                     }
                 ) {
-                    Text("Inscribirse")
+                    Text("INSCRIBIR")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showInscripcionDialog = false }) {
-                    Text("Cancelar")
+                    Text("CANCELAR")
                 }
             }
         )
@@ -396,21 +365,21 @@ fun PanelAlumnoScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Cerrar Sesión") },
-            text = { Text("¿Estás seguro de que deseas cerrar sesión?") },
+            title = { Text("Terminar Sesión") },
+            text = { Text("¿Confirmar desconexión del sistema?") },
             confirmButton = {
-                Button(
+                TextButton(
                     onClick = {
                         showLogoutDialog = false
                         viewModel.logout()
                     }
                 ) {
-                    Text("Cerrar Sesión")
+                    Text("DESCONECTAR", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancelar")
+                    Text("CANCELAR")
                 }
             }
         )
@@ -426,32 +395,58 @@ fun AsignaturaCard(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
-            Text(
-                text = asignatura.nombre,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                 Icon(
+                    imageVector = Icons.Default.Book,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = asignatura.nombre,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            
             if (asignatura.descripcion.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = asignatura.descripcion,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Código: ${asignatura.codigoAcceso}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = "ID: ${asignatura.codigoAcceso}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+            }
         }
     }
 }

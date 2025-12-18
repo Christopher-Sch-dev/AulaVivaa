@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -113,275 +115,231 @@ fun PanelPrincipalScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { cl.duocuc.aulaviva.presentation.ui.common.CyberSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Panel Principal") },
+                title = { Text("PANEL DOCENTE", fontWeight = FontWeight.Bold, letterSpacing = 2.sp) }, // Cyber Header
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        Column(
+        
+        // Gradient Background
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(scrollState)
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Icono de bienvenida
-            Card(
-                modifier = Modifier.size(80.dp),
-                shape = RoundedCornerShape(40.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "🎓",
-                        fontSize = 42.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Mensaje de bienvenida
-            Text(
-                text = "👨‍🏫 Bienvenido Profesor ${userEmail?.substringBefore("@") ?: "Usuario"}",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-            )
-
-            Text(
-                text = "Gestiona tus asignaturas y clases",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
-
-            // Card: Mis Asignaturas
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(text = "📚", fontSize = 40.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Mis Asignaturas",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            val intent = Intent(context, DocenteAsignaturasActivityCompose::class.java)
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                             MaterialTheme.colorScheme.background,
+                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         )
+                    )
+                )
+                .padding(paddingValues)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Welcome Section (No more Emoji)
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.AccountCircle, // Generic Avatar
+                    contentDescription = "Profile",
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Mensaje de bienvenida
+                Text(
+                    text = "PROFESOR ${userEmail?.substringBefore("@")?.uppercase() ?: "USUARIO"}",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center
+                )
+
+                Text(
+                    text = "CONTROL DE MANDO ACADÉMICO",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    textAlign = TextAlign.Center,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.padding(bottom = 32.dp, top = 8.dp)
+                )
+
+                // Card: Mis Asignaturas
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f) // Glass feel
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
                             imageVector = Icons.Default.Book,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(40.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Ver Mis Asignaturas",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            text = "MIS ASIGNATURAS",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                val intent = Intent(context, DocenteAsignaturasActivityCompose::class.java)
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text(
+                                text = "ACCEDER A CLASES",
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Crea asignaturas, genera códigos y gestiona tus clases",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
                 }
-            }
 
-            // Card: Modo Demostración
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Card: Modo Demostración
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
-                    Text(text = "🧪", fontSize = 40.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "🎓 Modo Demostración",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            if (!isCreatingDemo) {
-                                showConfirmDialog = true
-                            }
-                        },
-                        enabled = !isCreatingDemo,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondary
-                        )
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
                             imageVector = Icons.Default.Science,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(40.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        if (isCreatingDemo) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text(
-                                text = "Crear Demo",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Crea una asignatura y clase de demostración completa",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-
-            // Dialog de confirmación para crear demo
-            if (showConfirmDialog) {
-                AlertDialog(
-                    onDismissRequest = { showConfirmDialog = false },
-                    title = { Text("🎓 Crear Asignatura Demo") },
-                    text = {
-                        Column {
-                            Text(
-                                text = "Se creará una asignatura de demostración con:",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            Text(
-                                text = "• Asignatura: Programación Móvil DEMO",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
-                            )
-                            Text(
-                                text = "• Clase: Introducción a Kotlin para Android",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
-                            )
-                            Text(
-                                text = "• Material PDF incluido",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp)
-                            )
-                            Text(
-                                text = "• Código de acceso generado automáticamente",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(start = 16.dp)
-                            )
-                        }
-                    },
-                    confirmButton = {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "MODO DEMOSTRACIÓN",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
                         Button(
                             onClick = {
-                                showConfirmDialog = false
-                                isCreatingDemo = true
-                                viewModel.crearAsignaturaYClaseDemo()
-                            }
+                                if (!isCreatingDemo) {
+                                    showConfirmDialog = true
+                                }
+                            },
+                            enabled = !isCreatingDemo,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary
+                            )
                         ) {
-                            Text("Sí, crear")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showConfirmDialog = false }) {
-                            Text("Cancelar")
+                            if (isCreatingDemo) {
+                                cl.duocuc.aulaviva.presentation.ui.common.CyberLoading(
+                                    size = 16.dp,
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onSecondary
+                                )
+                            } else {
+                                Text(
+                                    text = "GENERAR DATA DEMO",
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
                         }
                     }
-                )
-            }
+                }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Botón cerrar sesión
-            OutlinedButton(
-                onClick = { showLogoutDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                ),
-                border = ButtonDefaults.outlinedButtonBorder.copy(
-                    width = 2.dp,
-                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.error,
-                            MaterialTheme.colorScheme.error
-                        )
+                // Dialog de confirmación para crear demo
+                if (showConfirmDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showConfirmDialog = false },
+                        title = { Text("Generar Entorno Demo") },
+                        text = {
+                            Column {
+                                Text("Se generará una asignatura y clase de prueba con datos simulados.")
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showConfirmDialog = false
+                                    isCreatingDemo = true
+                                    viewModel.crearAsignaturaYClaseDemo()
+                                }
+                            ) {
+                                Text("Confirmar")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showConfirmDialog = false }) {
+                                Text("Cancelar")
+                            }
+                        }
                     )
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ExitToApp,
-                    contentDescription = null
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Cerrar Sesión",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
+                }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Botón cerrar sesión
+                OutlinedButton(
+                    onClick = { showLogoutDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "CERRAR SESIÓN")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 
@@ -389,8 +347,8 @@ fun PanelPrincipalScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Cerrar sesión") },
-            text = { Text("¿Estás seguro que quieres salir de Aula Viva?") },
+            title = { Text("Terminar Sesión") },
+            text = { Text("¿Confirmar desconexión del sistema?") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -398,12 +356,12 @@ fun PanelPrincipalScreen(
                         viewModel.logout()
                     }
                 ) {
-                    Text("Sí, salir", color = MaterialTheme.colorScheme.error)
+                    Text("DESCONECTAR", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancelar")
+                    Text("CANCELAR")
                 }
             }
         )
