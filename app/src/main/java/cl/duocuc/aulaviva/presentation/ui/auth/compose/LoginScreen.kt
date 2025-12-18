@@ -98,20 +98,13 @@ fun LoginScreen(
         containerColor = MaterialTheme.colorScheme.background // Ensure dark background
     ) { paddingValues ->
         
-        // Background with subtle Gradient
+        // Matrix Rain Background
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(
-                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    )
-                )
         ) {
+            cl.duocuc.aulaviva.presentation.ui.common.MatrixBackground()
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -123,7 +116,7 @@ fun LoginScreen(
                 // Main Login Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp), // Slightly softer for tech look
+                    shape = androidx.compose.foundation.shape.CutCornerShape(24.dp), // Angled tech look
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
                     ),
@@ -146,7 +139,7 @@ fun LoginScreen(
                         )
 
                         // Title
-                        Text(
+                        cl.duocuc.aulaviva.presentation.ui.common.GlitchText(
                             text = "AULA VIVA",
                             style = MaterialTheme.typography.headlineLarge,
                             color = MaterialTheme.colorScheme.primary,

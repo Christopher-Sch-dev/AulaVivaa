@@ -118,9 +118,14 @@ fun PanelPrincipalScreen(
         snackbarHost = { cl.duocuc.aulaviva.presentation.ui.common.CyberSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("PANEL DOCENTE", fontWeight = FontWeight.Bold, letterSpacing = 2.sp) }, // Cyber Header
+                title = { 
+                    cl.duocuc.aulaviva.presentation.ui.common.GlitchText(
+                        text = "PANEL DOCENTE", 
+                        style = MaterialTheme.typography.titleLarge
+                    ) 
+                }, // Cyber Header
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
                     titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
@@ -128,20 +133,13 @@ fun PanelPrincipalScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         
-        // Gradient Background
+        // Matrix Rain Background
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        colors = listOf(
-                             MaterialTheme.colorScheme.background,
-                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
-                    )
-                )
                 .padding(paddingValues)
         ) {
+            cl.duocuc.aulaviva.presentation.ui.common.MatrixBackground()
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -233,7 +231,12 @@ fun PanelPrincipalScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = androidx.compose.foundation.shape.CutCornerShape(
+                        topStart = 0.dp, 
+                        topEnd = 16.dp, 
+                        bottomStart = 16.dp, 
+                        bottomEnd = 0.dp
+                    ),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
                     ),

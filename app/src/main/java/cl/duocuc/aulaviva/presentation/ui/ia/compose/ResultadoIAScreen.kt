@@ -65,7 +65,12 @@ fun ResultadoIAScreen(
         snackbarHost = { cl.duocuc.aulaviva.presentation.ui.common.CyberSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(titulo.uppercase(), fontWeight = FontWeight.Bold, letterSpacing = 1.sp) }, // Uppercase & Spacing
+                title = { 
+                    cl.duocuc.aulaviva.presentation.ui.common.GlitchText(
+                        text = titulo.uppercase(), 
+                        style = MaterialTheme.typography.titleLarge
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         (context as? android.app.Activity)?.finish()
@@ -74,27 +79,21 @@ fun ResultadoIAScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
                     titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        // Cyber Gradient Background
+        // Matrix Rain Background
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                             MaterialTheme.colorScheme.background,
-                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
-                    )
-                )
                 .padding(paddingValues)
         ) {
+            cl.duocuc.aulaviva.presentation.ui.common.MatrixBackground()
+            
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -225,24 +224,25 @@ fun MensajeChatCard(mensaje: MensajeChat) {
     ) {
         Card(
             modifier = Modifier
-                .widthIn(max = if (mensaje.esUsuario) 280.dp else 320.dp) 
-                .fillMaxWidth(0.85f), 
-            shape = if (mensaje.esUsuario) {
-                RoundedCornerShape(topStart = 16.dp, topEnd = 4.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
-            } else {
-                RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
-            },
+                .widthIn(max = if (mensaje.esUsuario) 280.dp else 340.dp) 
+                .fillMaxWidth(0.9f), 
+            shape = androidx.compose.foundation.shape.CutCornerShape(
+                topStart = 0.dp, 
+                topEnd = 16.dp, 
+                bottomStart = 16.dp, 
+                bottomEnd = 0.dp
+            ),
             colors = CardDefaults.cardColors(
                 containerColor = if (mensaje.esUsuario) {
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha=0.8f) 
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha=0.3f) 
                 } else {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.6f) 
+                    MaterialTheme.colorScheme.surface.copy(alpha=0.9f) 
                 }
             ),
             border = if (mensaje.esUsuario) {
-                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha=0.5f))
+                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
             } else {
-                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha=0.5f))
+                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             },
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) 
         ) {

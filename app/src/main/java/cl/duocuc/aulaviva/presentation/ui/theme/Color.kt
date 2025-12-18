@@ -2,35 +2,35 @@ package cl.duocuc.aulaviva.presentation.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Cyber-Academic Palette - Aula Viva
-// High performance, professional, deep dark mode with electric accents.
+// Cyber-Academic Palette - Aula Viva (Matrix Edition)
+// High performance, professional, deep dark mode with terminal green accents.
 
-// Primary - Electric Blue (Action/Focus)
-val ElectricBlue = Color(0xFF00F0FF) 
-val ElectricBlueDark = Color(0xFF00B8C4)
-val ElectricBlueAlpha = Color(0x3300F0FF) // For glows
+// Primary - Terminal Green (Action/Focus)
+val MatrixGreen = Color(0xFF00FF41)
+val MatrixDarkGreen = Color(0xFF003B00)
+val MatrixGreenAlpha = Color(0x3300FF41)
 
-// Secondary - Deep Purple (Creative/Depth)
-val DeepPurple = Color(0xFF7000FF)
-val DeepPurpleLight = Color(0xFF9E47FF)
+// Secondary - Glitch Red/Blue (Effects)
+val GlitchRed = Color(0xFFFF003C)
+val GlitchBlue = Color(0xFF04D9FF)
 
 // Backgrounds - OLED Optimized
-val CyberBlack = Color(0xFF050505) // Absolute darkest background
-val BackgroundDark = Color(0xFF0A0E14) // Main background (Deep Blue-Grey)
-val SurfaceDark = Color(0xFF11161D) // Cards/Surfaces
-val SurfaceHighlight = Color(0xFF1A212C) // Hover/Active states
+val CyberBlack = Color(0xFF000000) // True Black
+val BackgroundDark = Color(0xFF050505) // Deepest Grey
+val SurfaceDark = Color(0xFF0A0A0A) // Card Surface
+val SurfaceHighlight = Color(0xFF111111) // Hover state
 
-// Functional / State Colors
-val CyberRed = Color(0xFFFF2A6D) // Critical Error / Stop
-val NeonGreen = Color(0xFF00FF9D) // Success / Online
-val TechGold = Color(0xFFFFD600) // Warning / Attention
+// Functional
+val CyberRed = Color(0xFFFF2A6D)
+val NeonGreen = Color(0xFF00FF41)
+val TechGold = Color(0xFFFFD700)
 
-// Text Colors
-val TextPrimary = Color(0xFFF0F0F0) // Almost white for readability
-val TextSecondary = Color(0xFFAAAAAA) // De-emphasized text
-val TextTertiary = Color(0xFF666666) // Disabled/Hint
+// Text
+val TextPrimary = Color(0xFFE0E0E0) // Off-white/Silver
+val TextSecondary = Color(0xFF008F11) // Matrix Dark Text
+val TextTertiary = Color(0xFF003B00) // Faint Code
 
 // Gradients
-val GradientCyberMain = listOf(ElectricBlue, DeepPurple)
+val GradientMatrix = listOf(MatrixGreen, MatrixDarkGreen)
 val GradientDarkSurface = listOf(SurfaceDark, BackgroundDark)
 

@@ -19,16 +19,16 @@ import androidx.core.view.WindowCompat
 // Cyber-Academic is a Dark-First theme. 
 // We intentionally override light mode to maintain the "Cyber" aesthetic in all conditions.
 
-private val CyberColorScheme = darkColorScheme(
-    primary = ElectricBlue,
-    onPrimary = CyberBlack, // High contrast text on primary buttons
-    primaryContainer = ElectricBlueAlpha,
-    onPrimaryContainer = ElectricBlue,
+private val MatrixColorScheme = darkColorScheme(
+    primary = MatrixGreen,
+    onPrimary = Color.Black,
+    primaryContainer = MatrixGreenAlpha,
+    onPrimaryContainer = MatrixGreen,
 
-    secondary = DeepPurple,
-    onSecondary = Color.White,
-    secondaryContainer = DeepPurple.copy(alpha = 0.3f),
-    onSecondaryContainer = DeepPurpleLight,
+    secondary = MatrixDarkGreen,
+    onSecondary = MatrixGreen,
+    secondaryContainer = MatrixDarkGreen.copy(alpha = 0.5f),
+    onSecondaryContainer = MatrixGreen,
 
     background = BackgroundDark,
     onBackground = TextPrimary,
@@ -39,7 +39,7 @@ private val CyberColorScheme = darkColorScheme(
     onSurfaceVariant = TextSecondary,
 
     error = CyberRed,
-    onError = Color.White,
+    onError = Color.Black,
     
     outline = TextTertiary,
     outlineVariant = SurfaceHighlight
@@ -47,7 +47,7 @@ private val CyberColorScheme = darkColorScheme(
 
 // We map Light Scheme to Dark Scheme because this app strictly enforces the Cyber aesthetic
 // This ensures consistency even if user has Light Mode on system.
-private val ForceDarkScheme = CyberColorScheme
+private val ForceDarkScheme = MatrixColorScheme
 
 /**
  * Tema principal "AulaViva Cyber-Academic"
@@ -68,7 +68,7 @@ fun AulaVivaTheme(
             // but for "Branded" cyber aesthetic, we usually prefer our defined palette.
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicDarkColorScheme(context)
         }
-        else -> CyberColorScheme
+        else -> MatrixColorScheme
     }
 
     val view = LocalView.current

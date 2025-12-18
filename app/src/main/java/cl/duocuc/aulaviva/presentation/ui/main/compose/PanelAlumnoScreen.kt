@@ -99,9 +99,14 @@ fun PanelAlumnoScreen(
         snackbarHost = { cl.duocuc.aulaviva.presentation.ui.common.CyberSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("PANEL ALUMNO", fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
+                title = { 
+                    cl.duocuc.aulaviva.presentation.ui.common.GlitchText(
+                        text = "PANEL ALUMNO", 
+                        style = MaterialTheme.typography.titleLarge
+                    ) 
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
                     titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
@@ -109,20 +114,13 @@ fun PanelAlumnoScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         
-        // Background Gradient
+        // Matrix Rain Background
         Box(
              modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        colors = listOf(
-                             MaterialTheme.colorScheme.background,
-                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
-                    )
-                )
                 .padding(paddingValues)
         ) {
+            cl.duocuc.aulaviva.presentation.ui.common.MatrixBackground()
             if (isLoading && asignaturas.isEmpty()) {
                 cl.duocuc.aulaviva.presentation.ui.common.FullScreenLoading()
             } else {
@@ -141,7 +139,12 @@ fun PanelAlumnoScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
-                                shape = RoundedCornerShape(16.dp),
+                                shape = androidx.compose.foundation.shape.CutCornerShape(
+                                    topStart = 0.dp, 
+                                    topEnd = 16.dp, 
+                                    bottomStart = 16.dp, 
+                                    bottomEnd = 0.dp
+                                ),
                                 colors = CardDefaults.cardColors(
                                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
                                 ),
@@ -396,7 +399,9 @@ fun AsignaturaCard(
     Card(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = androidx.compose.foundation.shape.CutCornerShape(
+            topStart = 8.dp, topEnd = 0.dp, bottomStart = 0.dp, bottomEnd = 8.dp
+        ),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ),

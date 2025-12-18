@@ -62,7 +62,12 @@ fun DetalleClaseScreen(
         snackbarHost = { cl.duocuc.aulaviva.presentation.ui.common.CyberSnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("DETALLE DE CLASE", fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
+                title = { 
+                     cl.duocuc.aulaviva.presentation.ui.common.GlitchText(
+                        text = "DETALLE DE CLASE", 
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         (context as? android.app.Activity)?.finish()
@@ -79,20 +84,14 @@ fun DetalleClaseScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         
-        // Cyber Gradient Background
+        // Matrix Rain Background
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                             MaterialTheme.colorScheme.background,
-                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
-                    )
-                )
                 .padding(paddingValues)
         ) {
+            cl.duocuc.aulaviva.presentation.ui.common.MatrixBackground()
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
