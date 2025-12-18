@@ -120,43 +120,47 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
     /**
      * Sincroniza clases desde Spring Boot a Room.
      */
-    override suspend fun sincronizarDesdeSupabase() {
-        try {
+    override suspend fun sincronizarDesdeSupabase(): Result<Unit> {
+        return try {
             // PASO 1: Subir clases pendientes desde Room a Spring Boot
             val clasesNoSincronizadas = claseDao.obtenerNoSincronizadas()
-            Log.d(
-                "ClaseRepository",
-                "🔄 Intentando subir ${clasesNoSincronizadas.size} clases pendientes..."
-            )
-            clasesNoSincronizadas.forEach { claseEntity ->
-                try {
-                    val clase = claseEntity.toClase()
-                    // Intentar crear/actualizar en Spring Boot
-                    val existe = springBootRepo.obtenerClasePorId(clase.id).getOrNull()
-                    val result = if (existe != null) {
-                        springBootRepo.actualizarClase(clase)
-                    } else {
-                        springBootRepo.crearClase(clase)
-                    }
-                    result.fold(
-                        onSuccess = {
-                            // Si se subió, marcar como sincronizada en Room
-                            claseDao.insertarClase(claseEntity.copy(sincronizado = true))
-                            Log.d("ClaseRepository", "✅ Clase ${clase.id} sincronizada a Spring Boot")
-                        },
-                        onFailure = { error ->
-                            Log.e(
-                                "ClaseRepository",
-                                "❌ Error subiendo clase ${clase.id}: ${error.message}"
-                            )
+            if (clasesNoSincronizadas.isNotEmpty()) {
+                Log.d(
+                    "ClaseRepository",
+                    "🔄 Intentando subir ${clasesNoSincronizadas.size} clases pendientes..."
+                )
+                clasesNoSincronizadas.forEach { claseEntity ->
+                    try {
+                        val clase = claseEntity.toClase()
+                        // Intentar crear/actualizar en Spring Boot
+                        val existe = springBootRepo.obtenerClasePorId(clase.id).getOrNull()
+                        val result = if (existe != null) {
+                            springBootRepo.actualizarClase(clase)
+                        } else {
+                            springBootRepo.crearClase(clase)
                         }
-                    )
-                } catch (e: Exception) {
-                    Log.e(
-                        "ClaseRepository",
-                        "❌ Excepción al procesar clase pendiente ${claseEntity.id}",
-                        e
-                    )
+                        result.fold(
+                            onSuccess = {
+                                // Si se subió, marcar como sincronizada en Room
+                                claseDao.insertarClase(claseEntity.copy(sincronizado = true))
+                                Log.d("ClaseRepository", "✅ Clase ${clase.id} sincronizada a Spring Boot")
+                            },
+                            onFailure = { error ->
+                                Log.e(
+                                    "ClaseRepository",
+                                    "❌ Error subiendo clase ${clase.id}: ${error.message}"
+                                )
+                                // No propagamos este error individual para no detener todo el proceso,
+                                // pero idealmente deberíamos notificar si es algo crítico.
+                            }
+                        )
+                    } catch (e: Exception) {
+                        Log.e(
+                            "ClaseRepository",
+                            "❌ Excepción al procesar clase pendiente ${claseEntity.id}",
+                            e
+                        )
+                    }
                 }
             }
 
@@ -169,13 +173,16 @@ class ClaseRepository(private val application: Application) : IClaseRepository {
                         "✅ Sincronización exitosa: ${it.size} clases descargadas"
                     )
                     // El springBootRepo.obtenerClases ya actualiza Room.
+                    Result.success(Unit)
                 },
                 onFailure = { error ->
                     Log.e("ClaseRepository", "❌ Error en sincronización de descarga", error)
+                    Result.failure(error)
                 }
             )
         } catch (e: Exception) {
             Log.e("ClaseRepository", "❌ Error general sincronizando", e)
+            Result.failure(e)
         }
     }
 

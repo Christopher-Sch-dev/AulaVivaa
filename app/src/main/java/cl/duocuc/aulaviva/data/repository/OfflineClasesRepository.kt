@@ -130,8 +130,8 @@ class OfflineClasesRepository(private val application: Application) : IClaseRepo
     // SINCRONIZACIÓN (SYNC)
     // ============================================================================================
 
-    override suspend fun sincronizarDesdeSupabase() {
-        try {
+    override suspend fun sincronizarDesdeSupabase(): Result<Unit> {
+        return try {
             // 1. PUSH: Subir pendientes
             val pendientes = claseDao.obtenerNoSincronizadas()
             if (pendientes.isNotEmpty()) {
@@ -147,9 +147,14 @@ class OfflineClasesRepository(private val application: Application) : IClaseRepo
             }
             
             // 2. PULL: Descargar nuevos
-            remoteRepo.obtenerClases() // Este método en SpringBootRepo ya inserta en Room
+            val result = remoteRepo.obtenerClases() // Este método en SpringBootRepo ya inserta en Room
+            result.fold(
+                onSuccess = { Result.success(Unit) },
+                onFailure = { Result.failure(it) }
+            )
         } catch (e: Exception) {
             Log.e("OfflineRepo", "Sync error", e)
+            Result.failure(e)
         }
     }
 
