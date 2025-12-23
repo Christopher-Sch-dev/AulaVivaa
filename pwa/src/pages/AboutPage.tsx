@@ -45,11 +45,16 @@ export const AboutPage = () => {
                             <BrainCircuit size={24} />
                         </div>
                         <div className="space-y-3">
-                            <h3 className="text-xl font-bold text-white">El Desafío Técnico</h3>
+                            <h3 className="text-xl font-bold text-white">Arquitectura & Demo</h3>
                             <p className="text-gray-400 leading-relaxed">
-                                El objetivo fue democratizar el acceso a tutores inteligentes en zonas con baja conectividad.
+                                Para efectos de este <strong>Portafolio/Demo</strong>, se optó por una arquitectura <em>"Local-Only"</em> para garantizar accesibilidad total.
                             </p>
-                            <ul className="space-y-2 text-sm text-gray-400">
+                            <div className="bg-primary/5 border-l-2 border-primary p-3 rounded-r-lg my-2">
+                                <p className="text-xs text-gray-300 italic">
+                                    * Nota: En producción, la persistencia usaría una BD centralizada (PostgreSQL) para integridad de datos, lógica que domino (Spring Boot) pero omití aquí por portabilidad.
+                                </p>
+                            </div>
+                            <ul className="space-y-2 text-sm text-gray-400 mt-2">
                                 <li className="flex items-center gap-2">
                                     <WifiOff size={16} className="text-red-400" />
                                     <span>Funcionamiento 100% Offline (IndexedDB)</span>
