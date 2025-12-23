@@ -14,7 +14,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen text-text relative overflow-hidden font-sans selection:bg-primary selection:text-white flex flex-col">
+    <div className="h-screen text-text relative overflow-hidden font-sans selection:bg-primary selection:text-white flex flex-col">
       <MatrixBackground />
       <Scanlines />
 
@@ -62,7 +62,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </nav>
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10 overflow-y-auto scrollbar-hide">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}

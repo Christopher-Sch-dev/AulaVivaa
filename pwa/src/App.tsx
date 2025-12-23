@@ -30,7 +30,13 @@ const Dashboard = () => {
   return user?.role === 'docente' ? <DocenteDashboard /> : <AlumnoDashboard />;
 };
 
+import { SeedService } from './services/seeder';
+
 function App() {
+  React.useEffect(() => {
+    SeedService.seedDemoData();
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
