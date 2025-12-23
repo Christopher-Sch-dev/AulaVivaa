@@ -105,26 +105,26 @@ export const AuthPage = () => {
 
   return (
     <div className="flex items-center justify-center min-h-[80vh] w-full mt-[-40px]">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
 
         {/* Left Column: Educational Showcase */}
-        <div className="hidden lg:flex flex-col justify-center space-y-12">
+        <div className="hidden lg:flex flex-col justify-center space-y-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md animate-fade-in-up delay-100">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md animate-fade-in-up delay-100 mb-4">
               <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
               <span className="text-xs font-medium text-gray-300 tracking-wider">POWERED BY GEMINI 3 FLASH + VISION API</span>
             </div>
-            <h1 className="text-5xl font-bold text-white leading-tight mb-6">
+            <h1 className="text-4xl font-bold text-white leading-tight mb-3">
               La Evolución del <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Aprendizaje Digital</span>
             </h1>
-            <p className="text-lg text-gray-400 max-w-md leading-relaxed">
+            <p className="text-base text-gray-400 max-w-md leading-relaxed">
               Aula Viva conecta docentes y estudiantes con el poder de la IA Generativa, en una plataforma segura y siempre disponible.
             </p>
           </div>
 
           {/* Feature Card Carousel */}
-          <div className="relative h-48">
+          <div className="relative h-32">
             <AnimatePresence mode="wait">
               <motion.div
                 key={featureIndex}
@@ -132,30 +132,27 @@ export const AuthPage = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.5 }}
-                className="bg-surface/30 border border-white/5 backdrop-blur-sm p-6 rounded-2xl flex items-start gap-4 absolute w-full"
+                className="bg-surface/30 border border-white/5 backdrop-blur-sm p-4 rounded-2xl flex items-start gap-4 absolute w-full"
               >
-                <div className="p-3 bg-primary/20 rounded-lg text-primary">
-                  {React.createElement(FEATURES[featureIndex].icon, { size: 28 })}
+                <div className="p-2 bg-primary/20 rounded-lg text-primary">
+                  {React.createElement(FEATURES[featureIndex].icon, { size: 24 })}
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-2">{FEATURES[featureIndex].title}</h3>
-                  <p className="text-sm text-gray-400 leading-relaxed">{FEATURES[featureIndex].desc}</p>
+                  <h3 className="text-lg font-bold text-white mb-1">{FEATURES[featureIndex].title}</h3>
+                  <p className="text-xs text-gray-400 leading-relaxed">{FEATURES[featureIndex].desc}</p>
                 </div>
               </motion.div>
             </AnimatePresence>
 
             {/* Indicators */}
-            <div className="absolute -bottom-8 flex gap-2 cursor-pointer z-10">
+            <div className="absolute -bottom-6 flex gap-2 cursor-pointer z-10">
               {FEATURES.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => {
                     setFeatureIndex(i);
-                    // Reset timer logic handled by effect dependency or manual restart?
-                    // Actually, if we just update state, the current interval keeps ticking and might switch immediately.
-                    // We need a way to reset.
                   }}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${i === featureIndex ? 'w-8 bg-primary' : 'w-2 bg-gray-700 hover:bg-gray-600'}`}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${i === featureIndex ? 'w-6 bg-primary' : 'w-2 bg-gray-700 hover:bg-gray-600'}`}
                 />
               ))}
             </div>
@@ -166,17 +163,17 @@ export const AuthPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-white/20 transition-colors"
+            className="bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl p-5 relative overflow-hidden group hover:border-white/20 transition-colors"
           >
-            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Rocket size={64} className="text-white transform rotate-12" />
+            <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Rocket size={48} className="text-white transform rotate-12" />
             </div>
 
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
               ⚡ Acceso Rápido (Demo)
             </h3>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => {
                   setIsLogin(true);
@@ -184,10 +181,10 @@ export const AuthPage = () => {
                   setPassword('docente12');
                   toast.info('Credenciales de Docente cargadas');
                 }}
-                className="bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/50 transition-all p-4 rounded-xl text-left group/btn"
+                className="bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/50 transition-all p-3 rounded-xl text-left group/btn"
               >
-                <div className="text-xs text-primary font-bold mb-1 group-hover/btn:translate-x-1 transition-transform">DOCENTE</div>
-                <div className="text-white font-mono text-sm mb-1">d1@d1.cl</div>
+                <div className="text-[10px] text-primary font-bold mb-0.5 group-hover/btn:translate-x-1 transition-transform">DOCENTE</div>
+                <div className="text-white font-mono text-xs mb-0.5">d1@d1.cl</div>
                 <div className="text-gray-500 text-[10px]">Pass: docente12</div>
               </button>
 
@@ -198,16 +195,16 @@ export const AuthPage = () => {
                   setPassword('alumno12');
                   toast.info('Credenciales de Alumno cargadas');
                 }}
-                className="bg-secondary/10 border border-secondary/20 hover:bg-secondary/20 hover:border-secondary/50 transition-all p-4 rounded-xl text-left group/btn"
+                className="bg-secondary/10 border border-secondary/20 hover:bg-secondary/20 hover:border-secondary/50 transition-all p-3 rounded-xl text-left group/btn"
               >
-                <div className="text-xs text-secondary font-bold mb-1 group-hover/btn:translate-x-1 transition-transform">ALUMNO</div>
-                <div className="text-white font-mono text-sm mb-1">a1@a1.cl</div>
+                <div className="text-[10px] text-secondary font-bold mb-0.5 group-hover/btn:translate-x-1 transition-transform">ALUMNO</div>
+                <div className="text-white font-mono text-xs mb-0.5">a1@a1.cl</div>
                 <div className="text-gray-500 text-[10px]">Pass: alumno12</div>
               </button>
             </div>
 
-            <p className="text-[10px] text-gray-500 mt-4 text-center italic">
-              * Haz clic en una tarjeta para autofo-completar el formulario
+            <p className="text-[10px] text-gray-500 mt-3 text-center italic">
+              * Haz clic en una tarjeta para auto-completar el formulario
             </p>
           </motion.div>
         </div>
