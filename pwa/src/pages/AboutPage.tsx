@@ -137,14 +137,14 @@ export const AboutPage = () => {
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {[
-                        { name: "React 18", desc: "Core Framework" },
-                        { name: "TypeScript", desc: "Type Safety" },
-                        { name: "Vite", desc: "Build Tool" },
-                        { name: "Tailwind CSS", desc: "Styling Engine" },
-                        { name: "Dexie.js", desc: "Local Database" },
-                        { name: "Google Gemini", desc: "Generative AI" },
-                        { name: "Framer Motion", desc: "Animations" },
-                        { name: "PWA", desc: "Offline Capabilities" }
+                        { name: "React 18", desc: "Framework Principal" },
+                        { name: "TypeScript", desc: "Tipado Seguro" },
+                        { name: "Vite", desc: "Empaquetador Rápido" },
+                        { name: "Tailwind CSS", desc: "Motor de Estilos" },
+                        { name: "Dexie.js", desc: "Base de Datos Local" },
+                        { name: "Google Gemini", desc: "IA Generativa" },
+                        { name: "Framer Motion", desc: "Animaciones UI" },
+                        { name: "PWA", desc: "Capacidad Offline" }
                     ].map((tech, i) => (
                         <div key={i} className="bg-white/5 border border-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors">
                             <h4 className="font-bold text-primary">{tech.name}</h4>
