@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import React, { useState, useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { Button, Input, Card } from './ui';
-import { Send, Bot, Loader2, ShieldAlert, Key } from 'lucide-react';
-import { GlitchText } from './GlitchText';
+import { Send, Bot, Loader2, ShieldAlert, Key, Sparkles, FileText, HelpCircle, Lightbulb, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { AIService } from '../services/ai';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
-// Use local worker for offline support and reliability
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 interface AIChatProps {
@@ -29,12 +30,10 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Extract PDF Text on mount/change
   useEffect(() => {
     const extractText = async () => {
       try {
@@ -50,10 +49,12 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
           fullText += `\n--- Page ${i} ---\n${pageText}`;
         }
         setPdfText(fullText);
-        setMessages([{ role: 'model', text: '¡LISTO! He analizado el documento. ¿Qué necesitas saber?' }]);
+        setPdfText(fullText);
+        // Removed initial message to show Contextual Suggestions UI instead
+        // setMessages([{ role: 'model', text: '...' }]); 
       } catch (error) {
         console.error('Error parsing PDF:', error);
-        setMessages([{ role: 'model', text: 'ERROR CRÍTICO: No se pudo leer el PDF. Asegúrate de que sea texto seleccionable (no escaneado / imagen).' }]);
+        setMessages([{ role: 'model', text: '**Error Crítico**: No se pudo leer el PDF. Verifica que el archivo contenta texto seleccionable.' }]);
       } finally {
         setLoading(false);
       }
@@ -72,35 +73,28 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
     setLoading(true);
 
     try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
       const prompt = `
-        Actúa como un profesor experto y conciso del sistema "Aula Viva".
-        Tienes el siguiente contexto extraído de un documento PDF:
-        
-        CONTEXTO (${pdfText.length} caracteres):
-        ${pdfText.substring(0, 50000)}
+        Actúa como un profesor tutor experto del sistema.
+        CONTEXTO (${pdfText.length} chars):
+        ${pdfText.substring(0, 48000)}
 
-        PREGUNTA DEL ESTUDIANTE:
+        PREGUNTA:
         ${userMsg}
 
-        INSTRUCCIONES:
-        1. Responde de manera educativa y clara.
-        2. Usa formato Markdown (negritas, listas) para estructurar la respuesta.
-        3. Si la respuesta no está en el contexto, indícalo.
+        Responde usando Markdown enriquecido (encabezados, listas, negritas, bloques de código si aplica). Sé claro, pedagógico y calmado.
       `;
 
-      const result = await model.generateContent(prompt);
-      const response = result.response.text();
+      const { text } = await AIService.generateContent(apiKey, prompt);
 
-      setMessages(prev => [...prev, { role: 'model', text: response }]);
+      setMessages(prev => [...prev, { role: 'model', text }]);
+      // toast.success(`Respondido con ${model}`, { position: 'bottom-right' }); 
+
     } catch (error: any) {
-      if (error.message.includes('API key')) {
-        setMessages(prev => [...prev, { role: 'model', text: 'ERROR DE AUTENTICACIÓN: Tu API Key no es válida.' }]);
+      if (error.message.includes('API Key')) {
+        setMessages(prev => [...prev, { role: 'model', text: '> **ERROR DE ACCESO**\n\nTu API Key no es válida o ha expirado.' }]);
         setShowKeyInput(true);
       } else {
-        setMessages(prev => [...prev, { role: 'model', text: `ERROR DEL SISTEMA: ${error.message}` }]);
+        setMessages(prev => [...prev, { role: 'model', text: `> **ERROR DEL SISTEMA**\n\n${error.message}` }]);
       }
     } finally {
       setLoading(false);
@@ -109,52 +103,51 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
 
   const saveKey = (key: string) => {
     if (!key.trim()) {
-      toast.error('Ingresa una API Key válida');
+      toast.error('Token vacío');
       return;
     }
     setApiKey(key);
     localStorage.setItem('GEMINI_API_KEY', key);
     setShowKeyInput(false);
-    toast.success('Clave de seguridad almacenada');
+    toast.success('Token Guardado');
   };
 
   if (showKeyInput) {
     return (
-      <Card className={`h-full flex flex-col justify-center items-center p-8 text-center space-y-6 border-accent/30 bg-black/80 backdrop-blur-xl ${className}`}>
-        <div className="relative">
-          <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+      <Card className={`h-full flex flex-col justify-center items-center p-8 text-center space-y-6 bg-surface/90 backdrop-blur-md border border-primary/20 ${className}`}>
+        <div className="relative group">
+          <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse group-hover:bg-primary/30 transition-all" />
           <Bot size={64} className="text-primary relative z-10" />
         </div>
 
         <div className="space-y-2">
-          <GlitchText text="SISTEMA IA: AUTH REQUERIDA" className="text-xl font-bold text-accent" />
-          <p className="text-gray-400 text-sm max-w-xs mx-auto">
-            Para interactuar con Gemini 1.5 Flash, se requiere una credencial de acceso.
+          <h3 className="text-xl font-bold text-white tracking-tight">AUTENTICACIÓN REQUERIDA</h3>
+          <p className="text-muted text-sm max-w-xs mx-auto">
+            Para activar el Módulo IA, ingresa tu credencial de Gemini.
           </p>
         </div>
 
         <div className="w-full max-w-sm space-y-4">
-          <div className="bg-accent/5 border border-accent/20 rounded p-3 flex items-start gap-3 text-left">
-            <ShieldAlert className="text-accent shrink-0 mt-0.5" size={18} />
-            <p className="text-xs text-gray-300">
-              <span className="font-bold text-accent">AVISO DE PRIVACIDAD:</span> Tu API Key se almacena <strong>únicamente en tu navegador</strong> (LocalStorage). No se envía a ningún servidor intermedio, solo directo a Google API. Es seguro usar una key gratuita.
+          <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 flex items-start gap-3 text-left">
+            <ShieldAlert className="text-primary shrink-0 mt-0.5" size={18} />
+            <p className="text-xs text-muted">
+              <span className="font-bold text-primary">PRIVACIDAD:</span> Los datos viajan encriptados directamente a Google. Sin intermediarios.
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Input
               type="password"
-              placeholder="Pegar Google Gemini API Key"
+              placeholder="Tu API Key aquí"
               onChange={(e) => setApiKey(e.target.value)}
-              className="bg-black/50 border-gray-700 text-center font-mono tracking-widest"
+              className="text-center font-mono tracking-wider bg-black/20"
             />
             <Button onClick={() => saveKey(apiKey)} className="w-full flex items-center justify-center gap-2">
-              <Key size={16} /> ACTIVAR SISTEMA
+              <Key size={16} /> VINCULAR SISTEMA
             </Button>
           </div>
-
-          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="block text-xs text-primary hover:underline opacity-70 hover:opacity-100 transition-opacity">
-            Obtener API Key gratuita (Google AI Studio) &rarr;
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="block text-xs text-secondary hover:text-white transition-colors">
+            ¿No tienes una? Consíguela gratis aquí
           </a>
         </div>
       </Card>
@@ -162,70 +155,105 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
   }
 
   return (
-    <div className={`flex flex-col h-[600px] border border-gray-800 rounded-lg bg-black/80 backdrop-blur-xl shadow-2xl relative overflow-hidden ${className}`}>
-      {/* Header */}
-      <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-black/40 z-10">
-        <div className="flex items-center gap-2 text-primary font-bold font-mono tracking-tighter">
-          <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-          AULA_VIVA_AI :: V2.0
+    <div className={`flex flex-col h-[600px] bg-surface/50 border border-white/5 rounded-xl shadow-2xl relative overflow-hidden backdrop-blur-sm ${className}`}>
+
+      {/* Header Calmeante */}
+      <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center bg-black/20">
+        <div className="flex items-center gap-3 text-primary font-medium tracking-wide">
+          <Sparkles size={18} className="text-secondary animate-pulse" />
+          ASISTENTE DE APRENDIZAJE
         </div>
-        <button onClick={() => setShowKeyInput(true)} className="text-[10px] uppercase font-bold text-gray-600 hover:text-accent border border-gray-800 px-2 py-1 rounded hover:border-accent transition-all">
-          Reconfigurar Credenciales
+        <button onClick={() => setShowKeyInput(true)} className="text-[10px] uppercase font-bold text-muted hover:text-white border border-white/10 px-3 py-1 rounded-full hover:bg-white/5 transition-all">
+          Ajustes
         </button>
       </div>
 
-      {/* Scanlines Overlay for Chat */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] z-0" />
-
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-primary/20 relative z-10">
-        {messages.map((msg, idx) => (
-          <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-white/10 relative z-10">
 
-            <div className={`max-w-[85%] p-4 rounded-xl text-sm leading-relaxed shadow-lg relative group ${msg.role === 'user'
-              ? 'bg-primary/10 text-Primary-50 border border-primary/20 rounded-tr-none'
-              : 'bg-surface/80 text-gray-200 border border-t border-gray-700/50 rounded-tl-none'
-              }`}>
-              {/* Decorative triangle */}
-              <div className={`absolute top-0 w-2 h-2 ${msg.role === 'user' ? '-right-1.5 bg-primary/20' : '-left-1.5 bg-gray-700/50'} rotate-45 transform origin-center border-t border-l border-inherit`} />
-
-              {msg.role === 'model' && (
-                <div className="prose prose-invert prose-p:my-1 prose-headings:text-primary prose-strong:text-primary/90 text-sm max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') }} />
-                </div>
-              )}
-              {msg.role === 'user' && msg.text}
-
-              <div className={`text-[9px] font-mono mt-1 opacity-40 uppercase tracking-wider ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                {msg.role === 'user' ? 'User_Input' : 'AI_Response'}
-              </div>
+        {/* Contextual Suggestions (Empty State) */}
+        {messages.length === 0 && !loading && (
+          <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-6 opacity-80">
+            <Bot size={48} className="text-white/20 mb-2" />
+            <p className="text-sm text-gray-400 max-w-xs">
+              Hola, soy tu Tutor IA. Basado en el documento, te sugiero:
+            </p>
+            <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
+              {[
+                { icon: FileText, label: "Resumir conceptos clave", text: "Resumir conceptos clave" },
+                { icon: HelpCircle, label: "Generar 5 preguntas", text: "Generar 5 preguntas de quiz" },
+                { icon: Lightbulb, label: "Explicar para niño de 5 años", text: "Explicar como si tuviera 5 años" },
+                { icon: Calendar, label: "Crear plan de estudio", text: "Crear plan de estudio" }
+              ].map((item, i) => (
+                <button
+                  key={i}
+                  onClick={() => setInput(item.text)}
+                  className="text-left text-xs p-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 hover:border-primary/50 transition-all text-gray-300 hover:text-white flex items-center gap-3 group"
+                >
+                  <item.icon size={14} className="text-primary opacity-70 group-hover:scale-110 transition-transform" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
             </div>
           </div>
-        ))}
-        {loading && (
-          <div className="flex justify-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center animate-spin">
-              <Loader2 size={16} className="text-primary" />
+        )}
+
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-500 fade-in-5`}>
+
+            {msg.role === 'model' && (
+              <div className="w-8 h-8 rounded-full bg-linear-to-br from-primary to-secondary flex items-center justify-center shrink-0 mt-1 shadow-lg shadow-primary/20">
+                <Bot size={16} className="text-white" />
+              </div>
+            )}
+
+            <div className={`max-w-[85%] p-5 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
+              ? 'bg-primary text-white rounded-tr-sm shadow-primary/10'
+              : 'bg-black/30 text-gray-200 border border-white/5 rounded-tl-sm backdrop-blur-md'
+              }`}>
+              {msg.role === 'model' ? (
+                <div className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-headings:text-secondary prose-a:text-primary prose-code:bg-black/50 prose-code:px-1 prose-code:rounded prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/5">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                    {msg.text}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <p>{msg.text}</p>
+              )}
             </div>
-            <div className="bg-surface/50 px-4 py-2 rounded-lg text-xs text-primary animate-pulse flex items-center gap-2">
-              ANALIZANDO DATOS <span className="flex gap-0.5"><span className="animate-bounce">.</span><span className="animate-bounce delay-100">.</span><span className="animate-bounce delay-200">.</span></span>
+
+            {msg.role === 'user' && (
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 mt-1">
+                <div className="w-4 h-4 rounded-full bg-white/50" />
+              </div>
+            )}
+          </div>
+        ))}
+
+        {loading && (
+          <div className="flex items-start gap-4 animate-pulse">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+              <Loader2 size={16} className="text-primary animate-spin" />
+            </div>
+            <div className="bg-black/20 px-4 py-3 rounded-2xl rounded-tl-sm text-xs text-muted flex items-center gap-2 border border-white/5">
+              Pensando...
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSend} className="p-4 border-t border-gray-800 bg-black/40 backdrop-blur flex gap-3 relative z-20">
+      {/* Quiet Input Area */}
+      <form onSubmit={handleSend} className="p-4 bg-black/20 flex gap-3 relative z-20 border-t border-white/5">
         <Input
           value={input}
           onChange={e => setInput(e.target.value)}
-          placeholder="Ingresa tu consulta sobre el documento..."
           disabled={loading}
-          className="flex-1 bg-black/50 border-gray-700 focus:border-primary placeholder-gray-600"
+          className="flex-1 bg-black/40 border-white/10 focus:border-primary/50 focus:ring-primary/20 rounded-xl placeholder-gray-600 transition-all font-sans"
+          placeholder="Escribe aquí para preguntar..."
         />
-        <Button type="submit" disabled={loading} className="px-4 shadow-[0_0_15px_rgba(0,255,65,0.1)]">
-          {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+        <Button type="submit" disabled={loading} className="w-12 h-12 rounded-xl p-0 flex items-center justify-center bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
+          {loading ? <Loader2 className="animate-spin text-white" size={20} /> : <Send size={20} className="text-white ml-0.5" />}
         </Button>
       </form>
     </div>

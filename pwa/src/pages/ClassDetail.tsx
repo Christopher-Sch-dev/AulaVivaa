@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { DataService } from '../services/data';
 import { type ClassSession } from '../db/db';
 import { Button } from '../components/ui';
-import { ArrowLeft, MonitorPlay, FileText } from 'lucide-react';
+import { ArrowLeft, MonitorPlay, FileText, Download } from 'lucide-react';
 import { AIChat } from '../components/AIChat';
-import { GlitchText } from '../components/GlitchText';
+
 
 export const ClassDetail = () => {
   const { id } = useParams();
@@ -34,29 +34,34 @@ export const ClassDetail = () => {
   if (!session) return <div className="text-center py-40 text-primary font-mono animate-pulse">CARGANDO RECURSOS...</div>;
 
   return (
-    <div className="h-[calc(100vh-100px)] flex flex-col">
-      <div className="flex items-center gap-4 mb-6 flex-shrink-0">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="rounded-full w-10 h-10 p-0 flex items-center justify-center">
-          <ArrowLeft size={20} />
-        </Button>
-        <div>
-          <GlitchText text={session.name.toUpperCase()} className="text-2xl font-bold text-white mb-1 block" />
-          <p className="text-gray-400 text-xs font-mono uppercase tracking-widest">{session.description}</p>
+    <div className="h-[calc(100vh-120px)] flex flex-col gap-6">
+
+      {/* Header Info */}
+      <div className="flex items-center justify-between flex-shrink-0 bg-surface/30 p-4 rounded-xl border border-white/5 backdrop-blur-sm">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="rounded-full w-10 h-10 p-0 flex items-center justify-center border-none bg-white/5 hover:bg-white/10">
+            <ArrowLeft size={20} />
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-tight">{session.name}</h1>
+            <p className="text-muted text-sm font-sans">{session.description}</p>
+          </div>
+        </div>
+        <div className="hidden sm:block">
+          <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20 font-mono">
+            IA HABILITADA
+          </span>
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0 pb-6">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
         {/* PDF Viewer */}
-        <div className="bg-black/40 backdrop-blur-md rounded-xl border border-gray-800 flex flex-col overflow-hidden shadow-2xl relative group">
-          {/* Tech Corners */}
-          <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-primary/50 rounded-tl z-20" />
-          <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-primary/50 rounded-tr z-20" />
-          <div className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-primary/50 rounded-bl z-20" />
-          <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-primary/50 rounded-br z-20" />
-
-          <div className="p-3 border-b border-gray-800 bg-black/60 flex justify-between items-center text-xs text-gray-400 font-mono">
-            <span className="flex items-center gap-2"><FileText size={14} className="text-primary" /> {session.pdfName}</span>
-            <a href={pdfUrl!} download={session.pdfName} className="hover:text-primary hover:underline decoration-primary transition-all">DESCARGAR_ARCHIVO</a>
+        <div className="bg-surface/30 backdrop-blur-md rounded-2xl border border-white/5 flex flex-col overflow-hidden shadow-2xl relative group hover:border-white/10 transition-colors">
+          <div className="p-3 border-b border-white/5 bg-black/20 flex justify-between items-center text-xs text-muted font-sans cursor-default select-none">
+            <span className="flex items-center gap-2"><FileText size={14} className="text-secondary" /> Documento Fuente</span>
+            <a href={pdfUrl!} download={session.pdfName} className="flex items-center gap-1 hover:text-white transition-colors">
+              <Download size={12} /> Descargar
+            </a>
           </div>
           {pdfUrl ? (
             <iframe
@@ -65,9 +70,9 @@ export const ClassDetail = () => {
               title="PDF Viewer"
             />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-600">
-              <MonitorPlay size={48} className="mb-4 opacity-50" />
-              <span className="font-mono text-sm">NO_SIGNAL_FOUND</span>
+            <div className="flex-1 flex flex-col items-center justify-center text-muted">
+              <MonitorPlay size={48} className="mb-4 opacity-30" />
+              <span className="text-sm">Sin documento visualizable</span>
             </div>
           )}
         </div>

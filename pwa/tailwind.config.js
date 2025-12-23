@@ -7,19 +7,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#0D0D0D', // Deep Black
-        surface: '#1A1A1A',   // Dark Gray
-        primary: '#00FF41',   // Neon Green (Matrix Style)
-        secondary: '#008F11', // Darker Green
-        accent: '#D00000',    // Red for errors/accents
-        text: '#E0E0E0',      // Light Gray for text
+        // Much Darker Base
+        background: '#050409', // Almost pure black with hint of purple
+        surface: '#0F0E16',    // Dark grey-violet
+
+        // Vibrant Neon Accents (High Contrast)
+        primary: '#7C3AED',    // Deep Violet
+        primaryGlow: '#8B5CF6',
+
+        secondary: '#0D9488',  // Darker Teal
+        accent: '#E11D48',     // Deep Rose
+
+        // Text Levels
+        text: '#F8FAFC',       // Slate 50 (White-ish)
+        muted: '#94A3B8',      // Slate 400
       },
       fontFamily: {
-        mono: ['"Courier New"', 'Courier', 'monospace'], // Matrix terminal feel
+        mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
         sans: ['"Inter"', 'sans-serif'],
       },
       animation: {
         'glitch': 'glitch 1s linear infinite',
+        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         glitch: {
@@ -30,5 +39,7 @@ export default {
       }
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 }

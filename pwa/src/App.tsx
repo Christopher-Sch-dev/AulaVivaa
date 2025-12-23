@@ -25,38 +25,42 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
 };
 
 const Dashboard = () => {
-    const { user } = useStore();
-    return user?.role === 'docente' ? <DocenteDashboard /> : <AlumnoDashboard />;
+  const { user } = useStore();
+  return user?.role === 'docente' ? <DocenteDashboard /> : <AlumnoDashboard />;
 };
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/auth" element={<AuthPage />} />
-        
+        <Route path="/auth" element={
+          <Layout>
+            <AuthPage />
+          </Layout>
+        } />
+
         <Route path="/" element={
-            <ProtectedRoute>
-                <Layout>
-                    <Dashboard />
-                </Layout>
-            </ProtectedRoute>
+          <ProtectedRoute>
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </ProtectedRoute>
         } />
 
         <Route path="/asignatura/:id" element={
-            <ProtectedRoute>
-                <Layout>
-                    <SubjectDetail />
-                </Layout>
-            </ProtectedRoute>
+          <ProtectedRoute>
+            <Layout>
+              <SubjectDetail />
+            </Layout>
+          </ProtectedRoute>
         } />
 
         <Route path="/clase/:id" element={
-            <ProtectedRoute>
-                 <Layout>
-                    <ClassDetail />
-                </Layout>
-            </ProtectedRoute>
+          <ProtectedRoute>
+            <Layout>
+              <ClassDetail />
+            </Layout>
+          </ProtectedRoute>
         } />
 
       </Routes>

@@ -18,7 +18,7 @@ export const MatrixBackground = () => {
     const nums = '0123456789';
     const alphabet = katakana + latin + nums;
 
-    const fontSize = 16;
+    const fontSize = 14;
     const columns = canvas.width / fontSize;
 
     const rainDrops: number[] = [];
@@ -27,14 +27,24 @@ export const MatrixBackground = () => {
     }
 
     const draw = () => {
-      ctx.fillStyle = 'rgba(13, 13, 13, 0.05)';
+      // Deep Purple Fade
+      ctx.fillStyle = 'rgba(11, 10, 18, 0.05)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = '#0F0'; // Neon Green
+      // Violet/Purple Text
+      ctx.fillStyle = '#8B5CF6';
       ctx.font = fontSize + 'px monospace';
 
       for (let i = 0; i < rainDrops.length; i++) {
         const text = alphabet.charAt(Math.floor(Math.random() * alphabet.length));
+
+        // Occasional white flicker for "glitch" feel
+        if (Math.random() > 0.98) {
+          ctx.fillStyle = '#E2E8F0';
+        } else {
+          ctx.fillStyle = '#C4B5FD'; // Brighter violet (Violet-300)
+        }
+
         ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
 
         if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
@@ -44,7 +54,7 @@ export const MatrixBackground = () => {
       }
     };
 
-    const intervalId = setInterval(draw, 30);
+    const intervalId = setInterval(draw, 50); // Slower animation (50ms vs 30ms)
 
     const handleResize = () => {
       canvas.width = window.innerWidth;
@@ -60,9 +70,9 @@ export const MatrixBackground = () => {
   }, []);
 
   return (
-    <canvas 
-      ref={canvasRef} 
-      className="fixed top-0 left-0 w-full h-full -z-10 opacity-30" 
+    <canvas
+      ref={canvasRef}
+      className="fixed top-0 left-0 w-full h-full -z-10 opacity-50"
     />
   );
 };
