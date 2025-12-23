@@ -18,7 +18,7 @@ export const AboutPage = () => {
             </div>
 
             {/* Main Info Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
 
                 {/* Contexto */}
                 <Card className="hover:border-primary/50 transition-colors">
@@ -32,7 +32,7 @@ export const AboutPage = () => {
                                 Desarrollado como proyecto semestral en <strong>Duoc UC</strong> por Christopher Schiefelbein, estudiante de Ingeniería en Informática (a 2 años de titulación).
                             </p>
                             <p className="text-gray-400 leading-relaxed">
-                                Este sistema es un <strong>Port Web (PWA)</strong> completo de la aplicación nativa Android "Aula Viva" antes creada, demostrando dominio en arquitecturas multiplataforma .
+                                Este sistema es un <strong>Port Web (PWA)</strong> completo de la aplicación nativa Android "Aula Viva" antes creada, demostrando dominio en arquitecturas multiplataforma.
                             </p>
                         </div>
                     </div>
