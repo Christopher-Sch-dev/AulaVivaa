@@ -32,7 +32,7 @@ export const AboutPage = () => {
                                 Desarrollado como proyecto semestral en <strong>Duoc UC</strong> por Christopher Schiefelbein, estudiante de Ingeniería en Informática (a 2 años de titulación).
                             </p>
                             <p className="text-gray-400 leading-relaxed">
-                                Este sistema es un <strong>Port Web (PWA)</strong> completo de la aplicación nativa Android "Aula Viva", demostrando dominio en arquitecturas multiplataforma.
+                                Este sistema es un <strong>Port Web (PWA)</strong> completo de la aplicación nativa Android "Aula Viva" antes creada, demostrando dominio en arquitecturas multiplataforma .
                             </p>
                         </div>
                     </div>
@@ -97,13 +97,13 @@ export const AboutPage = () => {
             {/* Impacto */}
             <Card className="bg-linear-to-br from-primary/10 to-transparent border-primary/20">
                 <div className="text-center space-y-4">
-                    <h3 className="text-2xl font-bold text-white">Impacto Social & Visión</h3>
+                    <h3 className="text-2xl font-bold text-white">Amplificador de Aprendizaje</h3>
                     <p className="text-gray-300 max-w-3xl mx-auto leading-relaxed italic">
-                        "La tecnología debe ser un puente, no una barrera."
+                        "Tu tutor de bolsillo: personalización real para cada asignatura."
                     </p>
                     <p className="text-gray-400 max-w-3xl mx-auto leading-relaxed mt-4">
-                        Aula Viva nace de una convicción profunda: <strong>la educación de calidad, potenciada por IA, es un derecho que no debe depender de una conexión a internet estable.</strong>
-                        Esta herramienta busca empoderar a docentes y estudiantes en zonas rurales o vulnerables, llevando la vanguardia tecnológica (IA Generativa) al <em>Edge</em>, democratizando así el acceso al conocimiento universal.
+                        Aula Viva actúa como un <strong>tutor cognitivo</strong>. No solo gestiona contenido, sino que lo <em>moldea</em> para adaptarse al estilo de cada estudiante o docente; potenciando la metodologia del aprendizaje.
+                        Es un <strong>Tutor de Bolsillo</strong> que acompaña el proceso educativo, acelerando la curva de aprendizaje y asegurando que la enseñanza sea precisa, contextual y profundamente efectiva.
                     </p>
                     <div className="pt-4">
                         <Button onClick={() => window.open('https://portafolio-devchris.vercel.app/', '_blank')} className="gap-2">
