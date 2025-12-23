@@ -20,7 +20,6 @@
  * I will use exactly those strings. If they fail (404), the logic handles it!
  */
 const MODELS_PRIORITY = [
-    "gemini-3-flash",
     "gemini-3-flash-preview",
     "gemini-2.5-flash"
 ];
