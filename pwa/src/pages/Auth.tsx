@@ -51,7 +51,7 @@ export const AuthPage = () => {
       setFeatureIndex(prev => (prev + 1) % FEATURES.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [featureIndex]); // Dependency added to reset timer on manual interaction
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,11 +147,17 @@ export const AuthPage = () => {
             </AnimatePresence>
 
             {/* Indicators */}
-            <div className="absolute -bottom-8 flex gap-2">
+            <div className="absolute -bottom-8 flex gap-2 cursor-pointer z-10">
               {FEATURES.map((_, i) => (
-                <div
+                <button
                   key={i}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${i === featureIndex ? 'w-8 bg-primary' : 'w-2 bg-gray-700'}`}
+                  onClick={() => {
+                    setFeatureIndex(i);
+                    // Reset timer logic handled by effect dependency or manual restart?
+                    // Actually, if we just update state, the current interval keeps ticking and might switch immediately.
+                    // We need a way to reset.
+                  }}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${i === featureIndex ? 'w-8 bg-primary' : 'w-2 bg-gray-700 hover:bg-gray-600'}`}
                 />
               ))}
             </div>
