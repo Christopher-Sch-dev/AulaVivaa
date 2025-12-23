@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+import { createWorker } from 'tesseract.js';
 import { Button, Input, Card } from './ui';
 import { Send, Bot, Loader2, ShieldAlert, Key, Sparkles, FileText, HelpCircle, Lightbulb, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
@@ -37,74 +38,145 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
   }, [messages]);
 
   useEffect(() => {
+    // ---------------------------------------------------------
+    // 1. FILE HASHING (Deep Identity)
+    // ---------------------------------------------------------
+    const generateFileHash = async (buffer: ArrayBuffer) => {
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    };
+
+    // ---------------------------------------------------------
+    // 2. OCR GOD MODE (Visual Vision)
+    // ---------------------------------------------------------
+    const performOCR = async (pdfDoc: any) => {
+      setLoading(true);
+      toast.info('🔍 PDF Escaneado Detectado. Activando Visión Artificial (OCR)...');
+      setMessages(prev => [...prev, { role: 'model', text: '> **MODO DIOS (OCR) ACTIVADO** 👁️\n\nEste documento es una imagen. Estoy usando mis redes neuronales visuales para leerlo pixel a pixel. Esto tomará unos segundos.' }]);
+
+      let ocrText = '';
+      const worker = await createWorker('spa'); // Spanish trained data
+
+      try {
+        const totalPages = pdfDoc.numPages;
+        for (let i = 1; i <= totalPages; i++) {
+          const page = await pdfDoc.getPage(i);
+          const viewport = page.getViewport({ scale: 2.0 }); // High scale for better recognition
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+
+          const context = canvas.getContext('2d');
+          if (context) {
+            await page.render({ canvasContext: context, viewport }).promise;
+
+            // Get text from image
+            const { data: { text } } = await worker.recognize(canvas);
+
+            ocrText += `\n--- PÁGINA ${i} (OCR) ---\n${text}`;
+            toast.loading(`Leyendo página ${i}/${totalPages} (IA Vision)...`);
+          }
+        }
+      } catch (err) {
+        console.error('OCR Error:', err);
+        toast.error('Falló el OCR. El archivo podría estar dañado.');
+      } finally {
+        await worker.terminate();
+        toast.dismiss();
+      }
+      return ocrText;
+    };
+
     const extractText = async () => {
       try {
         setLoading(true);
         const arrayBuffer = await pdfFile.arrayBuffer();
+
+        // Hashing for Uniqueness
+        const fileHash = await generateFileHash(arrayBuffer);
+        console.log(`[PDF] ID Único (SHA-256): ${fileHash}`);
+
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let fullText = '';
+        let fullSmartText = '';
+        let fullRawText = '';
         let totalPages = pdf.numPages;
 
-        console.log(`[PDF] Iniciando extracción de ${totalPages} páginas...`);
+        console.log(`[PDF] Iniciando extracción híbrida de ${totalPages} páginas...`);
 
+        // TIER 1 & 2: TEXT EXTRACTION
         for (let i = 1; i <= totalPages; i++) {
           try {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
+            const textItems = textContent.items.filter((item: any) => item.str != null);
 
-            // Smart Layout Preservation: Sort by Y (vertical), then X (horizontal)
-            // Note: PDF coordinate system usually puts (0,0) at bottom-left, so higher Y is higher up.
-            // We sort descending Y to read top-to-bottom.
-            const sortedItems = textContent.items.map((item: any) => ({
+            // --- Strategy A: Smart Layout (Sort by Y, then X) ---
+            const itemsWithPos = textItems.filter((item: any) => Array.isArray(item.transform));
+
+            const sortedItems = itemsWithPos.map((item: any) => ({
               str: item.str,
-              y: item.transform[5], // Matrix index 5 is Translate Y
-              x: item.transform[4], // Matrix index 4 is Translate X
+              y: item.transform[5],
+              x: item.transform[4],
               hasEOL: item.hasEOL
             })).sort((a, b) => {
-              if (Math.abs(a.y - b.y) > 4) { // Threshold for "same line"
-                return b.y - a.y; // Sort Top to Bottom
-              }
-              return a.x - b.x; // Sort Left to Right
+              if (Math.abs(a.y - b.y) > 5) return b.y - a.y;
+              return a.x - b.x;
             });
 
-            // Reconstruct lines
-            let pageText = '';
+            let pageSmartText = '';
             let lastY = -1;
-
             sortedItems.forEach((item) => {
               if (lastY === -1) lastY = item.y;
-
-              // New line if Y diff is significant
-              if (Math.abs(item.y - lastY) > 4) {
-                pageText += '\n';
+              if (Math.abs(item.y - lastY) > 5) {
+                pageSmartText += '\n';
                 lastY = item.y;
-              } else {
-                // Add space if not starting new line
-                if (pageText.length > 0 && pageText[pageText.length - 1] !== '\n') {
-                  pageText += ' ';
-                }
+              } else if (pageSmartText.length > 0 && !pageSmartText.endsWith('\n') && !pageSmartText.endsWith(' ')) {
+                if (item.str.trim().length > 0) pageSmartText += ' ';
               }
-              pageText += item.str;
+              pageSmartText += item.str;
             });
+            fullSmartText += `\n--- PÁGINA ${i} ---\n${pageSmartText}`;
 
-            fullText += `\n\n--- PÁGINA ${i}/${totalPages} ---\n${pageText}`;
+            // --- Strategy B: Raw Stream (Backup) ---
+            const pageRawText = textItems.map((item: any) => item.str).join(' ');
+            fullRawText += `\n--- PÁGINA ${i} ---\n${pageRawText}`;
 
           } catch (pageError) {
             console.error(`Error leyendo página ${i}:`, pageError);
-            fullText += `\n\n--- PÁGINA ${i} (Error de Lectura) ---\n`;
           }
         }
 
-        console.log(`[PDF] Extracción completa. ${fullText.length} caracteres.`);
-        setPdfText(fullText);
+        const smartLen = fullSmartText.replace(/--- PÁGINA \d+ ---/g, '').trim().length;
+        const rawLen = fullRawText.replace(/--- PÁGINA \d+ ---/g, '').trim().length;
 
-        if (fullText.length < 100) {
-          toast.warning('El PDF parece ser una imagen o está vacío. La IA podría no leerlo bien.');
+        let finalText = fullSmartText;
+        if (smartLen < (rawLen * 0.5)) {
+          console.warn('[PDF] Smart Extraction perdió contenido. Usando Raw Fallback.');
+          finalText = fullRawText;
         }
+
+        // TIER 3: GOD MODE (OCR)
+        const finalLen = finalText.replace(/--- PÁGINA \d+ ---/g, '').trim().length;
+
+        if (finalLen < 50) {
+          console.warn('[PDF] Texto insuficiente. Activando OCR Tesseract...');
+          const ocrResult = await performOCR(pdf);
+
+          if (ocrResult.replace(/--- PÁGINA \d+ \(OCR\) ---/g, '').trim().length > 50) {
+            finalText = ocrResult;
+            toast.success('¡Lectura OCR completada!');
+          } else {
+            toast.error('⚠️ El documento es ilegible incluso con OCR.');
+            setMessages(prev => [...prev, { role: 'model', text: '**ERROR FATAL**: No pude leer nada, ni siquiera con scaneo visual. El archivo podría estar en blanco o muy dañado.' }]);
+          }
+        }
+
+        setPdfText(finalText);
 
       } catch (error) {
         console.error('Error parsing PDF:', error);
-        setMessages([{ role: 'model', text: '**Error Crítico**: No se pudo procesar el archivo PDF. Asegúrate que no esté corrupto o protegido.' }]);
+        setMessages([{ role: 'model', text: '**Error Crítico**: No se pudo procesar el archivo PDF.' }]);
       } finally {
         setLoading(false);
       }
