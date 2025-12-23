@@ -1,4 +1,4 @@
-import { db, User } from '../db/db';
+import { db, type User } from '../db/db';
 import { DataService } from './data';
 
 export const SeedService = {
