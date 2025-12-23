@@ -1,6 +1,6 @@
 import { Card, Button } from '../components/ui';
 import { GlitchText } from '../components/GlitchText';
-import { BrainCircuit, WifiOff, ExternalLink, GraduationCap, Code2, Server, ShieldCheck } from 'lucide-react';
+import { BrainCircuit, WifiOff, ExternalLink, GraduationCap, Code2, Server, ShieldCheck, FileText, History } from 'lucide-react';
 
 export const AboutPage = () => {
     return (
@@ -40,12 +40,33 @@ export const AboutPage = () => {
 
                 {/* Problema y Solución */}
                 <Card className="hover:border-primary/50 transition-colors">
-                    <div className="flex items-start gap-4">
-                        <div className="p-3 bg-white/5 rounded-lg text-primary">
-                            <BrainCircuit size={24} />
+                    <div className="flex flex-col gap-4">
+                        <div className="bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-primary/30 transition-all group">
+                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <FileText size={24} className="text-primary" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Motor Neuronal Híbrido</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">
+                                Sistema de ingestión de documentos "God Mode". Combina reconstrucción de layout inteligente con
+                                <span className="text-secondary font-bold"> OCR (Visión Artificial)</span> en cliente. Lee desde PDFs nativos hasta escaneos antiguos.
+                            </p>
                         </div>
-                        <div className="space-y-3">
-                            <h3 className="text-xl font-bold text-white">Arquitectura & Demo</h3>
+
+                        <div className="bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-primary/30 transition-all group">
+                            <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <History size={24} className="text-secondary" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Memoria Contextual RAG</h3>
+                            <p className="text-gray-400 text-sm leading-relaxed">
+                                Transformamos el modelo stateless en una sesión persistente. El asistente "recuerda" toda la conversación y mantiene el contexto del documento activo, permitiendo preguntas de seguimiento complejas.
+                            </p>
+                        </div>
+
+                        <div className="bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 hover:border-primary/30 transition-all group">
+                            <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <BrainCircuit size={24} className="text-purple-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Arquitectura & Demo</h3>
                             <p className="text-gray-400 leading-relaxed">
                                 Para efectos de este <strong>Portafolio/Demo</strong>, se optó por una arquitectura <em>"Local-Only"</em> para garantizar accesibilidad total.
                             </p>

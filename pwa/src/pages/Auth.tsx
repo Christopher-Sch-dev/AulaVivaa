@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { BrainCircuit, WifiOff, ShieldCheck, GraduationCap, ArrowRight, Rocket } from 'lucide-react';
+import { BrainCircuit, WifiOff, ShieldCheck, ArrowRight, Rocket } from 'lucide-react';
 
 const FEATURES = [
   {
@@ -110,11 +110,9 @@ export const AuthPage = () => {
         {/* Left Column: Educational Showcase */}
         <div className="hidden lg:flex flex-col justify-center space-y-12">
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <GraduationCap size={40} className="text-secondary" />
-              <span className="px-3 py-1 rounded-full border border-secondary/30 bg-secondary/10 text-secondary text-xs uppercase font-bold tracking-widest">
-                Versión 2.0 PWA
-              </span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md animate-fade-in-up delay-100">
+              <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
+              <span className="text-xs font-medium text-gray-300 tracking-wider">POWERED BY GEMINI 3 FLASH + VISION API</span>
             </div>
             <h1 className="text-5xl font-bold text-white leading-tight mb-6">
               La Evolución del <br />

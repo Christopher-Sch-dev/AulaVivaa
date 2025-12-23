@@ -67,7 +67,12 @@ La característica estrella es la implementación de **RAG (Retrieval-Augmented 
 3.  **Prompt Engineering**: Se inyecta el texto extraído dentro de un "System Prompt" diseñado específicamente según el rol (Docente vs Alumno).
     *   *Prompt Docente*: Enfocado en didáctica, bloom's taxonomy y planificación.
     *   *Prompt Alumno*: Enfocado en simplificación, analogías y mnemotecnia.
-4.  **Inferencia**: Se envía a **Gemini 3 Flash (Preview)**, seleccionado por su capacidad de razonamiento superior. El sistema implementa una estrategia de *Fallback* automática a **Gemini 2.5 Flash** en caso de saturación, garantizando disponibilidad.
+4.  **Inferencia Multimodal (RAG Híbrido)**:
+    *   **Modelo Primario**: Gemini 3 Flash (Preview).
+    *   **Contexto**: Inyección dinámica (`System Prompt` + `PDF Context` + `Chat History`). Se transformó el endpoint `generateContent` (stateless) en una sesión **Stateful** en el cliente.
+5.  **Ingestión "God Mode" (OCR & Hashing)**:
+    *   **Identidad**: Cada PDF genera un hash **SHA-256** único al cargarse (`crypto.subtle`).
+    *   **Vision Fallback**: Implementación de **Tesseract.js** corriendo en `Web Workers` dedicados. Si `pdf.js` detecta < 50 caracteres (imagen), el sistema renderiza el PDF a `OffscreenCanvas` y ejecuta reconocimiento óptico de caracteres (OCR) en tiempo real en el cliente.
 
 ---
 
