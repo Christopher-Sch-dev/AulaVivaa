@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -52,3 +53,25 @@ export const Card = ({ className, children, ...props }: React.HTMLAttributes<HTM
     {children}
   </div>
 );
+
+export const PasswordInput = ({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        type={show ? 'text' : 'password'}
+        className={cn("pr-16", className)}
+        {...props}
+      />
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold tracking-widest text-gray-500 hover:text-primary transition-colors focus:outline-none uppercase"
+      >
+        {show ? 'Ocultar' : 'Ver'}
+      </button>
+    </div>
+  );
+};
+
+

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { AuthService } from '../services/auth';
-import { Button, Input, Card } from '../components/ui';
+import { Button, Input, Card, PasswordInput } from '../components/ui';
 import { useNavigate } from 'react-router-dom';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -210,102 +210,100 @@ export const AuthPage = () => {
               * Haz clic en una tarjeta para autofo-completar el formulario
             </p>
           </motion.div>
-
-          {/* Right Column: Login Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <Card id="auth-form" className="border-white/10 bg-[#0F0E16]/90 backdrop-blur-xl shadow-2xl relative overflow-hidden">
-              {/* Decorative top line */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary opacity-80" />
-
-              <div className="text-center mb-8">
-                {/* Demo Disclaimer */}
-                <div className="flex items-center justify-center gap-2 text-primary mb-1">
-                  <Rocket size={12} />
-                  <p className="text-[10px] font-bold tracking-wider uppercase">Demo Funcional Completa</p>
-                </div>
-                <p className="text-[10px] text-gray-400">Port Web desde App Nativa Android (Kotlin)</p>
-
-
-                <h2 className="text-2xl font-bold text-white mb-2">{isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}</h2>
-                <p className="text-sm text-gray-400">
-                  {isLogin ? 'Accede a tu cuenta institucional' : 'Únete a la comunidad de Aula Viva'}
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {!isLogin && (
-                  <div className="space-y-1">
-                    <label className="text-xs text-gray-500 font-bold ml-1">NOMBRE COMPLETO</label>
-                    <Input
-                      placeholder="Ej: Juan Pérez"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      required
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-1">
-                  <label className="text-xs text-gray-500 font-bold ml-1">CORREO INSTITUCIONAL</label>
-                  <Input
-                    type="email"
-                    placeholder="usuario@duoc.cl"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs text-gray-500 font-bold ml-1">CONTRASEÑA</label>
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {!isLogin && (
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <label className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${role === 'alumno' ? 'border-primary bg-primary/10 text-white' : 'border-white/10 text-gray-500 hover:border-white/30'}`}>
-                      <input type="radio" className="hidden" name="role" checked={role === 'alumno'} onChange={() => setRole('alumno')} />
-                      <span className="text-sm font-bold">Soy Alumno</span>
-                    </label>
-                    <label className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${role === 'docente' ? 'border-primary bg-primary/10 text-white' : 'border-white/10 text-gray-500 hover:border-white/30'}`}>
-                      <input type="radio" className="hidden" name="role" checked={role === 'docente'} onChange={() => setRole('docente')} />
-                      <span className="text-sm font-bold">Soy Docente</span>
-                    </label>
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full mt-6 py-3 text-base flex justify-center items-center gap-2"
-                >
-                  {loading ? 'Procesando...' : (isLogin ? 'Ingresar a la Plataforma' : 'Registrar Usuario')}
-                  {!loading && <ArrowRight size={18} />}
-                </Button>
-              </form>
-
-              <div className="mt-6 text-center pt-6 border-t border-white/5">
-                <button
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-sm text-secondary hover:text-white transition-colors"
-                >
-                  {isLogin ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia sesión'}
-                </button>
-              </div>
-            </Card>
-          </motion.div>
         </div>
-      </div >
-      );
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <Card id="auth-form" className="border-white/10 bg-[#0F0E16]/90 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+            {/* Decorative top line */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-secondary to-primary opacity-80" />
+
+            <div className="text-center mb-8">
+              {/* Demo Disclaimer */}
+              <div className="flex items-center justify-center gap-2 text-primary mb-1">
+                <Rocket size={12} />
+                <p className="text-[10px] font-bold tracking-wider uppercase">Demo Funcional Completa</p>
+              </div>
+              <p className="text-[10px] text-gray-400">Port Web desde App Nativa Android (Kotlin)</p>
+
+
+              <h2 className="text-2xl font-bold text-white mb-2">{isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}</h2>
+              <p className="text-sm text-gray-400">
+                {isLogin ? 'Accede a tu cuenta institucional' : 'Únete a la comunidad de Aula Viva'}
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {!isLogin && (
+                <div className="space-y-1">
+                  <label className="text-xs text-gray-500 font-bold ml-1">NOMBRE COMPLETO</label>
+                  <Input
+                    placeholder="Ej: Juan Pérez"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500 font-bold ml-1">CORREO INSTITUCIONAL</label>
+                <Input
+                  type="email"
+                  placeholder="usuario@duoc.cl"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500 font-bold ml-1">CONTRASEÑA</label>
+                <PasswordInput
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              {!isLogin && (
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <label className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${role === 'alumno' ? 'border-primary bg-primary/10 text-white' : 'border-white/10 text-gray-500 hover:border-white/30'}`}>
+                    <input type="radio" className="hidden" name="role" checked={role === 'alumno'} onChange={() => setRole('alumno')} />
+                    <span className="text-sm font-bold">Soy Alumno</span>
+                  </label>
+                  <label className={`cursor-pointer border rounded-lg p-3 text-center transition-all ${role === 'docente' ? 'border-primary bg-primary/10 text-white' : 'border-white/10 text-gray-500 hover:border-white/30'}`}>
+                    <input type="radio" className="hidden" name="role" checked={role === 'docente'} onChange={() => setRole('docente')} />
+                    <span className="text-sm font-bold">Soy Docente</span>
+                  </label>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-6 py-3 text-base flex justify-center items-center gap-2"
+              >
+                {loading ? 'Procesando...' : (isLogin ? 'Ingresar a la Plataforma' : 'Registrar Usuario')}
+                {!loading && <ArrowRight size={18} />}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center pt-6 border-t border-white/5">
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-secondary hover:text-white transition-colors"
+              >
+                {isLogin ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia sesión'}
+              </button>
+            </div>
+          </Card>
+        </motion.div>
+      </div>
+    </div >
+  );
 };
