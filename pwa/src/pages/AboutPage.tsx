@@ -73,8 +73,68 @@ export const AboutPage = () => {
             {/* Stack Técnico */}
             <div>
                 <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                    <Server className="text-secondary" /> Stack Tecnológico
+                    <Server className="text-secondary" /> Evolución del Stack
                 </h2>
+
+                {/* Comparison Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    {/* Android Native */}
+                    <div className="bg-white/5 border border-white/5 rounded-xl p-6 relative overflow-hidden group hover:border-white/10 transition-colors">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-green-500/50" />
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-green-500/10 rounded-lg">
+                                <Code2 size={20} className="text-green-400" />
+                            </div>
+                            <h3 className="font-bold text-white">Versión Nativa (Original)</h3>
+                        </div>
+                        <ul className="space-y-3 text-sm text-gray-400">
+                            <li className="flex items-center justify-between border-b border-white/5 pb-2">
+                                <span>Plataforma</span> <span className="text-green-400 font-mono">Android (APK)</span>
+                            </li>
+                            <li className="flex items-center justify-between border-b border-white/5 pb-2">
+                                <span>Lenguaje</span> <span className="text-gray-300">Kotlin + Compose</span>
+                            </li>
+                            <li className="flex items-center justify-between border-b border-white/5 pb-2">
+                                <span>Backend</span> <span className="text-gray-300">Spring Boot (Java)</span>
+                            </li>
+                            <li className="flex items-center justify-between border-b border-white/5 pb-2">
+                                <span>BD</span> <span className="text-gray-300">PostgreSQL + Room</span>
+                            </li>
+                            <li className="mt-2 text-xs italic opacity-70">
+                                "Robusta pero requiere instalación."
+                            </li>
+                        </ul>
+                    </div>
+
+                    {/* PWA Port */}
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-primary/20 rounded-lg">
+                                <BrainCircuit size={20} className="text-primary" />
+                            </div>
+                            <h3 className="font-bold text-white">Versión PWA (Demo)</h3>
+                        </div>
+                        <ul className="space-y-3 text-sm text-gray-300">
+                            <li className="flex items-center justify-between border-b border-white/5 pb-2">
+                                <span>Plataforma</span> <span className="text-primary font-bold font-mono">Web Universal</span>
+                            </li>
+                            <li className="flex items-center justify-between border-b border-white/5 pb-2">
+                                <span>Lenguaje</span> <span>React + TypeScript</span>
+                            </li>
+                            <li className="flex items-center justify-between border-b border-white/5 pb-2">
+                                <span>Backend</span> <span>Client-Side (Edge)</span>
+                            </li>
+                            <li className="flex items-center justify-between border-b border-white/5 pb-2">
+                                <span>BD</span> <span>Dexie.js (NoSQL)</span>
+                            </li>
+                            <li className="mt-2 text-xs text-primary italic">
+                                "Acceso instantáneo para demostración."
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {[
                         { name: "React 18", desc: "Core Framework" },
