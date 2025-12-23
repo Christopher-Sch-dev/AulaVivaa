@@ -97,9 +97,13 @@ export const AboutPage = () => {
             {/* Impacto */}
             <Card className="bg-linear-to-br from-primary/10 to-transparent border-primary/20">
                 <div className="text-center space-y-4">
-                    <h3 className="text-2xl font-bold text-white">Impacto y Proyección</h3>
-                    <p className="text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                        Aula Viva demuestra que es posible llevar herramientas educativas de vanguardia (IA Generativa) al borde (Edge), eliminando barreras de infraestructura y costos de servidor, ideal para implementaciones en instituciones educativas reales.
+                    <h3 className="text-2xl font-bold text-white">Impacto Social & Visión</h3>
+                    <p className="text-gray-300 max-w-3xl mx-auto leading-relaxed italic">
+                        "La tecnología debe ser un puente, no una barrera."
+                    </p>
+                    <p className="text-gray-400 max-w-3xl mx-auto leading-relaxed mt-4">
+                        Aula Viva nace de una convicción profunda: <strong>la educación de calidad, potenciada por IA, es un derecho que no debe depender de una conexión a internet estable.</strong>
+                        Esta herramienta busca empoderar a docentes y estudiantes en zonas rurales o vulnerables, llevando la vanguardia tecnológica (IA Generativa) al <em>Edge</em>, democratizando así el acceso al conocimiento universal.
                     </p>
                     <div className="pt-4">
                         <Button onClick={() => window.open('https://portafolio-devchris.vercel.app/', '_blank')} className="gap-2">
