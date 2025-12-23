@@ -35,8 +35,15 @@ export const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [featureIndex, setFeatureIndex] = useState(0);
 
-  const { setUser } = useStore();
+  const { user, setUser } = useStore();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
 
   // Feature Carousel
   useEffect(() => {

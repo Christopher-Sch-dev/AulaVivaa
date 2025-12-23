@@ -9,7 +9,7 @@ export const Footer = () => {
                 <div className="flex items-center gap-2">
                     <Code2 size={16} className="text-primary/60" />
                     <span>
-                        {new Date().getFullYear()} Aula Viva AI <span className="mx-2">•</span> v2.0 PWA
+                        {new Date().getFullYear()} Aula Viva AI <span className="mx-2">&bull;</span> v2.0 PWA
                     </span>
                 </div>
 
