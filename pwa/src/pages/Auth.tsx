@@ -57,6 +57,23 @@ export const AuthPage = () => {
     e.preventDefault();
     setLoading(true);
 
+    // Validation Logic
+    if (!email.includes('@') || email.length < 5) {
+      toast.error('Ingresa un correo válido');
+      setLoading(false);
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      setLoading(false);
+      return;
+    }
+    if (!isLogin && name.length < 3) {
+      toast.error('Ingresa tu nombre completo');
+      setLoading(false);
+      return;
+    }
+
     // Simulator delay for "Processing" feel
     await new Promise(r => setTimeout(r, 800));
 

@@ -38,6 +38,15 @@ export const DocenteDashboard = () => {
     e.preventDefault();
     if (!user?.id) return;
 
+    if (newSubject.name.length < 5) {
+      toast.error('El nombre de la asignatura es muy corto');
+      return;
+    }
+    if (newSubject.description.length < 10) {
+      toast.error('La descripción debe ser más detallada');
+      return;
+    }
+
     const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
     const code = `${newSubject.name.substring(0, 3).toUpperCase()}2025-${randomSuffix}`;
 
@@ -132,20 +141,29 @@ export const DocenteDashboard = () => {
           <Card className="w-full max-w-md animate-in fade-in zoom-in duration-300 border-primary/50 shadow-[0_0_50px_rgba(0,255,65,0.1)]">
             <h2 className="text-2xl font-bold mb-4 text-primary font-mono tracking-tight">NUEVA ASIGNATURA</h2>
             <form onSubmit={handleCreate} className="space-y-4">
-              <Input
-                placeholder="Nombre (ej: Programación)"
-                value={newSubject.name}
-                onChange={e => setNewSubject({ ...newSubject, name: e.target.value })}
-                required
-                className="bg-black/50 border-gray-700 focus:border-primary"
-              />
-              <Input
-                placeholder="Descripción"
-                value={newSubject.description}
-                onChange={e => setNewSubject({ ...newSubject, description: e.target.value })}
-                required
-                className="bg-black/50 border-gray-700 focus:border-primary"
-              />
+              <div className="space-y-1">
+                <label className="text-xs text-secondary font-bold ml-1">NOMBRE DE ASIGNATURA</label>
+                <Input
+                  placeholder="Ej: Biología Celular Avanzada"
+                  value={newSubject.name}
+                  onChange={e => setNewSubject({ ...newSubject, name: e.target.value })}
+                  required
+                  className="bg-black/50 border-gray-700 focus:border-primary"
+                />
+                <p className="text-[10px] text-gray-500 ml-1">Este nombre será visible para todos los estudiantes.</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-secondary font-bold ml-1">DESCRIPCIÓN</label>
+                <Input
+                  placeholder="Ej: Curso fundamental para 1er Semestre..."
+                  value={newSubject.description}
+                  onChange={e => setNewSubject({ ...newSubject, description: e.target.value })}
+                  required
+                  className="bg-black/50 border-gray-700 focus:border-primary"
+                />
+                <p className="text-[10px] text-gray-500 ml-1">Breve resumen de los contenidos.</p>
+              </div>
               <div className="flex justify-end gap-2 mt-6">
                 <Button type="button" variant="ghost" onClick={() => setShowModal(false)}>CANCELAR</Button>
                 <Button type="submit">CREAR</Button>

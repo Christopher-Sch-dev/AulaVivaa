@@ -35,6 +35,11 @@ export const AlumnoDashboard = () => {
     e.preventDefault();
     if (!user?.id) return;
 
+    if (joinCode.trim().length < 5) {
+      toast.error('Código de asignatura inválido');
+      return;
+    }
+
     try {
       await DataService.joinSubject(user.id, joinCode);
       setJoinCode('');
@@ -73,6 +78,7 @@ export const AlumnoDashboard = () => {
             onChange={e => setJoinCode(e.target.value)}
             className="flex-1 bg-black/50"
           />
+          <p className="text-[10px] text-gray-500 mt-1 sm:hidden">Pídele el código de acceso a tu profesor.</p>
           <Button type="submit" className="flex items-center justify-center gap-2 sm:w-auto w-full">
             <Search size={18} />
             UNIRSE
