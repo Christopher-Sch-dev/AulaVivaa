@@ -43,17 +43,68 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
         const arrayBuffer = await pdfFile.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         let fullText = '';
+        let totalPages = pdf.numPages;
 
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map((item: any) => item.str).join(' ');
-          fullText += `\n--- Page ${i} ---\n${pageText}`;
+        console.log(`[PDF] Iniciando extracción de ${totalPages} páginas...`);
+
+        for (let i = 1; i <= totalPages; i++) {
+          try {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+
+            // Smart Layout Preservation: Sort by Y (vertical), then X (horizontal)
+            // Note: PDF coordinate system usually puts (0,0) at bottom-left, so higher Y is higher up.
+            // We sort descending Y to read top-to-bottom.
+            const sortedItems = textContent.items.map((item: any) => ({
+              str: item.str,
+              y: item.transform[5], // Matrix index 5 is Translate Y
+              x: item.transform[4], // Matrix index 4 is Translate X
+              hasEOL: item.hasEOL
+            })).sort((a, b) => {
+              if (Math.abs(a.y - b.y) > 4) { // Threshold for "same line"
+                return b.y - a.y; // Sort Top to Bottom
+              }
+              return a.x - b.x; // Sort Left to Right
+            });
+
+            // Reconstruct lines
+            let pageText = '';
+            let lastY = -1;
+
+            sortedItems.forEach((item) => {
+              if (lastY === -1) lastY = item.y;
+
+              // New line if Y diff is significant
+              if (Math.abs(item.y - lastY) > 4) {
+                pageText += '\n';
+                lastY = item.y;
+              } else {
+                // Add space if not starting new line
+                if (pageText.length > 0 && pageText[pageText.length - 1] !== '\n') {
+                  pageText += ' ';
+                }
+              }
+              pageText += item.str;
+            });
+
+            fullText += `\n\n--- PÁGINA ${i}/${totalPages} ---\n${pageText}`;
+
+          } catch (pageError) {
+            console.error(`Error leyendo página ${i}:`, pageError);
+            fullText += `\n\n--- PÁGINA ${i} (Error de Lectura) ---\n`;
+          }
         }
+
+        console.log(`[PDF] Extracción completa. ${fullText.length} caracteres.`);
         setPdfText(fullText);
+
+        if (fullText.length < 100) {
+          toast.warning('El PDF parece ser una imagen o está vacío. La IA podría no leerlo bien.');
+        }
+
       } catch (error) {
         console.error('Error parsing PDF:', error);
-        setMessages([{ role: 'model', text: '**Error Crítico**: No se pudo leer el PDF.' }]);
+        setMessages([{ role: 'model', text: '**Error Crítico**: No se pudo procesar el archivo PDF. Asegúrate que no esté corrupto o protegido.' }]);
       } finally {
         setLoading(false);
       }
@@ -92,7 +143,7 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
         ROL: ${roleContext}
         
         CONTEXTO DEL DOCUMENTO (${pdfText.length} chars):
-        ${pdfText.substring(0, 48000)}
+        ${pdfText}
 
         PREGUNTA DEL USUARIO (${user?.name || 'Usuario'}):
         ${userMsg}
