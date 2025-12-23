@@ -4,7 +4,7 @@ import { DataService } from './data';
 export const SeedService = {
     async seedDemoData() {
         try {
-            console.log('🌱 Verifying Demo Data Integrity...');
+            console.log('🌱 Verifying Demo Data Integrity (Local Mode)...');
 
             // 1. Ensure Teacher Exists
             let teacher = await db.users.where('email').equals('d1@d1.cl').first();
@@ -44,47 +44,46 @@ export const SeedService = {
                 });
                 console.log('✅ Subject Created');
             } else {
-                // Ensure subject belongs to demo teacher (fix if ID changed due to re-seed)
                 if (subject.teacherId !== teacher.id) {
                     await db.subjects.update(subject.id!, { teacherId: teacher.id });
-                    subject.teacherId = teacher.id!; // local update
+                    subject.teacherId = teacher.id!;
                     console.log('🔧 Subject Ownership Corrected');
                 }
             }
 
-            // 4. Ensure Class Exists (Atomic Check)
-            // We look for a class in this subject. If none, we create the demo class.
+            // 4. Ensure Class Exists (Force Update with Local PDF)
             const existingClass = await db.classes.where('subjectId').equals(subject.id!).first();
 
-            if (!existingClass) {
-                console.log('⚠️ Class missing for Subject, creating...');
+            try {
+                // Fetch from LOCAL public folder
+                const response = await fetch('/demo_ai.pdf');
+                if (!response.ok) throw new Error('Local PDF not found in /public/demo_ai.pdf');
 
-                // Robust Base64 PDF (Welcome to Aula Viva) - SHORT VERSION "Hello World" PDF to avoid huge file size issues in chat
-                // In a real scenario, this would be the longer Blob.
-                // This is a minimal valid PDF showing "Bienvenido a Aula Viva".
-                const pdfBase64 = "JVBERi0xLjcKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PgplbmRvYmoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMS9LaWRzWzMgMCBSXT4+CmVuZG9iajMgMCBvYmoKPDwvVHlwZS9QYWdlL01lZGlhQm94WzAgMCA1OTUgODQyXS9QYXJlbnQgMiAwIFIvUmVzb3VyY2VzPDwvRm9udDw8L0YxIDQgMCBSPj4+Pi9Db250ZW50cyA1IDAgUj4+CmVuZG9iajQgMCBvYmoKPDwvVHlwZS9Gb250L1N1YnR5cGUvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhPj4KZW5kb2JqNSAwIG9iago8PC9MZW5ndGggNDQ+PgpzdHJlYW0KQlQKL0YxIDI0IFRmCjEwMCA3MDAgVGQKKEJpZW52ZW5pZG8gYSBBdWxhIFZpdmEgSW50ZWxpZ2VuY2lhIEFydGlmaWNpYWwpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDEwIDAwMDAwIG4gCjAwMDAwMDAwNjAgMDAwMDAgbiAKMDAwMDAwMDExNyAwMDAwMCBuIAowMDAwMDAwMjQ1IDAwMDAwIG4gCjAwMDAwMDAzMzMgMDAwMDAgbiAKdHJhaWxlcgo8PC9TaXplIDYvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgozOTgKJSVFT0YK";
+                const blob = await response.blob();
+                const pdfName = 'IA_Estado_Actual.pdf';
 
-                const base64ToBlob = (base64: string, type: string) => {
-                    const binStr = atob(base64);
-                    const len = binStr.length;
-                    const arr = new Uint8Array(len);
-                    for (let i = 0; i < len; i++) {
-                        arr[i] = binStr.charCodeAt(i);
-                    }
-                    return new Blob([arr], { type: type });
-                };
+                if (!existingClass) {
+                    await DataService.createClass({
+                        name: 'Estado Actual de la IA (Demo)',
+                        description: 'Lectura obligatoria sobre el impacto de la IA en la educación.',
+                        date: new Date().toISOString(),
+                        subjectId: subject.id!,
+                        pdfFile: blob,
+                        pdfName: pdfName
+                    });
+                    console.log('✅ Class & PDF Created (From Local Public)');
+                } else {
+                    // FORCE UPDATE PDF to fix broken ones
+                    await db.classes.update(existingClass.id!, {
+                        pdfFile: blob,
+                        pdfName: pdfName,
+                        description: 'Lectura obligatoria sobre el impacto de la IA en la educación.'
+                    });
+                    console.log('🔄 Class PDF Refreshed (Local File)');
+                }
 
-                const blob = base64ToBlob(pdfBase64, 'application/pdf');
-
-                await DataService.createClass({
-                    name: 'Estado Actual de la IA (Demo)',
-                    description: 'Documento PDF Demo generado localmente (Offline).',
-                    date: new Date().toISOString(),
-                    subjectId: subject.id!,
-                    pdfFile: blob,
-                    pdfName: 'Demo_IA.pdf'
-                });
-                console.log('✅ Class & PDF Created (Embedded)');
+            } catch (e) {
+                console.error('❌ Failed to load local PDF:', e);
             }
 
             // 5. Ensure Enrollment Exists
