@@ -211,22 +211,26 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
            4. Adaptabilidad: Explicar "como si tuviera 5 años" o con analogías si se pide.
            TONO: Amigable, motivador, paciente, mentor inspirador.`;
 
-      const prompt = `
-        ROL: ${roleContext}
+      const systemPrompt = `
+        ROL SISTEMA: ${roleContext}
         
         CONTEXTO DEL DOCUMENTO (${pdfText.length} chars):
         ${pdfText}
 
-        PREGUNTA DEL USUARIO (${user?.name || 'Usuario'}):
-        ${userMsg}
-
         INSTRUCCIONES DE FORMATO:
         - Responde usando Markdown enriquecido.
         - Usa listas, negritas y tablas si es útil.
-        - Identifica explícitamente secciones clave.
+        - Mantén el contexto de la conversación anterior.
       `;
 
-      const { text } = await AIService.generateContent(apiKey, prompt);
+      // Construct history including the new message
+      // Gemini expects { role: 'user'|'model', text: string }
+      const newHistory = [
+        ...messages,
+        { role: 'user', text: userMsg }
+      ] as { role: 'user' | 'model', text: string }[];
+
+      const { text } = await AIService.generateContent(apiKey, newHistory, systemPrompt);
 
       setMessages(prev => [...prev, { role: 'model', text }]);
 

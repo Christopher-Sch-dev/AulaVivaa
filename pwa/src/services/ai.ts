@@ -25,28 +25,36 @@ const MODELS_PRIORITY = [
 ];
 
 export const AIService = {
-    async generateContent(apiKey: string, prompt: string): Promise<{ text: string, model: string }> {
+    async generateContent(apiKey: string, history: Array<{ role: 'user' | 'model', text: string }>, systemPrompt: string): Promise<{ text: string, model: string }> {
         for (const model of MODELS_PRIORITY) {
             try {
                 console.log(`[AI-Service] Intentando conectar con modelo: ${model}...`);
+
+                // Construct full conversation history
+                // 1. System Prompt (Context) is treated as the first 'user' message to ground the model.
+                const contents = [
+                    {
+                        role: "user",
+                        parts: [{ text: systemPrompt }]
+                    },
+                    ...history.map(msg => ({
+                        role: msg.role === 'user' ? 'user' : 'model',
+                        parts: [{ text: msg.text }]
+                    }))
+                ];
 
                 const response = await fetch(
                     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [{ text: prompt }]
-                            }]
-                        })
+                        body: JSON.stringify({ contents })
                     }
                 );
 
                 if (!response.ok) {
                     const errorBody = await response.json().catch(() => ({}));
                     console.warn(`[AI-Service] Fallo en ${model}:`, response.status, errorBody);
-                    // Si es error de key (400/403), no tiene sentido reintentar con otro modelo
                     if (response.status === 400 && errorBody.error?.message?.includes('API key')) {
                         throw new Error('API Key inválida');
                     }
@@ -66,11 +74,9 @@ export const AIService = {
 
             } catch (err: any) {
                 console.warn(`[AI-Service] Error con modelo ${model}: ${err.message}`);
-                // Si es el último modelo, lanzar el error
                 if (model === MODELS_PRIORITY[MODELS_PRIORITY.length - 1] || err.message === 'API Key inválida') {
                     throw err;
                 }
-                // Si no, continuar al siguiente loop (fallback)
             }
         }
         throw new Error("Todos los modelos de IA fallaron. Verifica tu conexión o cuota.");
