@@ -3,6 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { Button, Input, Card } from './ui';
 import { Send, Bot, Loader2, ShieldAlert, Key, Sparkles, FileText, HelpCircle, Lightbulb, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { useStore } from '../store/useStore';
 import { AIService } from '../services/ai';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -28,6 +29,7 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
   const [apiKey, setApiKey] = useState(localStorage.getItem('GEMINI_API_KEY') || '');
   const [showKeyInput, setShowKeyInput] = useState(!apiKey);
 
+  const { user } = useStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,12 +51,9 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
           fullText += `\n--- Page ${i} ---\n${pageText}`;
         }
         setPdfText(fullText);
-        setPdfText(fullText);
-        // Removed initial message to show Contextual Suggestions UI instead
-        // setMessages([{ role: 'model', text: '...' }]); 
       } catch (error) {
         console.error('Error parsing PDF:', error);
-        setMessages([{ role: 'model', text: '**Error Crítico**: No se pudo leer el PDF. Verifica que el archivo contenta texto seleccionable.' }]);
+        setMessages([{ role: 'model', text: '**Error Crítico**: No se pudo leer el PDF.' }]);
       } finally {
         setLoading(false);
       }
@@ -73,21 +72,40 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
     setLoading(true);
 
     try {
+      const roleContext = user?.role === 'docente'
+        ? `ERES UN ASISTENTE PEDAGÓGICO EXPERTO (Tutor para Docentes).
+           TUS DEBERES:
+           1. Enseñar metodologías y estrategias didácticas.
+           2. Retroalimentar el material: Sugerir mejoras, detectar huecos de contenido.
+           3. Ayudar a preparar clases: Estructurar por bloques de tiempo, sugerir actividades interactivas.
+           4. Generar evaluaciones: Tests, quizzes, rúbricas.
+           TONO: Profesional, colega experto, estructurado, directo.`
+        : `ERES UN TUTOR DE ESTUDIO PERSONALIZADO (Tutor para Alumnos).
+           TUS DEBERES:
+           1. Enseñar: Explicar conceptos complejos de forma simple.
+           2. Resumir: Extraer las ideas clave para facilitar el estudio.
+           3. Hacer preguntas: Interrogar al alumno (método socrático) para verificar entendimiento.
+           4. Adaptabilidad: Explicar "como si tuviera 5 años" o con analogías si se pide.
+           TONO: Amigable, motivador, paciente, mentor inspirador.`;
+
       const prompt = `
-        Actúa como un profesor tutor experto del sistema.
-        CONTEXTO (${pdfText.length} chars):
+        ROL: ${roleContext}
+        
+        CONTEXTO DEL DOCUMENTO (${pdfText.length} chars):
         ${pdfText.substring(0, 48000)}
 
-        PREGUNTA:
+        PREGUNTA DEL USUARIO (${user?.name || 'Usuario'}):
         ${userMsg}
 
-        Responde usando Markdown enriquecido (encabezados, listas, negritas, bloques de código si aplica). Sé claro, pedagógico y calmado.
+        INSTRUCCIONES DE FORMATO:
+        - Responde usando Markdown enriquecido.
+        - Usa listas, negritas y tablas si es útil.
+        - Identifica explícitamente secciones clave.
       `;
 
       const { text } = await AIService.generateContent(apiKey, prompt);
 
       setMessages(prev => [...prev, { role: 'model', text }]);
-      // toast.success(`Respondido con ${model}`, { position: 'bottom-right' }); 
 
     } catch (error: any) {
       if (error.message.includes('API Key')) {
@@ -111,6 +129,18 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
     setShowKeyInput(false);
     toast.success('Token Guardado');
   };
+
+  const suggestions = user?.role === 'docente' ? [
+    { icon: Calendar, label: "Planificar estructura de clase", text: "Genera una estructura de clase de 90 min basada en este contenido, con tiempos y actividades." },
+    { icon: HelpCircle, label: "Crear quiz de 5 preguntas", text: "Genera un quiz de 5 preguntas de selección múltiple con solucionario para evaluar este texto." },
+    { icon: Lightbulb, label: "Ideas de actividades prácticas", text: "Sugiere 3 actividades dinámicas grupales para enseñar este tema." },
+    { icon: FileText, label: "Generar Rúbrica de evaluación", text: "Crea una rúbrica detallada para evaluar un trabajo sobre este tema." }
+  ] : [
+    { icon: FileText, label: "Resumir para estudiar", text: "Hazme un resumen estructurado con lo más importante para estudiar para el examen." },
+    { icon: HelpCircle, label: "Ponme a prueba (Quiz)", text: "Hazme 3 preguntas difíciles sobre esto para ver si entendí. No me des las respuestas todavía." },
+    { icon: Lightbulb, label: "Explicar como a un niño", text: "Explícame este concepto clave como si tuviera 5 años, usando analogías divertidas." },
+    { icon: Calendar, label: "Crear plan de estudio", text: "Organiza un plan de estudio de 3 días para aprender esto paso a paso." }
+  ];
 
   if (showKeyInput) {
     return (
@@ -138,10 +168,14 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
           <div className="space-y-3">
             <Input
               type="password"
-              placeholder="Tu API Key aquí"
+              placeholder="Tu API Key de Gemini"
               onChange={(e) => setApiKey(e.target.value)}
               className="text-center font-mono tracking-wider bg-black/20"
+              autoComplete="off"
             />
+            <p className="text-[10px] text-gray-500 text-center">
+              * Tu llave se guarda localmente en este dispositivo.
+            </p>
             <Button onClick={() => saveKey(apiKey)} className="w-full flex items-center justify-center gap-2">
               <Key size={16} /> VINCULAR SISTEMA
             </Button>
@@ -161,7 +195,7 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
       <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center bg-black/20">
         <div className="flex items-center gap-3 text-primary font-medium tracking-wide">
           <Sparkles size={18} className="text-secondary animate-pulse" />
-          ASISTENTE DE APRENDIZAJE
+          ASISTENTE DE APRENDIZAJE ({user?.role === 'docente' ? 'PEDAGÓGICO' : 'TUTOR'})
         </div>
         <button onClick={() => setShowKeyInput(true)} className="text-[10px] uppercase font-bold text-muted hover:text-white border border-white/10 px-3 py-1 rounded-full hover:bg-white/5 transition-all">
           Ajustes
@@ -179,12 +213,7 @@ export const AIChat = ({ pdfFile, className }: AIChatProps) => {
               Hola, soy tu Tutor IA. Basado en el documento, te sugiero:
             </p>
             <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
-              {[
-                { icon: FileText, label: "Resumir conceptos clave", text: "Resumir conceptos clave" },
-                { icon: HelpCircle, label: "Generar 5 preguntas", text: "Generar 5 preguntas de quiz" },
-                { icon: Lightbulb, label: "Explicar para niño de 5 años", text: "Explicar como si tuviera 5 años" },
-                { icon: Calendar, label: "Crear plan de estudio", text: "Crear plan de estudio" }
-              ].map((item, i) => (
+              {suggestions.map((item, i) => (
                 <button
                   key={i}
                   onClick={() => setInput(item.text)}

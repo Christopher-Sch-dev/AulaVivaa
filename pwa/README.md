@@ -1,73 +1,84 @@
-# React + TypeScript + Vite
+# 🚀 Aula Viva AI - PWA (v2.0)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> **Plataforma Educativa Inteligente Offline-First**
+> *Port Web de la App Android nativa "Aula Viva", potenciado por React, IA Generativa y capacidades PWA.*
 
-Currently, two official plugins are available:
+![Aula Viva Banner](https://via.placeholder.com/1200x400/0F0E16/C4B5FD?text=AULA+VIVA+AI+PWA)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📖 Descripción
 
-## React Compiler
+**Aula Viva AI** es una Progressive Web App (PWA) diseñada para transformar la experiencia educativa mediante el uso de Inteligencia Artificial contextual. Permite a docentes gestionar asignaturas y a estudiantes interactuar con un **Tutor IA** que analiza documentos PDF en tiempo real, todo bajo una arquitectura segura, privada y funcional sin conexión a internet constante.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Esta versión es un **port moderno y estético** de una aplicación académica original en Kotlin, llevada a la web con estándares de rendimiento y diseño "Futuristic/Cyberpunk".
 
-## Expanding the ESLint configuration
+## ✨ Características Principales
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+*   **🧠 Tutor IA Contextual**: Integración directa con **Google Gemini 1.5 Flash**. Sube un PDF y chatea con él (resúmenes, quizzes, explicaciones).
+*   **⚡ Offline-First**: Persistencia de datos completa en el navegador usando **IndexedDB (Dexie.js)**. Funciona sin red.
+*   **🎨 UI Futurista**: Interfaz inmersiva con efectos *Glassmorphism*, animaciones *Framer Motion*, fondos *Matrix* y tipografía moderna.
+*   **🔒 Privacidad Total**: Arquitectura **P2P (Peer-to-Peer)**. Tu API Key y tus documentos nunca tocan un servidor intermedio; van directo de tu navegador a Google.
+*   **📱 PWA Instalable**: Se instala como una app nativa en Android, iOS y Desktop.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🛠️ Stack Tecnológico
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+*   **Core**: React 18, TypeScript, Vite.
+*   **Estilos**: Tailwind CSS, PostCSS.
+*   **Animaciones**: Framer Motion, Canvas Confetti.
+*   **Base de Datos Local**: Dexie.js (IndexedDB wrapper).
+*   **IA**: Google Generative AI SDK (Gemini).
+*   **Manejo de PDF**: PDF.js.
+*   **Iconos**: Lucide React.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 🚀 Instalación y Despliegue
+
+### Requisitos previos
+*   Node.js 18+
+*   NPM o Bun
+
+### Desarrollo Local
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/usuario/aulaviva-pwa.git
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Iniciar servidor de desarrollo
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Compilación para Producción
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
+# Los archivos estáticos se generarán en /dist
 ```
+
+## ☁️ Despliegue en Vercel
+
+Este proyecto está configurado para desplegarse instantáneamente en Vercel.
+
+1. Has fork de este repositorio.
+2. Importa el proyecto en Vercel.
+3. El *Framework Preset* se detectará automáticamente como **Vite**.
+4. ¡Listo! Vercel detectará el archivo `vercel.json` para manejar las rutas.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fusuario%2Faulaviva-pwa)
+
+
+## 🔐 Seguridad y Reglas de Oro
+
+Este proyecto sigue estrictos protocolos de desarrollo (**Clean Code**):
+*   **Validación Estricta**: Todos los formularios blindados contra datos incorrectos.
+*   **Arquitectura por Capas**: Separación clara entre Vistas, Componentes UI (Atomic), y Servicios de Lógica (Auth/Data/AI).
+*   **Cero Emojis**: Uso exclusivo de grafismos vectoriales (SVG) para una apariencia profesional.
+
+## 👤 Autor
+
+**Christopher Schiefelbein**
+*   [Portafolio Web](https://portafolio-devchris.vercel.app/)
+*   *Desarrollador Full Stack / Mobile / AI Integration*
+
+---
+*Hecho con 💜 y código limpio.*
