@@ -11,6 +11,10 @@ export const Footer = () => {
                     <span>
                         {new Date().getFullYear()} Aula Viva AI <span className="mx-2">&bull;</span> v2.0 PWA
                     </span>
+                    <span className="text-gray-700 mx-2">|</span>
+                    <a href="/about" className="text-gray-400 hover:text-white transition-colors text-xs font-medium uppercase tracking-wider">
+                        Acerca del Proyecto
+                    </a>
                 </div>
 
                 <a

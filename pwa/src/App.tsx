@@ -7,6 +7,7 @@ import { DocenteDashboard } from './pages/DocenteDashboard';
 import { AlumnoDashboard } from './pages/AlumnoDashboard';
 import { SubjectDetail } from './pages/SubjectDetail';
 import { ClassDetail } from './pages/ClassDetail';
+import { AboutPage } from './pages/AboutPage';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -61,6 +62,12 @@ function App() {
               <ClassDetail />
             </Layout>
           </ProtectedRoute>
+        } />
+
+        <Route path="/about" element={
+          <Layout>
+            <AboutPage />
+          </Layout>
         } />
 
       </Routes>
