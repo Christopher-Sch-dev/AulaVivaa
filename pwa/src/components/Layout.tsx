@@ -62,7 +62,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </nav>
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10 overflow-y-auto scrollbar-hide">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10 overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}

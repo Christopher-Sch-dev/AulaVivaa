@@ -87,3 +87,24 @@
     top: 0%
   }
 }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 10, 15, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4A4557;
+  /* Muted Violet/Grey */
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
+  /* Primary Violet on Hover */
+}
