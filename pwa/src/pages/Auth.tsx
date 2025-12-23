@@ -104,7 +104,7 @@ export const AuthPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[80vh] w-full mt-[-40px]">
+    <div className="flex items-center justify-center min-h-[60vh] w-full mt-[-40px]">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
 
         {/* Left Column: Educational Showcase */}
@@ -181,11 +181,16 @@ export const AuthPage = () => {
                   setPassword('docente12');
                   toast.info('Credenciales de Docente cargadas');
                 }}
-                className="bg-primary/10 border border-primary/20 hover:bg-primary/20 hover:border-primary/50 transition-all p-3 rounded-xl text-left group/btn"
+                className="bg-primary/20 border-2 border-primary/30 hover:bg-primary/30 hover:border-primary/60 transition-all p-3 rounded-xl text-left group/btn flex items-center justify-between shadow-lg shadow-primary/10"
               >
-                <div className="text-[10px] text-primary font-bold mb-0.5 group-hover/btn:translate-x-1 transition-transform">DOCENTE</div>
-                <div className="text-white font-mono text-xs mb-0.5">d1@d1.cl</div>
-                <div className="text-gray-500 text-[10px]">Pass: docente12</div>
+                <div>
+                  <div className="text-[10px] text-primary font-bold mb-0.5 uppercase tracking-wider group-hover/btn:translate-x-1 transition-transform">Docente</div>
+                  <div className="text-white font-mono text-xs mb-0.5 font-bold">d1@d1.cl</div>
+                  <div className="text-gray-400 text-[10px]">Pass: docente12</div>
+                </div>
+                <div className="bg-primary/20 p-1.5 rounded-full group-hover/btn:bg-primary group-hover/btn:text-white transition-colors">
+                  <ArrowRight size={16} className="text-primary group-hover/btn:text-white" />
+                </div>
               </button>
 
               <button
@@ -195,11 +200,16 @@ export const AuthPage = () => {
                   setPassword('alumno12');
                   toast.info('Credenciales de Alumno cargadas');
                 }}
-                className="bg-secondary/10 border border-secondary/20 hover:bg-secondary/20 hover:border-secondary/50 transition-all p-3 rounded-xl text-left group/btn"
+                className="bg-secondary/20 border-2 border-secondary/30 hover:bg-secondary/30 hover:border-secondary/60 transition-all p-3 rounded-xl text-left group/btn flex items-center justify-between shadow-lg shadow-secondary/10"
               >
-                <div className="text-[10px] text-secondary font-bold mb-0.5 group-hover/btn:translate-x-1 transition-transform">ALUMNO</div>
-                <div className="text-white font-mono text-xs mb-0.5">a1@a1.cl</div>
-                <div className="text-gray-500 text-[10px]">Pass: alumno12</div>
+                <div>
+                  <div className="text-[10px] text-secondary font-bold mb-0.5 uppercase tracking-wider group-hover/btn:translate-x-1 transition-transform">Alumno</div>
+                  <div className="text-white font-mono text-xs mb-0.5 font-bold">a1@a1.cl</div>
+                  <div className="text-gray-400 text-[10px]">Pass: alumno12</div>
+                </div>
+                <div className="bg-secondary/20 p-1.5 rounded-full group-hover/btn:bg-secondary group-hover/btn:text-white transition-colors">
+                  <ArrowRight size={16} className="text-secondary group-hover/btn:text-white" />
+                </div>
               </button>
             </div>
 
