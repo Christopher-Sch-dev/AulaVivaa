@@ -51,7 +51,7 @@ export const AboutPage = () => {
                             </p>
                             <div className="bg-primary/5 border-l-2 border-primary p-3 rounded-r-lg my-2">
                                 <p className="text-xs text-gray-300 italic">
-                                    * Nota: En producción, la persistencia usaría una BD centralizada (PostgreSQL) para integridad de datos, lógica que domino (Spring Boot) pero omití aquí por portabilidad.
+                                    * Nota: En producción, la persistencia usaría una BD centralizada (Supabase) para integridad de datos, lógica que domino (Spring Boot) pero omití aquí por portabilidad.
                                 </p>
                             </div>
                             <ul className="space-y-2 text-sm text-gray-400 mt-2">
@@ -98,7 +98,7 @@ export const AboutPage = () => {
                                 <span>Backend</span> <span className="text-gray-300">Spring Boot (Java)</span>
                             </li>
                             <li className="flex items-center justify-between border-b border-white/5 pb-2">
-                                <span>BD</span> <span className="text-gray-300">PostgreSQL + Room</span>
+                                <span>BD</span> <span className="text-gray-300">Supabase + Room</span>
                             </li>
                             <li className="mt-2 text-xs italic opacity-70">
                                 "Robusta pero requiere instalación."

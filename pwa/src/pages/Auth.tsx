@@ -180,7 +180,7 @@ export const AuthPage = () => {
                 <Rocket size={12} />
                 <p className="text-[10px] font-bold tracking-wider uppercase">Demo Funcional Completa</p>
               </div>
-              <p className="text-[10px] text-gray-400">Port from Kotlin Android Academy App</p>
+              <p className="text-[10px] text-gray-400">Port Web desde App Nativa Android (Kotlin)</p>
 
 
               <h2 className="text-2xl font-bold text-white mb-2">{isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}</h2>
