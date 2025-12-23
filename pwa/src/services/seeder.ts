@@ -46,35 +46,44 @@ export const SeedService = {
                 console.log('✅ Seeded Subject');
 
                 // 4. Create Class with PDF
-                const pdfUrl = 'https://desarrollodocente.uc.cl/wp-content/uploads/2020/09/Una-breve-mirada-al-estado-actual-de-la-Inteligencia-Artificial.pdf';
+
+                // Minimal Valid PDF (Hello World) Base64 to guarantee offline functionality
+                // This avoids CORS issues completely.
+                const base64PDF = "JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwogIC9QYWdlcyAyIDAgUgo+PgplbmRvYmoKCjIgMCBvYmoKPDwKICAvVHlwZSAvUGFnZXMKICAvTWVkaWFCb3ggWyAwIDAgNTk1LjI4IDg0MS44OSBdCiAgL0NvdW50IDEKICAvS2lkcyBbIDMgMCBSIF0KPj4KZW5kb2JqCgozIDAgb2JqCjw8CiAgL1R5cGUgL1BhZ2UKICAvUGFyZW50IDIgMCBSCiAgL1Jlc291cmNlcyA8PAogICAgL0ZvbnQgPDwKICAgICAgL0YxIDQgMCBSC    
+                // Truncated for brevity manually, let's use a real full string or fetch a reliable data URI?
+                // Actually, let's try to fetch a DATA URI if possible, or construct Blob from Base64.
+                // It's safer to use a function to convert base64.
+
+                // I'll use a reliable, simple PDF content here.
+                // Title: "Aula Viva Demo PDF"
+                const pdfBase64 = "JVBERi0xLjcKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PgplbmRvYmoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMS9LaWRzWzMgMCBSXT4+CmVuZG9iajMgMCBvYmoKPDwvVHlwZS9QYWdlL01lZGlhQm94WzAgMCA1OTUgODQyXS9QYXJlbnQgMiAwIFIvUmVzb3VyY2VzPDwvRm9udDw8L0YxIDQgMCBSPj4+Pi9Db250ZW50cyA1IDAgUj4+CmVuZG9iajQgMCBvYmoKPDwvVHlwZS9Gb250L1N1YnR5cGUvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhPj4KZW5kb2JqNSAwIG9iago8PC9MZW5ndGggNDQ+PgpzdHJlYW0KQlQKL0YxIDI0IFRmCjEwMCA3MDAgVGQKKEJpZW52ZW5pZG8gYSBBdWxhIFZpdmEgSW50ZWxpZ2VuY2lhIEFydGlmaWNpYWwpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDEwIDAwMDAwIG4gCjAwMDAwMDAwNjAgMDAwMDAgbiAKMDAwMDAwMDExNyAwMDAwMCBuIAowMDAwMDAwMjQ1IDAwMDAwIG4gCjAwMDAwMDAzMzMgMDAwMDAgbiAKdHJhaWxlcgo8PC9TaXplIDYvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgozOTgKJSVFT0YK";
+
+                // Helper to convert Base64 to Blob
+                const base64ToBlob = (base64: string, type: string) => {
+                    const binStr = atob(base64);
+                    const len = binStr.length;
+                    const arr = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        arr[i] = binStr.charCodeAt(i);
+                    }
+                    return new Blob([arr], { type: type });
+                };
+
+                const blob = base64ToBlob(pdfBase64, 'application/pdf');
 
                 try {
-                    const response = await fetch(pdfUrl, { mode: 'cors' });
-                    if (!response.ok) throw new Error('Fetch failed');
-
-                    const blob = await response.blob();
-
                     await DataService.createClass({
-                        name: 'Estado Actual de la IA',
-                        description: 'Lectura obligatoria sobre el impacto de la IA en la educación.',
+                        name: 'Estado Actual de la IA (Demo)',
+                        description: 'Documento PDF Demo generado localmente (Offline). Linkea a Docente ID: ' + teacher.id,
                         date: new Date().toISOString(),
                         subjectId: subject.id!,
                         pdfFile: blob,
-                        pdfName: 'IA_Estado_Actual.pdf'
+                        pdfName: 'Demo_IA.pdf'
                     });
-                    console.log('✅ Seeded Class & PDF');
+                    console.log('✅ Seeded Class & PDF (Embedded)');
 
                 } catch (e) {
-                    console.warn('⚠️ PDF Fetch failed (CORS?):', e);
-                    const dummyBlob = new Blob(['Dummy PDF Content for Demo'], { type: 'application/pdf' });
-                    await DataService.createClass({
-                        name: 'Estado Actual de la IA (Demo)',
-                        description: 'No se pudo descargar el PDF real por CORS. Este es un archivo de prueba. (Detalle: ' + (e as any).message + ')',
-                        date: new Date().toISOString(),
-                        subjectId: subject.id!,
-                        pdfFile: dummyBlob,
-                        pdfName: 'Demo_Fallback.pdf'
-                    });
+                    console.error('Failed to seed class:', e);
                 }
             }
 
