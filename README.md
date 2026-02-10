@@ -1,98 +1,98 @@
 # 🎓 Aula Viva AI
 
-**Unified Educational Management Ecosystem | PWA & Mobile Architecture**
+**Ecosistema Unificado de Gestión Educativa | Arquitectura PWA & Móvil**
 
-*Developed by **Christopher Schiefelbein** | Computer Engineering Portfolio*
-
----
-
-## 🚀 Executive Summary
-
-I designed **Aula Viva AI** to bridge the gap between traditional educational management and modern artificial intelligence. This repository documents the evolution of my project from a native Android application (v1.0) to a sophisticated, Local-First Progressive Web App (v2.0).
-
-My primary goal was to create a system that empowers both teachers and students with AI-driven tools for content generation and comprehension, while maintaining strict data privacy and offline capabilities.
+*Desarrollado por **Christopher Schiefelbein** | Portafolio de Ingeniería Informática*
 
 ---
 
-## 🌐 Project Structure
+## 🚀 Resumen Ejecutivo
 
-This repository is organized into two distinct architectural phases:
+Diseñé **Aula Viva AI** para conectar la gestión educativa tradicional con el potencial de la inteligencia artificial moderna. Este repositorio documenta la evolución de mi proyecto desde una aplicación nativa Android (v1.0) hacia una Progressive Web App (PWA) sofisticada y con enfoque "Local-First" (v2.0).
 
-1.  **Current Production (Root)**: The v2.0 Progressive Web App (React/Vite). This is the active, modern iteration of the project.
-2.  **Legacy Archive (`OLD-aulaviva-KOTLIN`)**: The original v1.0 Native Android Application. Preserved for historical context and code reference.
+Mi objetivo principal fue crear un sistema que realmente empodere a docentes y alumnos con herramientas de IA para generar contenido y mejorar la comprensión, manteniendo siempre una estricta privacidad de datos y capacidad de funcionamiento offline.
+
+---
+
+## 🌐 Estructura del Proyecto
+
+Organicé este repositorio en dos fases arquitectónicas distintas:
+
+1.  **Producción Actual (Raíz)**: La Progressive Web App v2.0 (React/Vite). Esta es la iteración activa y moderna del proyecto.
+2.  **Archivo Legado (`OLD-aulaviva-KOTLIN`)**: La aplicación nativa Android v1.0 original. La mantengo aquí únicamente por contexto histórico y referencia de código.
 
 ---
 
 ## ✨ Aula Viva v2.0 (PWA)
 
-### Technical Philosophy: "Thick Client & Local-First"
-For the web migration, I made a deliberate architectural choice to adopt a **Local-First** approach. Instead of relying on heavy backend infrastructure, I engineered the application to perform complex logic and data persistence directly in the user's browser.
+### Mi Filosofía Técnica: "Thick Client & Local-First"
+Para la migración a web, tomé la decisión arquitectónica deliberada de adoptar un enfoque **Local-First**. En lugar de depender de una infraestructura backend pesada, diseñé la aplicación para que ejecute la lógica compleja y la persistencia de datos directamente en el navegador del usuario.
 
-*   **Zero Latency**: Interactions are immediate as they don't await server round-trips.
-*   **Privacy by Design**: Data lives on the user's device, not in a central cloud database.
-*   **Cost Efficiency**: Eliminates the need for expensive always-on backend servers for a portfolio demonstration.
+*   **Latencia Cero**: Las interacciones son inmediatas porque no esperan viajes de ida y vuelta al servidor.
+*   **Privacidad por Diseño**: Los datos viven en el dispositivo del usuario, no en una base de datos central en la nube.
+*   **Eficiencia de Costos**: Elimino la necesidad de servidores backend costosos "siempre encendidos" para una demostración de portafolio.
 
-### The Stack
-I built the PWA using a modern, performance-oriented stack:
+### El Stack Tecnológico
+Construí la PWA utilizando un stack moderno orientado al rendimiento:
 
 *   **Core**: React 18, TypeScript, Vite.
-*   **State & Logic**: Zustand (State Management), React Router v7.
-*   **Persistence**: Dexie.js (IndexedDB wrapper) for a robust client-side SQL-like database.
-*   **UI/UX**: Tailwind CSS with a custom "Cyberpunk/Neon" aesthetic, Framer Motion for orchestral animations.
-*   **AI Engine**: Google Gemini API (Flash 1.5) integrated via a custom RAG (Retrieval-Augmented Generation) pipeline running locally.
+*   **Estado y Lógica**: Zustand (Gestión de Estado), React Router v7.
+*   **Persistencia**: Dexie.js (wrapper de IndexedDB) para una base de datos tipo SQL robusta en el cliente.
+*   **UI/UX**: Tailwind CSS con una estética personalizada "Cyberpunk/Neon" y Framer Motion para orquestar las animaciones.
+*   **Motor de IA**: Google Gemini API (Flash 1.5) integrada a través de un pipeline RAG (Retrieval-Augmented Generation) personalizado que corre localmente.
 
-### Key Features
-*   **Client-Side RAG**: Users upload PDFs, and I use `pdf.js` (in Web Workers) to extract text and feed it into the Gemini context window entirely within the browser session.
-*   **Role-Based AI**: The AI adapts its persona based on the logged-in user (Didactic planner for Teachers vs. Study guide for Students).
-*   **Smart Fallbacks**: Includes Tesseract.js for OCR when PDFs are image-based.
+### Características Clave
+*   **RAG en el Cliente**: Los usuarios suben PDFs y utilizo `pdf.js` (en Web Workers) para extraer el texto y alimentarlo a la ventana de contexto de Gemini, todo sin salir de la sesión del navegador.
+*   **IA Basada en Roles**: La IA adapta su personalidad según el usuario logueado (planificador didáctico para Docentes vs. guía de estudio para Alumnos).
+*   **Fallbacks Inteligentes**: Incluí Tesseract.js para hacer OCR cuando los PDFs son imágenes escaneadas.
 
-### How to Run (PWA)
-1.  **Install Dependencies**:
+### Cómo Ejecutar (PWA)
+1.  **Instalar Dependencias**:
     ```bash
     npm install
     ```
-2.  **Start Development Server**:
+2.  **Iniciar Servidor de Desarrollo**:
     ```bash
     npm run dev
     ```
-3.  **Build for Production**:
+3.  **Compilar para Producción**:
     ```bash
     npm run build
     ```
 
 ---
 
-## 📱 Legacy Archive: Aula Viva v1.0 (Android)
+## 📱 Archivo Legado: Aula Viva v1.0 (Android)
 
-*Location: `/OLD-aulaviva-KOTLIN`*
+*Ubicación: `/OLD-aulaviva-KOTLIN`*
 
-This folder contains the original native implementation. I developed this version using **Kotlin** and **Jetpack Compose**, following clean architecture principles (MVVM).
+Esta carpeta contiene la implementación nativa original. Desarrollé esta versión usando **Kotlin** y **Jetpack Compose**, siguiendo principios de arquitectura limpia (MVVM).
 
-### Legacy Stack highlights:
+### Highlights del Stack Legado:
 *   **Android**: Kotlin, Jetpack Compose, Room Database, Retrofit.
-*   **Backend**: Spring Boot 3.2 (Java), PostgreSQL, deployed on Google Cloud Run.
-*   **Features**: Native PDF rendering, biometric auth integration, and background sync.
+*   **Backend**: Spring Boot 3.2 (Java), PostgreSQL, desplegado en Google Cloud Run.
+*   **Funcionalidades**: Renderizado nativo de PDFs, integración de autenticación biométrica y sincronización en segundo plano.
 
-*Note: This version is archived and no longer actively maintained.*
-
----
-
-## 🔒 Security & Integrity
-
-Even as a portfolio project, I implemented professional security standards:
-
-*   **API Key Safety**: Users bring their own API keys (BYOK model), which are stored strictly in `localStorage` and never transmitted to my servers.
-*   **Input Sanitization**: All AI outputs are sanitized to prevent XSS attacks.
-*   **Strict Typing**: Comprehensive TypeScript interfaces ensure data integrity across the application state.
+*Nota: Esta versión está archivada y ya no recibe mantenimiento activo.*
 
 ---
 
-## 👨‍💻 Author
+## 🔒 Seguridad e Integridad
+
+Incluso siendo un proyecto de portafolio, implementé estándares de seguridad profesional:
+
+*   **Seguridad de API Key**: Los usuarios traen su propia llave (modelo BYOK), la cual se guarda estrictamente en el `localStorage` del navegador y nunca se transmite a mis servidores.
+*   **Sanitización de Inputs**: Todas las respuestas de la IA son sanitizadas para prevenir ataques XSS.
+*   **Tipado Estricto**: Interfaces completas de TypeScript aseguran la integridad de los datos a través de todo el estado de la aplicación.
+
+---
+
+## 👨‍💻 Autor
 
 **Christopher Schiefelbein**
-*Computer Engineering Student & Full Stack Developer*
+*Estudiante de Ingeniería en Informática & Desarrollador Full Stack*
 
-I am passionate about building software that feels alive. Aula Viva is a testament to my belief that educational software should be as engaging and well-engineered as the best consumer apps.
+Me apasiona construir software que se sienta vivo. Aula Viva es un testimonio de mi creencia de que el software educativo debería ser tan atractivo y bien diseñado como las mejores aplicaciones de consumo masivo.
 
 ---
-*© 2025 Christopher Schiefelbein. All Rights Reserved.*
+*© 2025 Christopher Schiefelbein. Todos los derechos reservados.*
