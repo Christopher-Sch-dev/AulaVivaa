@@ -125,3 +125,11 @@ app/ARCHITECTURE.md
 /informes de todo
 /IMPORTANTE
 /.kotlin/sessions
+
+# CI/CD - contiene configuracion de despliegue (no incluir en publico)
+cloudbuild.yaml
+
+# Firebase config - incluye API keys
+app/google-services.json
+google-services.json
+

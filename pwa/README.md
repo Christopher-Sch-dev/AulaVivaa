@@ -1,119 +1,89 @@
-# Aula Viva AI - Web Edition (PWA)
+# 🎓 Aula Viva AI
 
-![Status](https://img.shields.io/badge/Status-Stable%20Demo-success) ![Tech](https://img.shields.io/badge/Stack-React%20%7C%20Vite%20%7C%20Gemini-blueviolet) ![Type](https://img.shields.io/badge/Type-PWA%20Offline-orange)
+> **La clase no puede depender de si el profe subió bien el PDF.**
 
-> **"Tu tutor de bolsillo: personalización real para cada asignatura."**
-
-## 📖 Descripción del Proyecto
-
-**Aula Viva AI** es una plataforma educativa de vanguardia diseñada para democratizar el acceso a la tutoría personalizada mediante Inteligencia Artificial Generativa. Esta versión es un port web completo (PWA) de la aplicación nativa Android original, evolucionada para ofrecer accesibilidad universal sin instalaciones complejas.
-
-La aplicación implementa una arquitectura **"Offline-First"** (Local Web), permitiendo que toda la lógica, bases de datos y análisis de documentos ocurran directamente en el dispositivo del usuario, garantizando privacidad y funcionamiento incluso sin conexión constante (salvo para consultas a la IA).
-
-### 🌟 Misión
-Empoderar a docentes y estudiantes convirtiendo cada documento de clase (PDF) en un asistente interactivo capaz de explicar, evaluar y planificar.
+*Progressive Web App | React + Vite + Gemini | Christopher Schiefelbein*
 
 ---
 
-## 🚀 Características Principales
+## ¿Por qué existe esto?
 
-### 🧠 Tutoría IA Contextual (RAG Client-Side)
-No es un chat genérico. Aula Viva **lee tus PDFs de clase** y responde preguntas basándose *estrictamente* en ese contenido.
-*   **Para Alumnos**: Explica conceptos complejos, crea resúmenes y genera quizzes de práctica.
-*   **Para Docentes**: Sugiere planificaciones de clase, rúbricas y actividades didácticas basadas en el material.
+Estudié en Duoc UC y viví el problema de primera mano: los profesores a veces muestran PDFs en clase que nunca suben a la plataforma, o los suben mal. El contenido del día se pierde. Los alumnos no prestan atención, no toman buenas notas, y al momento de estudiar no tienen nada.
 
-### ⚡ Arquitectura "Edge" & Privacidad
-*   **Cero Base de Datos Central**: Toda tu información (usuarios, clases, PDFs) vive en tu navegador (`IndexedDB` vía `Dexie.js`).
-*   **API Key Privada**: Tu llave de Google Gemini se almacena encriptada localmente y viaja directo de tu navegador a Google. Nadie más la ve.
+Aula Viva reemplaza y agiliza ese proceso completo, para los dos lados del aula.
 
-### 🎨 Experiencia "Cyberpunk Academy"
-Una interfaz inmersiva diseñada para capturar la atención:
-*   Diseño **Glassmorphism** y neón "Deep Violet".
-*   Animaciones fluidas (Framer Motion).
-*   Micro-interacciones gamificadas.
+El docente puede subir el material de la clase, organizar su contenido por asignatura y fecha, y tener apoyos de IA para preparar su clase. El alumno, al estar inscrito en la misma asignatura, accede al material directamente, puede hacer repasos inteligentes, pedir resúmenes, hacer preguntas sobre el contenido, y aprender de forma mucho más activa.
 
-### 📱 PWA Universal
-*   Instalable en Android/iOS/Windows.
-*   Funciona como app nativa (Full screen, sin barra de navegación).
+Todo organizado por asignatura, por fecha y por orden estudiantil. Nada se pierde.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## ¿Cómo funciona?
 
-| Capa | Tecnología | Función |
-| :--- | :--- | :--- |
-| **Frontend** | React 18 + TypeScript | Lógica y Componentes UI |
-| **Build Tool** | Vite | Empaquetado ultrarrápido |
-| **Estilos** | Tailwind CSS | Sistema de diseño utilitario |
-| **Animación** | Framer Motion | Transiciones y efectos visuales |
-| **Base de Datos** | Dexie.js (IndexedDB) | Persistencia local completa (NoSQL) |
-| **IA Engine** | Google Gemini 3 Flash (Preview) | Modelo Multimodal SOTA (State of the Art) |
-| **Fallback** | Gemini 2.5 Flash | Respaldo para alta disponibilidad |
-| **PDF Engine** | **Hybrid Neural Architecture** | 3 Niveles: Layout Smart + Raw Stream + **Vision OCR (Tesseract)** |
-| **Memoria** | **Contexto Infinito (RAG)** | Historial conversacional completo con inyección de contexto dinámica |
-| **Seguridad** | **SHA-256 Hashing** | Identidad criptográfica única por documento |
+El núcleo de la app es un pipeline de **RAG (Retrieval-Augmented Generation)** que corre completamente en el navegador:
 
----
+1. El docente sube un PDF a la clase.
+2. `pdf.js` extrae el texto en un Web Worker (sin bloquear la UI).
+3. Si el PDF es una imagen escaneada, Tesseract.js aplica OCR automáticamente.
+4. El texto extraído se inyecta en el contexto de **Gemini 2.5 Flash** junto con el historial de chat.
+5. El alumno o docente interactúa con la IA, que responde basándose en el contenido real del material.
 
-## 🦾 "God Mode" PDF Engine
-
-Aula Viva implementa una arquitectura de ingestión de documentos de grado industrial única en su clase:
-
-1.  **Nivel 1: Reconstrucción Semántica (Smart Layout)**
-    *   Utiliza álgebra lineal para ordenar texto basado en coordenadas (X, Y), reconstruyendo tablas y columnas perfectamente.
-2.  **Nivel 2: Flujo Crudo (Raw Stream)**
-    *   Respaldo de bajo nivel para documentos con estructuras internas corruptas.
-3.  **Nivel 3: Visión Artificial (OCR Tesseract)**
-    *   Si el documento es una imagen o escaneo, el sistema activa **Redes Neuronales Convolucionales** en el navegador (Web Workers) para leer pixel por pixel.
-
-> **Resultado**: Tasa de éxito de lectura del 99.9%, sin importar si es un PDF nativo, un escaneo antiguo o una foto.
-
-## 🏁 Guía de Instalación (Local)
-
-Para ejecutar este proyecto en tu entorno local:
-
-1.  **Clonar el Repositorio**
-    ```bash
-    git clone https://github.com/tu-usuario/aulaviva-pwa.git
-    cd aulaviva-pwa/pwa
-    ```
-
-2.  **Instalar Dependencias**
-    ```bash
-    npm install
-    ```
-
-3.  **Ejecutar Servidor de Desarrollo**
-    ```bash
-    npm run dev
-    ```
-
-4.  **Abrir en Navegador**
-    Visita `http://localhost:5173`.
-
-> **Nota**: Para usar las funciones de IA, necesitarás una [API Key gratuita de Google Gemini](https://aistudio.google.com/app/apikey).
+La IA adapta su respuesta según el rol del usuario:
+- **Docente**: enfoque didáctico, planificación, taxonomía de Bloom.
+- **Alumno**: explicaciones simples, analogías, mnemotecnia, modo repaso.
 
 ---
 
-## 📸 Estructura del Proyecto
+## Filosofía técnica
 
-```
-src/
-├── components/      # UI Reutilizable (Cards, Buttons, Inputs)
-├── db/              # Esquema de Base de Datos Local (Dexie)
-├── pages/           # Vistas Principales (Dashboard, Auth, Details)
-├── services/        # Lógica de Negocio (AI, Auth, Data)
-├── store/           # Estado Global (Zustand)
-└── App.tsx          # Router y Configuración Principal
+Tomé la decisión de hacer todo **Local-First**: sin backend propio, sin base de datos en servidor, sin costos de infraestructura.
+
+- **Persistencia**: IndexedDB vía Dexie.js — base de datos transaccional completa en el navegador.
+- **API Key**: modelo BYOK (el usuario trae su propia clave de Gemini), nunca transmitida a ningún servidor mío.
+- **Deploy**: Vercel, dominio público, sin fricción de instalación.
+
+Fue la decisión correcta para un proyecto de portafolio que tiene que funcionar al instante para cualquier evaluador.
+
+---
+
+## Stack
+
+| Capa | Tecnología |
+|------|------------|
+| UI | React 18, TypeScript |
+| Build | Vite |
+| Estado | Zustand, React Router v7 |
+| DB Local | Dexie.js (IndexedDB) |
+| Estilos | Tailwind CSS, Framer Motion |
+| IA | Google Gemini 2.5 Flash (vía `@google/generative-ai`) |
+| PDF | pdf.js (Web Worker), Tesseract.js (OCR) |
+| Deploy | Vercel |
+
+---
+
+## Ejecutar localmente
+
+```bash
+# Instalar dependencias
+npm install
+
+# Iniciar servidor de desarrollo
+npm run dev
+
+# Compilar para producción
+npm run build
 ```
 
----
-
-## 👤 Autor
-
-**Christopher Schiefelbein**
-*   Ingeniería en Informática - Duoc UC
-*   [Portafolio Profesional](https://portafolio-devchris.vercel.app/)
+> Necesitas una API Key de Google Gemini. Puedes obtener una gratis en [aistudio.google.com](https://aistudio.google.com). La app te la pide al inicio, se guarda solo en tu `localStorage`.
 
 ---
-*Este proyecto es una demostración académica y técnica. La versión de producción podría requerir integración con servicios backend (PostgreSQL/Supabase) para sincronización entre dispositivos.*
+
+## Seguridad
+
+- La API key nunca sale del navegador.
+- Las respuestas de IA pasan por `react-markdown` con sanitización para prevenir XSS.
+- Roles estrictos: los alumnos no acceden a controles de edición de docentes.
+
+---
+
+*Desarrollado por Christopher Schiefelbein — 2025*
