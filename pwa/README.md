@@ -34,15 +34,15 @@ La IA adapta su respuesta según el rol del usuario:
 
 ---
 
-## Filosofía técnica
+## Filosofía técnica para DEMO en PWA (port de Android)
 
-Tomé la decisión de hacer todo **Local-First**: sin backend propio, sin base de datos en servidor, sin costos de infraestructura.
+Tomé la decisión de hacer todo **Local-First** para que pueda ser probado en ambos roles (docente y alumno): sin backend propio, sin base de datos en servidor, sin costos de infraestructura.
 
 - **Persistencia**: IndexedDB vía Dexie.js — base de datos transaccional completa en el navegador.
 - **API Key**: modelo BYOK (el usuario trae su propia clave de Gemini), nunca transmitida a ningún servidor mío.
 - **Deploy**: Vercel, dominio público, sin fricción de instalación.
 
-Fue la decisión correcta para un proyecto de portafolio que tiene que funcionar al instante para cualquier evaluador.
+Fue la decisión correcta para un proyecto de portafolio que tiene que funcionar al instante para cualquiera que quiera probarlo.
 
 ---
 
@@ -55,7 +55,7 @@ Fue la decisión correcta para un proyecto de portafolio que tiene que funcionar
 | Estado | Zustand, React Router v7 |
 | DB Local | Dexie.js (IndexedDB) |
 | Estilos | Tailwind CSS, Framer Motion |
-| IA | Google Gemini 2.5 Flash (vía `@google/generative-ai`) |
+| IA | Google Gemini 2.5 Flash API |
 | PDF | pdf.js (Web Worker), Tesseract.js (OCR) |
 | Deploy | Vercel |
 
@@ -86,4 +86,4 @@ npm run build
 
 ---
 
-*Desarrollado por Christopher Schiefelbein — 2025*
+*Desarrollado por Christopher Schiefelbein — enero 2026*
